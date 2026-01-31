@@ -1,0 +1,122 @@
+.wrap {
+  width: 100%;
+  max-width: 720px;
+  min-width: 320px;
+  margin-top: clamp(28px, 4vw, 44px);
+  perspective: 1000px;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 50px 100px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+.inputWrap {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.input:focus {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.dateInput {
+  composes: input;
+  cursor: pointer;
+  appearance: none;
+}
+
+.dateInput::-webkit-calendar-picker-indicator {
+  opacity: 0.8;
+  cursor: pointer;
+  filter: invert(1);
+  transition: opacity 0.2s;
+}
+
+.dateInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.cta {
+  grid-column: 1 / -1;
+  height: 50px;
+  margin-top: 8px;
+  padding: 0 36px;
+  background: linear-gradient(135deg, #00C853 0%, #B2FF59 100%);
+  border: none;
+  border-radius: 14px;
+  color: #052e16;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 8px 20px rgba(0, 200, 83, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cta:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0, 200, 83, 0.4);
+  filter: brightness(1.1);
+}
+
+.cta:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Responsive layout for mobile */
+@media (max-width: 600px) {
+  .form {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .cta {
+    margin-top: 4px;
+  }
+}

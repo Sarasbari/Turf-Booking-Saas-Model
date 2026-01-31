@@ -1,0 +1,55 @@
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #000; /* matches the dark video theme; no extra elements */
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* full-bleed with proper aspect-fit */
+  object-position: center;
+  transform: translateZ(0);
+  will-change: contents;
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000;
+}
+
+.fallbackInner {
+  max-width: 720px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+.fallbackTitle {
+  font-size: 18px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+
+.fallbackText {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.5;
+}
+
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95em;
+  color: rgba(255, 255, 255, 0.88);
+}
+

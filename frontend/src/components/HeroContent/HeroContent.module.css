@@ -1,0 +1,60 @@
+.wrap {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 1000px;
+  perspective: 1000px;
+  position: relative;
+}
+
+.slide1,
+.slide2 {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  will-change: transform, opacity;
+}
+
+/* Initially hide slide2 or handle via JS, but helpful to have styles */
+.slide2 {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(48px, 10vw, 110px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.0;
+  color: #fff;
+  /* Premium gradient text */
+  background: linear-gradient(180deg, #FFFFFF 0%, #E2E2E2 40%, #767676 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.1));
+}
+
+.sub {
+  margin: 0;
+  margin-top: clamp(12px, 2vw, 20px);
+  font-size: clamp(16px, 2.5vw, 24px);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.searchTitle {
+  margin: 0 0 24px 0;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}

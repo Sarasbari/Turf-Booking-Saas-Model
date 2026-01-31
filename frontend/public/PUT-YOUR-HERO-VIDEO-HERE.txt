@@ -1,0 +1,11 @@
+Place your landing hero video in this folder.
+
+Recommended:
+- `landing-impact.webm` (high quality, constant quality encode, no extra compression)
+
+Then it will be served at:
+- `/landing-impact.webm`
+
+If your source is an animated .webp, convert it to a real video container (webm/mp4)
+so we can scrub frame-by-frame via `video.currentTime`.
+
