@@ -103,8 +103,8 @@ export function BookingModal({ turf, isOpen, onClose }: BookingModalProps) {
                             <img src={turf.image} alt={turf.name} className={styles.summaryImage} />
                             <div className={styles.summaryDetails}>
                                 <div className={styles.summaryItem}>
-                                    <span className={styles.summaryLabel}>Size:</span>
-                                    <span className={styles.summaryValue}>{turf.size}</span>
+                                    <span className={styles.summaryLabel}>Type:</span>
+                                    <span className={styles.summaryValue}>{turf.type}</span>
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span className={styles.summaryLabel}>Price:</span>

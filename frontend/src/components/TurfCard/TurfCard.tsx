@@ -60,9 +60,11 @@ export function TurfCard({ turf, onBookNow }: TurfCardProps) {
                 <div className={styles.details}>
                     <div className={styles.size}>
                         <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={2} />
+                            <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                            <path d="M12 2a10 10 0 0 0 0 20" strokeWidth={2} />
+                            <path d="M2 12h20" strokeWidth={2} />
                         </svg>
-                        {turf.size}
+                        {turf.type}
                     </div>
 
                     <div className={styles.rating}>

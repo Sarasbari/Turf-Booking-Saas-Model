@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Turf, FilterState, SortOption } from '../../types/turf';
-import { mockTurfs, cities } from '../../data/mockTurfs';
+import { mockTurfs, cities, turfTypes } from '../../data/mockTurfs';
 import { TurfCard } from '../../components/TurfCard/TurfCard';
 import { BookingModal } from '../../components/BookingModal/BookingModal';
 import styles from './TurfListings.module.css';
@@ -10,7 +10,7 @@ export function TurfListings() {
         location: 'All Cities',
         date: '',
         priceRange: 'all',
-        turfSize: 'all'
+        turfType: 'all'
     });
     const [sortBy, setSortBy] = useState<SortOption>('rating');
     const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
@@ -25,7 +25,7 @@ export function TurfListings() {
             location: 'All Cities',
             date: '',
             priceRange: 'all',
-            turfSize: 'all'
+            turfType: 'all'
         });
     };
 
@@ -57,8 +57,8 @@ export function TurfListings() {
             });
         }
 
-        if (filters.turfSize !== 'all') {
-            result = result.filter(turf => turf.size === filters.turfSize);
+        if (filters.turfType !== 'all') {
+            result = result.filter(turf => turf.type === filters.turfType);
         }
 
         // Apply sorting
@@ -164,24 +164,25 @@ export function TurfListings() {
                                 </select>
                             </div>
 
-                            {/* Turf Size Filter */}
+                            {/* Turf Type Filter */}
                             <div className={styles.filterItem}>
-                                <label htmlFor="size-filter" className={styles.filterLabel}>
+                                <label htmlFor="type-filter" className={styles.filterLabel}>
                                     <svg className={styles.filterIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={2} />
+                                        <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                                        <path d="M12 2a10 10 0 0 0 0 20" strokeWidth={2} />
+                                        <path d="M2 12h20" strokeWidth={2} />
                                     </svg>
-                                    Turf Size
+                                    Turf Type
                                 </label>
                                 <select
-                                    id="size-filter"
+                                    id="type-filter"
                                     className={styles.filterSelect}
-                                    value={filters.turfSize}
-                                    onChange={(e) => handleFilterChange('turfSize', e.target.value)}
+                                    value={filters.turfType}
+                                    onChange={(e) => handleFilterChange('turfType', e.target.value)}
                                 >
-                                    <option value="all">All Sizes</option>
-                                    <option value="5-a-side">5-a-side</option>
-                                    <option value="7-a-side">7-a-side</option>
-                                    <option value="11-a-side">11-a-side</option>
+                                    {turfTypes.map(type => (
+                                        <option key={type} value={type === 'All Types' ? 'all' : type}>{type}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>

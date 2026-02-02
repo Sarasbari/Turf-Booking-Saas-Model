@@ -3,7 +3,7 @@ export interface Turf {
     name: string;
     location: string;
     city: string;
-    size: '5-a-side' | '7-a-side' | '11-a-side';
+    type: 'Cricket' | 'Football' | 'Volleyball' | 'Pickleball' | 'Badminton' | 'Tennis';
     pricePerHour: number;
     rating: number;
     image: string;
@@ -27,7 +27,7 @@ export interface FilterState {
     location: string;
     date: string;
     priceRange: string;
-    turfSize: string;
+    turfType: string;
 }
 
 export type SortOption = 'price-low' | 'price-high' | 'rating' | 'newest';
