@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./HeroSearch.module.css";
 
 export function HeroSearch() {
@@ -6,6 +7,7 @@ export function HeroSearch() {
   const dateId = useId();
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
+  const navigate = useNavigate();
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -15,7 +17,7 @@ export function HeroSearch() {
         className={styles.form}
         onSubmit={(e) => {
           e.preventDefault();
-          // Wire to search/navigation when ready
+          navigate('/listings');
         }}
       >
         <div className={styles.inputWrap}>
