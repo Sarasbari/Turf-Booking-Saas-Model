@@ -3,6 +3,9 @@ import { Turf, FilterState, SortOption } from '../../types/turf';
 import { mockTurfs, cities, turfTypes } from '../../data/mockTurfs';
 import { TurfCard } from '../../components/TurfCard/TurfCard';
 import { BookingModal } from '../../components/BookingModal/BookingModal';
+import { Header } from '../../components/Header/Header';
+import { SignInRequiredModal } from '../../components/SignInRequiredModal/SignInRequiredModal';
+import { isLoggedIn } from '../../utils/auth';
 import styles from './TurfListings.module.css';
 
 export function TurfListings() {
@@ -15,6 +18,7 @@ export function TurfListings() {
     const [sortBy, setSortBy] = useState<SortOption>('rating');
     const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -30,6 +34,14 @@ export function TurfListings() {
     };
 
     const handleBookNow = (turf: Turf) => {
+        // Check if user is logged in
+        if (!isLoggedIn()) {
+            // Show sign-in required modal
+            setIsSignInModalOpen(true);
+            return;
+        }
+
+        // User is logged in, proceed with booking
         setSelectedTurf(turf);
         setIsModalOpen(true);
     };
@@ -84,15 +96,8 @@ export function TurfListings() {
 
     return (
         <div className={styles.page}>
-            {/* Header */}
-            <header className={styles.header}>
-                <div className={styles.headerContent}>
-                    <div className={styles.logo}>
-                        <h1 className={styles.logoText}>TurfBookaro</h1>
-                    </div>
-                    <div className={styles.breadcrumb}>Browse & Book Turfs</div>
-                </div>
-            </header>
+            {/* Header with Authentication */}
+            <Header />
 
             {/* Main Content */}
             <main className={styles.main}>
@@ -242,6 +247,12 @@ export function TurfListings() {
                 turf={selectedTurf}
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
+            />
+
+            {/* Sign In Required Modal */}
+            <SignInRequiredModal
+                isOpen={isSignInModalOpen}
+                onClose={() => setIsSignInModalOpen(false)}
             />
         </div>
     );

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Turf } from '../../types/turf';
 import { generateTimeSlots } from '../../data/mockTurfs';
+import { getUserData, getFirstName } from '../../utils/auth';
 import styles from './BookingModal.module.css';
 
 interface BookingModalProps {
@@ -214,6 +215,13 @@ export function BookingModal({ turf, isOpen, onClose }: BookingModalProps) {
                                 <path fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" className={styles.checkmarkCheck} />
                             </svg>
                         </div>
+
+                        {/* Personalized Greeting */}
+                        {getUserData() && (
+                            <p className={styles.personalizedGreeting}>
+                                Thanks, {getFirstName(getUserData()!.name)}!
+                            </p>
+                        )}
 
                         <h2 className={styles.confirmTitle}>Booking Confirmed!</h2>
 

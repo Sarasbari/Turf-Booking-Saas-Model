@@ -1,0 +1,152 @@
+/* Backdrop */
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+}
+
+/* Modal */
+.modal {
+    position: relative;
+    max-width: 400px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modalOpen {
+    animation: scaleIn 0.3s ease-out;
+}
+
+/* Close Button */
+.closeButton {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #94a3b8;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+/* Icon Container */
+.iconContainer {
+    margin-bottom: 20px;
+}
+
+.icon {
+    width: 64px;
+    height: 64px;
+    color: #ea580c;
+    stroke-width: 1.5;
+}
+
+/* Heading */
+.heading {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 12px 0;
+}
+
+/* Message */
+.message {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+/* Sign In Button */
+.signInButton {
+    width: 100%;
+    background: #ea580c;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 12px 32px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 12px;
+}
+
+.signInButton:hover {
+    background: #dc2626;
+    box-shadow: 0 4px 16px rgba(234, 88, 12, 0.3);
+    transform: translateY(-2px);
+}
+
+.signInButton:active {
+    transform: translateY(0);
+}
+
+/* Continue Link */
+.continueLink {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 8px;
+    transition: color 0.2s ease;
+}
+
+.continueLink:hover {
+    color: #0f172a;
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .modal {
+        padding: 24px;
+    }
+
+    .heading {
+        font-size: 20px;
+    }
+
+    .icon {
+        width: 56px;
+        height: 56px;
+    }
+}

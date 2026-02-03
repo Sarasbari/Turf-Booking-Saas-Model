@@ -3,6 +3,7 @@ import { ScrollFramesHero } from "./components/ScrollFramesHero/ScrollFramesHero
 import { HeroContent } from "./components/HeroContent/HeroContent";
 import { HeroSearch } from "./components/HeroSearch/HeroSearch";
 import { TurfListings } from "./pages/TurfListings/TurfListings";
+import { SignIn } from "./pages/SignIn/SignIn";
 
 export function App() {
   return (
@@ -29,6 +30,7 @@ export function App() {
           }
         />
         <Route path="/listings" element={<TurfListings />} />
+        <Route path="/signin" element={<SignIn />} />
       </Routes>
     </BrowserRouter>
   );

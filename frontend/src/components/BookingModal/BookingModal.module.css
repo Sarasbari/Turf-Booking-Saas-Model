@@ -376,6 +376,13 @@
     }
 }
 
+.personalizedGreeting {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ea580c;
+}
+
 .confirmTitle {
     margin: 0 0 24px;
     font-size: 28px;
