@@ -1,8 +1,15 @@
-# Quick Reference - Google Authentication Feature
+# Quick Reference - Google OAuth Authentication
 
 ## 🚀 Quick Start
 
-### Start the App
+### Start the Backend
+```bash
+cd backend
+npm run dev
+```
+**URL**: http://localhost:5000
+
+### Start the Frontend
 ```bash
 cd frontend
 npm run dev
@@ -17,7 +24,8 @@ npm run dev
 |-------|-------------|
 | `/` | Homepage with hero section |
 | `/listings` | Turf listings page (main testing area) |
-| `/signin` | Mock Google sign-in page |
+| `/signin` | Google OAuth sign-in page |
+| `/auth/callback` | OAuth callback handler (automatic) |
 
 ---
 
@@ -32,9 +40,14 @@ npm run dev
 - Redirects to `/signin` page
 
 ### SignIn Page (`src/pages/SignIn/`)
-- Mock Google OAuth flow
-- Saves user data to localStorage
-- Redirects to homepage after 1.5s
+- **Real Google OAuth flow**
+- Redirects to Google's consent page
+- Returns via `/auth/callback`
+
+### AuthCallback Page (`src/pages/AuthCallback/`)
+- Handles OAuth redirect from backend
+- Stores token and user data
+- Redirects to listings page
 
 ---
 
@@ -42,28 +55,51 @@ npm run dev
 
 ### Check Login Status (Browser Console)
 ```javascript
+// Check if user is logged in
 localStorage.getItem('user')
+localStorage.getItem('token')
 ```
 
-### Manual Login
+### Manual Login (For Testing Only)
 ```javascript
+// Set mock user data
 localStorage.setItem('user', JSON.stringify({
   name: 'Test User',
   email: 'test@example.com',
-  picture: 'https://ui-avatars.com/api/?name=Test+User&background=ea580c&color=fff&size=128'
+  picture: 'https://ui-avatars.com/api/?name=Test+User&background=ea580c&color=fff&size=128',
+  id: 'test-123'
 }));
+// Set mock token
+localStorage.setItem('token', 'mock-jwt-token-for-testing');
 location.reload();
 ```
 
 ### Manual Logout
 ```javascript
 localStorage.removeItem('user');
+localStorage.removeItem('token');
 location.reload();
+```
+
+### Test Backend Health
+```bash
+curl http://localhost:5000/health
+```
+
+### Get Google Auth URL
+```bash
+curl http://localhost:5000/api/auth/google
 ```
 
 ---
 
 ## ✅ Test Checklist
+
+### Backend
+- [ ] Backend server running on port 5000
+- [ ] Health endpoint returns OK
+- [ ] Google auth endpoint returns URL
+- [ ] Redirect URI configured in Google Cloud Console
 
 ### Logged Out
 - [ ] Header shows "Sign In" button
@@ -71,12 +107,16 @@ location.reload();
 - [ ] Modal has lock icon and message
 - [ ] "Sign In with Google" redirects to `/signin`
 - [ ] Sign-in page has Google button
-- [ ] After sign-in, redirects to homepage
+- [ ] Clicking Google button redirects to Google
+- [ ] After Google approval, redirected to callback page
+- [ ] Callback page shows success message
+- [ ] Redirected to listings page
 
 ### Logged In
 - [ ] Header shows profile picture with green dot
+- [ ] Profile picture is from Google account
 - [ ] Clicking avatar opens dropdown
-- [ ] Dropdown shows name and email
+- [ ] Dropdown shows name and email from Google
 - [ ] "My Bookings" is disabled
 - [ ] "Sign Out" button works
 - [ ] Clicking "Book Now" opens booking modal directly
@@ -176,8 +216,18 @@ getFirstName(name)    // Extracts first name
 ```
 1. User visits /listings
 2. Clicks "Book Now"
-   ├─ If logged out → Sign-in modal → /signin → Login → Redirect
-   └─ If logged in → Booking modal → Confirmation with greeting
+   ├─ If logged out:
+   │  └─ Sign-in modal → /signin
+   │     └─ Click "Sign In with Google"
+   │        └─ Redirect to Google consent page
+   │           └─ User approves
+   │              └─ Google redirects to backend callback
+   │                 └─ Backend verifies & generates JWT
+   │                    └─ Redirect to /auth/callback
+   │                       └─ Store token & user data
+   │                          └─ Redirect to /listings
+   └─ If logged in:
+      └─ Booking modal → Confirmation with greeting
 ```
 
 ---

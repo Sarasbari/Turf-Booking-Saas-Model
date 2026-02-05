@@ -3,10 +3,10 @@ import { Turf } from '../types/turf';
 export const mockTurfs: Turf[] = [
     {
         id: '1',
-        name: 'Green Arena Turf',
+        name: 'prajval ka Turf',
         location: 'Andheri West',
         city: 'Mumbai',
-        type: 'Football',
+        type: 'Cricket',
         pricePerHour: 600,
         rating: 4.5,
         image: 'https://picsum.photos/seed/turf1/400/300',

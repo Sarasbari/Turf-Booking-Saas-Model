@@ -1,28 +1,24 @@
 import { useState } from 'react';
-import { setUserData } from '../../utils/auth';
+import { initiateGoogleLogin } from '../../utils/auth';
 import styles from './SignIn.module.css';
 
 export function SignIn() {
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleGoogleSignIn = () => {
+    const handleGoogleSignIn = async () => {
         setIsLoading(true);
+        setError(null);
 
-        // Simulate Google OAuth flow with realistic delay
-        setTimeout(() => {
-            // Mock user data (in real implementation, this would come from Google OAuth)
-            const mockUserData = {
-                name: 'John Doe',
-                email: 'john.doe@example.com',
-                picture: 'https://ui-avatars.com/api/?name=John+Doe&background=ea580c&color=fff&size=128'
-            };
-
-            // Save user data to localStorage
-            setUserData(mockUserData);
-
-            // Redirect back to listings page
-            window.location.href = '/listings';
-        }, 1500);
+        try {
+            // Initiate real Google OAuth flow
+            await initiateGoogleLogin();
+            // User will be redirected to Google, then back to our callback
+        } catch (err) {
+            console.error('Error during sign in:', err);
+            setError('Failed to initiate sign in. Please try again.');
+            setIsLoading(false);
+        }
     };
 
     const handleBackClick = (e: React.MouseEvent) => {
@@ -88,17 +84,33 @@ export function SignIn() {
                             <div className={styles.divider}></div>
                         </div>
 
-                        {/* Info Box */}
-                        <div className={styles.infoBox}>
-                            <svg className={styles.infoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <circle cx="12" cy="12" r="10" strokeWidth={2} />
-                                <line x1="12" y1="16" x2="12" y2="12" strokeWidth={2} />
-                                <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth={2} />
-                            </svg>
-                            <div className={styles.infoText}>
-                                <strong>Demo Mode:</strong> This is a demonstration. In production, you'll be securely redirected to Google's OAuth page.
+                        {/* Error Display */}
+                        {error && (
+                            <div className={styles.infoBox} style={{ borderColor: '#dc2626', backgroundColor: '#fef2f2' }}>
+                                <svg className={styles.infoIcon} viewBox="0 0 24 24" fill="none" stroke="#dc2626">
+                                    <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                                    <line x1="12" y1="8" x2="12" y2="12" strokeWidth={2} />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth={2} />
+                                </svg>
+                                <div className={styles.infoText} style={{ color: '#dc2626' }}>
+                                    <strong>Error:</strong> {error}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* Info Box */}
+                        {!error && (
+                            <div className={styles.infoBox}>
+                                <svg className={styles.infoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                                    <line x1="12" y1="16" x2="12" y2="12" strokeWidth={2} />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth={2} />
+                                </svg>
+                                <div className={styles.infoText}>
+                                    <strong>Secure Sign In:</strong> You'll be redirected to Google's secure authentication page.
+                                </div>
+                            </div>
+                        )}
 
                         {/* Back Link */}
                         <a href="/listings" onClick={handleBackClick} className={styles.backLink}>

@@ -4,6 +4,7 @@ import { HeroContent } from "./components/HeroContent/HeroContent";
 import { HeroSearch } from "./components/HeroSearch/HeroSearch";
 import { TurfListings } from "./pages/TurfListings/TurfListings";
 import { SignIn } from "./pages/SignIn/SignIn";
+import { AuthCallback } from "./pages/AuthCallback/AuthCallback";
 
 export function App() {
   return (
@@ -31,6 +32,7 @@ export function App() {
         />
         <Route path="/listings" element={<TurfListings />} />
         <Route path="/signin" element={<SignIn />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
       </Routes>
     </BrowserRouter>
   );
