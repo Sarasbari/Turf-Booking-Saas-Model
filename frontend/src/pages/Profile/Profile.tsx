@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { getUserProfile, createUserProfile } from '../../utils/firestoreUtils';
 import { UserProfile } from '../../types/profile';
 import { ProfileSidebar } from '../../components/ProfileSidebar/ProfileSidebar';
@@ -19,29 +20,36 @@ export function Profile() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        checkAuthAndLoadProfile();
-    }, []);
+        // Wait for auth state to be determined
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                loadProfile(currentUser.uid);
+            } else {
+                // Not authenticated, redirect to sign in
+                navigate('/signin');
+            }
+        });
 
-    const checkAuthAndLoadProfile = async () => {
+        return () => unsubscribe();
+    }, [navigate]);
+
+    const loadProfile = async (userId: string) => {
         try {
             setLoading(true);
             setError(null);
 
-            // Check if user is authenticated
-            const currentUser = auth.currentUser;
-
-            if (!currentUser) {
-                // Not authenticated, redirect to sign in
-                navigate('/signin');
-                return;
-            }
-
             // Try to fetch user profile
-            let userProfile = await getUserProfile(currentUser.uid);
+            let userProfile = await getUserProfile(userId);
 
             // If profile doesn't exist, create it
             if (!userProfile) {
-                userProfile = await createUserProfile(currentUser.uid, {
+                const currentUser = auth.currentUser;
+                if (!currentUser) {
+                    navigate('/signin');
+                    return;
+                }
+
+                userProfile = await createUserProfile(userId, {
                     name: currentUser.displayName || 'User',
                     email: currentUser.email || '',
                     picture: currentUser.photoURL || '',
@@ -62,7 +70,10 @@ export function Profile() {
 
     const handleProfileUpdate = () => {
         // Reload profile data after update
-        checkAuthAndLoadProfile();
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+            loadProfile(currentUser.uid);
+        }
     };
 
     const renderContent = () => {
@@ -102,7 +113,10 @@ export function Profile() {
             <div className="profile-error">
                 <h2>Oops! Something went wrong</h2>
                 <p>{error}</p>
-                <button onClick={checkAuthAndLoadProfile} className="retry-button">
+                <button onClick={() => {
+                    const currentUser = auth.currentUser;
+                    if (currentUser) loadProfile(currentUser.uid);
+                }} className="retry-button">
                     Try Again
                 </button>
             </div>

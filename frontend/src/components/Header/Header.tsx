@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isLoggedIn, getUserData, UserData } from '../../utils/auth';
+import { getUserData, UserData, onAuthStateChange } from '../../utils/auth';
 import { NavigationDrawer } from '../NavigationDrawer/NavigationDrawer';
 import { LocationModal } from '../LocationModal/LocationModal';
 import { SignInModal } from '../../pages/SignIn/SignIn';
@@ -20,11 +20,18 @@ export function Header({ onSearchChange }: HeaderProps) {
     const [selectedCity, setSelectedCity] = useState('Mumbai');
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+    // Listen for auth state changes
     useEffect(() => {
-        if (isLoggedIn()) {
-            const userData = getUserData();
-            setUser(userData);
-        }
+        const unsubscribe = onAuthStateChange((firebaseUser) => {
+            if (firebaseUser) {
+                const userData = getUserData();
+                setUser(userData);
+            } else {
+                setUser(null);
+            }
+        });
+
+        return () => unsubscribe();
     }, []);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

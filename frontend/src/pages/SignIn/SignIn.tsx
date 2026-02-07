@@ -46,8 +46,9 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
 
         try {
             await initiateGoogleLogin();
-            navigate('/listings');
             onClose();
+            // Reload the page to ensure all components get the updated auth state
+            window.location.reload();
         } catch (err: any) {
             console.error('Error during sign in:', err);
             setError(err.message || 'Failed to sign in. Please try again.');
