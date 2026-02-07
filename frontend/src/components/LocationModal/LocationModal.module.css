@@ -1,0 +1,273 @@
+/* BookMyShow-Style Location Modal */
+
+/* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal Container */
+.modal {
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 32px;
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Search Container */
+.searchContainer {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: #999999;
+    pointer-events: none;
+}
+
+.searchInput {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px 0 48px;
+    border: 1px solid #E5E5E5;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #333333;
+    background: #F5F5F5;
+    transition: all 0.2s;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: #ea580c;
+    background: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+}
+
+.searchInput::placeholder {
+    color: #999999;
+}
+
+/* Detect Location Button */
+.detectLocation {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: none;
+    border: 1px solid #E5E5E5;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #ea580c;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 24px;
+}
+
+.detectLocation:hover {
+    background: #FFF7ED;
+    border-color: #ea580c;
+}
+
+.locationIcon {
+    width: 20px;
+    height: 20px;
+    color: #ea580c;
+}
+
+/* Section Label */
+.sectionLabel {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333333;
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Cities Grid */
+.citiesGrid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.cityCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 8px;
+    background: #FFFFFF;
+    border: 1px solid #E5E5E5;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cityCard:hover {
+    border-color: #ea580c;
+    background: #FFF7ED;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);
+}
+
+.cityCardActive {
+    border-color: #ea580c;
+    background: #FFF7ED;
+}
+
+.cityIcon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.cityName {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333333;
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* View All Button */
+.viewAllButton {
+    width: 100%;
+    height: 44px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ea580c;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.viewAllButton:hover {
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modal {
+        width: 95%;
+        padding: 24px;
+        max-height: 85vh;
+    }
+
+    .citiesGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .cityCard {
+        padding: 12px 6px;
+    }
+
+    .cityIcon {
+        font-size: 28px;
+    }
+
+    .cityName {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal {
+        padding: 20px;
+    }
+
+    .citiesGrid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .cityCard {
+        padding: 10px 6px;
+    }
+
+    .cityIcon {
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+
+    .cityName {
+        font-size: 11px;
+    }
+
+    .searchInput {
+        height: 44px;
+        font-size: 14px;
+    }
+
+    .detectLocation {
+        height: 44px;
+        font-size: 14px;
+    }
+}
+
+/* Scrollbar Styling */
+.modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal::-webkit-scrollbar-track {
+    background: #F5F5F5;
+    border-radius: 4px;
+}
+
+.modal::-webkit-scrollbar-thumb {
+    background: #CCCCCC;
+    border-radius: 4px;
+}
+
+.modal::-webkit-scrollbar-thumb:hover {
+    background: #999999;
+}

@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isLoggedIn, getUserData, UserData } from '../../utils/auth';
 import { NavigationDrawer } from '../NavigationDrawer/NavigationDrawer';
+import { LocationModal } from '../LocationModal/LocationModal';
+import { SignInModal } from '../../pages/SignIn/SignIn';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -13,29 +15,16 @@ export function Header({ onSearchChange }: HeaderProps) {
     const [user, setUser] = useState<UserData | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+    const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+    const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
     const [selectedCity, setSelectedCity] = useState('Mumbai');
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-    const locationRef = useRef<HTMLDivElement>(null);
-
-    const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Hyderabad', 'Chennai'];
 
     useEffect(() => {
         if (isLoggedIn()) {
             const userData = getUserData();
             setUser(userData);
         }
-    }, []);
-
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (locationRef.current && !locationRef.current.contains(event.target as Node)) {
-                setShowLocationDropdown(false);
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,7 +35,6 @@ export function Header({ onSearchChange }: HeaderProps) {
 
     const handleCitySelect = (city: string) => {
         setSelectedCity(city);
-        setShowLocationDropdown(false);
     };
 
 
@@ -74,43 +62,25 @@ export function Header({ onSearchChange }: HeaderProps) {
                     />
                 </div>
 
-                {/* Right Section */}
+                {/* Spacer to push right section to the end */}
+                <div style={{ flex: 1 }}></div>
+
+                {/* Right Section - Location & Profile */}
                 <div className={styles.rightSection}>
                     {/* Location Selector */}
-                    <div className={styles.locationSelector} ref={locationRef}>
-                        <button
-                            className={styles.locationButton}
-                            onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-                        >
-                            {selectedCity}
-                            <svg className={styles.dropdownIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-
-                        {showLocationDropdown && (
-                            <div className={styles.locationDropdown}>
-                                {cities.map((city) => (
-                                    <button
-                                        key={city}
-                                        className={`${styles.cityOption} ${city === selectedCity ? styles.cityOptionActive : ''}`}
-                                        onClick={() => handleCitySelect(city)}
-                                    >
-                                        {city}
-                                        {city === selectedCity && (
-                                            <svg className={styles.checkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <polyline points="20 6 9 17 4 12" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    <button
+                        className={styles.locationButton}
+                        onClick={() => setIsLocationModalOpen(true)}
+                    >
+                        📍 {selectedCity}
+                        <svg className={styles.dropdownIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
 
                     {/* Sign In / Profile */}
                     {!user ? (
-                        <button className={styles.signInButton} onClick={() => setIsDrawerOpen(true)}>
+                        <button className={styles.signInButton} onClick={() => setIsSignInModalOpen(true)}>
                             Sign In
                         </button>
                     ) : (
@@ -176,6 +146,21 @@ export function Header({ onSearchChange }: HeaderProps) {
                 isOpen={isDrawerOpen}
                 onClose={() => setIsDrawerOpen(false)}
                 user={user}
+                onSignInClick={() => setIsSignInModalOpen(true)}
+            />
+
+            {/* Location Modal */}
+            <LocationModal
+                isOpen={isLocationModalOpen}
+                onClose={() => setIsLocationModalOpen(false)}
+                selectedCity={selectedCity}
+                onCitySelect={handleCitySelect}
+            />
+
+            {/* Sign In Modal */}
+            <SignInModal
+                isOpen={isSignInModalOpen}
+                onClose={() => setIsSignInModalOpen(false)}
             />
         </header>
     );

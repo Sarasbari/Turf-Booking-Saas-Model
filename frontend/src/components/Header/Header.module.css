@@ -37,7 +37,7 @@
 
 /* Search Container */
 .searchContainer {
-    flex: 1;
+    flex: 0 1 500px;
     max-width: 500px;
     position: relative;
 }
@@ -81,13 +81,10 @@
     display: flex;
     align-items: center;
     gap: 16px;
+    margin-left: auto;
 }
 
 /* Location Selector */
-.locationSelector {
-    position: relative;
-}
-
 .locationButton {
     height: 40px;
     padding: 0 12px;
@@ -114,48 +111,6 @@
     width: 16px;
     height: 16px;
     color: #666666;
-}
-
-.locationDropdown {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    background: #FFFFFF;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    min-width: 180px;
-    padding: 8px 0;
-    z-index: 1000;
-}
-
-.cityOption {
-    width: 100%;
-    padding: 10px 16px;
-    background: none;
-    border: none;
-    text-align: left;
-    font-size: 14px;
-    color: #333333;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.2s;
-}
-
-.cityOption:hover {
-    background: #F5F5F5;
-}
-
-.cityOptionActive {
-    color: #ea580c;
-    font-weight: 600;
-}
-
-.checkIcon {
-    width: 16px;
-    height: 16px;
-    color: #ea580c;
 }
 
 /* Sign In Button */
@@ -406,6 +361,13 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .searchContainer {
+        flex: 1;
+        max-width: 400px;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         height: 60px;
@@ -417,7 +379,7 @@
         display: none;
     }
 
-    .locationSelector {
+    .locationButton {
         display: none;
     }
 
@@ -429,6 +391,10 @@
 
     .mobileMenuOverlay {
         display: block;
+    }
+
+    .rightSection {
+        gap: 12px;
     }
 }
 

@@ -9,9 +9,10 @@ interface NavigationDrawerProps {
     onClose: () => void;
     user: UserData | null;
     favoriteCount?: number;
+    onSignInClick?: () => void;
 }
 
-export function NavigationDrawer({ isOpen, onClose, user, favoriteCount = 0 }: NavigationDrawerProps) {
+export function NavigationDrawer({ isOpen, onClose, user, favoriteCount = 0, onSignInClick }: NavigationDrawerProps) {
     const navigate = useNavigate();
 
     // Handle Escape key to close drawer
@@ -39,8 +40,12 @@ export function NavigationDrawer({ isOpen, onClose, user, favoriteCount = 0 }: N
     }, [isOpen]);
 
     const handleSignIn = () => {
-        navigate('/signin');
         onClose();
+        if (onSignInClick) {
+            onSignInClick();
+        } else {
+            navigate('/signin');
+        }
     };
 
     const handleEditProfile = () => {
