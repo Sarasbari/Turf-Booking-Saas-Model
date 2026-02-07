@@ -1,0 +1,95 @@
+.subNav {
+    position: sticky;
+    top: 68px;
+    z-index: 90;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E5E5;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.sportTabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.sportTabs::-webkit-scrollbar {
+    display: none;
+}
+
+.sportTab {
+    height: 48px;
+    padding: 0 20px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666666;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: all 0.2s;
+    font-family: 'Roboto', sans-serif;
+}
+
+.sportTab:hover:not(.sportTabActive) {
+    color: #333333;
+    background: #F5F5F5;
+}
+
+.sportTabActive {
+    color: #ea580c;
+    border-bottom-color: #ea580c;
+    font-weight: 600;
+}
+
+.sportIcon {
+    font-size: 18px;
+}
+
+.sportLabel {
+    font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .subNav {
+        top: 60px;
+    }
+
+    .container {
+        padding: 0 16px;
+    }
+
+    .sportTab {
+        padding: 0 16px;
+    }
+
+    .sportIcon {
+        font-size: 16px;
+    }
+
+    .sportLabel {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 640px) {
+    .sportTab {
+        padding: 0 12px;
+    }
+
+    .sportIcon {
+        display: none;
+    }
+}

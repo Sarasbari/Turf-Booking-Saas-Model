@@ -1,0 +1,231 @@
+/* Backdrop Overlay */
+.backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    animation: fadeIn 300ms ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Drawer Container */
+.drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 380px;
+    background: #ffffff;
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Header Section */
+.header {
+    padding: 24px 20px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.headerTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.greeting {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333333;
+    margin: 0;
+}
+
+.profilePic {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e5e5e5;
+}
+
+.editProfileLink {
+    background: none;
+    border: none;
+    color: #ea580c;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.editProfileLink:hover {
+    color: #dc2626;
+}
+
+.signInButton {
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 24px;
+    background: #ea580c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.signInButton:hover {
+    background: #dc2626;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.2);
+}
+
+/* Menu Section */
+.menu {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.menuItem {
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.menuItem:hover {
+    background: #f9f9f9;
+}
+
+.menuItemContent {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    min-height: 68px;
+}
+
+.icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.menuItemText {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.label {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333333;
+}
+
+.sublabel {
+    font-size: 12px;
+    font-weight: 400;
+    color: #999999;
+}
+
+.chevron {
+    font-size: 16px;
+    color: #cccccc;
+    flex-shrink: 0;
+}
+
+.badge {
+    background: #ea580c;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Notification Item (Yellow Background) */
+.notificationItem {
+    background: #fff9e6;
+}
+
+.notificationItem:hover {
+    background: #fff4d6;
+}
+
+/* Footer Section */
+.footer {
+    padding: 20px;
+    border-top: 1px solid #e5e5e5;
+    background: white;
+}
+
+.signOutButton {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid #ea580c;
+    border-radius: 6px;
+    color: #ea580c;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.signOutButton:hover {
+    background: #fff7ed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .drawer {
+        width: 340px;
+    }
+}
+
+@media (max-width: 480px) {
+    .drawer {
+        width: 85vw;
+        max-width: 320px;
+    }
+}

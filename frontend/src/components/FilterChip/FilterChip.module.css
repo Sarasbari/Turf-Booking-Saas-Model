@@ -1,0 +1,31 @@
+.chip {
+    height: 36px;
+    padding: 8px 16px;
+    border-radius: 18px;
+    border: 1px solid #E5E5E5;
+    background: #FFFFFF;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666666;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Roboto', sans-serif;
+}
+
+.chip:hover:not(.active) {
+    border-color: #ea580c;
+    color: #ea580c;
+}
+
+.chip.active {
+    background: #ea580c;
+    border-color: #ea580c;
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+.chip:focus-visible {
+    outline: 2px solid #ea580c;
+    outline-offset: 2px;
+}

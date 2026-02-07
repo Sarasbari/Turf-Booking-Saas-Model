@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Turf } from '../../types/turf';
+import { type Turf } from '../../data/mockTurfs';
 import { generateTimeSlots } from '../../data/mockTurfs';
 import { getUserData, getFirstName } from '../../utils/auth';
 import styles from './BookingModal.module.css';
@@ -101,11 +101,11 @@ export function BookingModal({ turf, isOpen, onClose }: BookingModalProps) {
 
                         {/* Turf Summary */}
                         <div className={styles.summary}>
-                            <img src={turf.image} alt={turf.name} className={styles.summaryImage} />
+                            <img src={turf.images[0]} alt={turf.name} className={styles.summaryImage} />
                             <div className={styles.summaryDetails}>
                                 <div className={styles.summaryItem}>
-                                    <span className={styles.summaryLabel}>Type:</span>
-                                    <span className={styles.summaryValue}>{turf.type}</span>
+                                    <span className={styles.summaryLabel}>Sport:</span>
+                                    <span className={styles.summaryValue}>{turf.sport}</span>
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span className={styles.summaryLabel}>Price:</span>

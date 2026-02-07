@@ -1,266 +1,231 @@
-# 🏟️ TurfBookaro - Turf Booking System
+# Turf Booking System
 
-A modern, full-stack turf booking application with Google OAuth authentication.
-
-## ✨ Features
-
-- 🎨 Beautiful, responsive UI with smooth animations
-- 🔐 Google OAuth 2.0 authentication
-- 🏟️ Browse and search turf listings
-- 📅 Book turfs with date and time selection
-- 👤 User profile management
-- 📱 Mobile-responsive design
+A modern turf booking application built with React, TypeScript, and Firebase.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
 
-- Node.js 16+ installed
-- Google Cloud Console account
-- Google OAuth credentials (already configured)
+### Installation
 
-### 1. Configure Google OAuth
+1. **Clone the repository** (if not already done)
 
-**Important:** Add the redirect URI to your Google Cloud Console:
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Navigate to **APIs & Services** → **Credentials**
-3. Click your OAuth 2.0 Client ID
-4. Add to **Authorized redirect URIs**:
-   ```
-   http://localhost:5000/api/auth/google/callback
-   ```
-5. Click **Save**
-
-### 2. Start the Backend
+2. **Install dependencies**
 
 ```bash
-cd backend
-npm install  # First time only
-npm run dev
-```
-
-Backend runs on: **http://localhost:5000**
-
-### 3. Start the Frontend
-
-In a new terminal:
-
-```bash
+# Frontend
 cd frontend
-npm install  # First time only
+npm install
+
+# Backend (if using)
+cd ../backend
+npm install
+```
+
+3. **Start the development server**
+
+```bash
+# Frontend
+cd frontend
 npm run dev
 ```
 
-Frontend runs on: **http://localhost:5173**
+The app will be available at **http://localhost:5173**
 
-### 4. Test It!
+## ✅ Current Status
 
-1. Open http://localhost:5173
-2. Click "BookMyTurf" to see listings
-3. Click "Sign In" in the header
-4. Sign in with Google
-5. Start booking turfs!
+### ✨ Working Features
+
+1. **Landing Page** - Hero section with location and date inputs
+2. **Turf Listings** - Two-panel layout with filters and results
+3. **Filters** - Location, date, price range, and turf type
+4. **Active Filters Display** - Visual feedback on applied filters
+5. **Responsive Design** - Works on desktop, tablet, and mobile
+6. **Firebase Integration** - Ready for authentication and database
+
+### 🔥 Firebase Setup
+
+Firebase has been integrated with the following services:
+- **Authentication** - For Google sign-in
+- **Firestore** - For storing turf and booking data
+- **Analytics** - For tracking user behavior
+
+**Configuration file**: `src/lib/firebase.ts`
+
+See `FIREBASE_SETUP.md` for detailed integration guide.
 
 ## 📁 Project Structure
 
 ```
-TurfBookingSystem/
-├── backend/                    # Express.js API server
-│   ├── src/
-│   │   ├── index.js           # Server entry point
-│   │   ├── config/            # Configuration
-│   │   ├── controllers/       # Request handlers
-│   │   ├── middleware/        # Auth middleware
-│   │   ├── routes/            # API routes
-│   │   └── services/          # Business logic
-│   ├── .env                   # Environment variables (configured)
-│   └── package.json
-│
-├── frontend/                   # React + TypeScript app
-│   ├── src/
-│   │   ├── components/        # Reusable components
-│   │   ├── pages/             # Page components
-│   │   ├── utils/             # Utility functions
-│   │   ├── types/             # TypeScript types
-│   │   └── App.tsx            # Main app component
-│   ├── .env                   # Environment variables (configured)
-│   └── package.json
-│
-└── docs/                       # Documentation
-    ├── COMPLETE_OAUTH_GUIDE.md
-    ├── OAUTH_IMPLEMENTATION_SUMMARY.md
-    ├── GOOGLE_OAUTH_SETUP.md
-    └── QUICK_REFERENCE.md
+frontend/
+├── src/
+│   ├── components/       # Reusable UI components
+│   ├── pages/           # Page components
+│   │   ├── Home/        # Landing page
+│   │   ├── TurfListings/# Listings with filters
+│   │   ├── SignIn/      # Sign-in page
+│   │   └── AuthCallback/# OAuth callback
+│   ├── lib/             # Firebase configuration
+│   ├── utils/           # Utility functions
+│   ├── types/           # TypeScript types
+│   ├── data/            # Mock data
+│   └── styles/          # Global styles
+├── index.html
+├── vite.config.ts
+└── package.json
 ```
 
-## 🔐 Authentication
+## 🎨 Features
 
-This app uses **Google OAuth 2.0** for authentication:
+### Two-Panel Layout (Listings Page)
 
-- Users sign in with their Google account
-- JWT tokens for session management
-- Secure HTTP-only cookies
-- 7-day token expiration
+**Desktop (>1280px):**
+- Left sidebar: 320px (sticky filters)
+- Right panel: Remaining space (turf results)
+- Gap: 32px
 
-**Your OAuth Credentials:**
+**Tablet (<1024px):**
+- Single column layout
+- Filters on top (2-column grid)
+- Results below
 
+**Mobile (<768px):**
+- Single column throughout
+- Vertical stacking
 
-## 📚 Documentation
+### Filter Options
 
-- **[COMPLETE_OAUTH_GUIDE.md](COMPLETE_OAUTH_GUIDE.md)** - Complete setup and testing guide
-- **[OAUTH_IMPLEMENTATION_SUMMARY.md](OAUTH_IMPLEMENTATION_SUMMARY.md)** - Implementation overview
-- **[GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md)** - Detailed OAuth setup
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference for testing
+- **Location** - Filter by city
+- **Date** - Select booking date
+- **Price Range** - Under ₹500, ₹500-₹1000, Over ₹1000
+- **Turf Type** - Cricket, Football, Volleyball, etc.
 
-## 🧪 Testing
+### Active Filters
 
-### Backend Health Check
+Visual tags showing currently applied filters:
+- 📍 Location
+- 📅 Date
+- 💰 Price Range
+- ⚽ Sport Type
+
+## 🔧 Development
+
+### Available Scripts
+
 ```bash
-curl http://localhost:5000/health
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
 ```
 
-### Manual Login (Browser Console)
-```javascript
-// For testing only
-localStorage.setItem('user', JSON.stringify({
-  name: 'Test User',
-  email: 'test@example.com',
-  picture: 'https://ui-avatars.com/api/?name=Test+User&background=ea580c&color=fff&size=128',
-  id: 'test-123'
-}));
-localStorage.setItem('token', 'mock-token');
-location.reload();
-```
+### Tech Stack
 
-### Manual Logout
-```javascript
-localStorage.clear();
-location.reload();
-```
-
-## 🛠️ Tech Stack
-
-### Frontend
+**Frontend:**
 - React 18
 - TypeScript
 - Vite
 - React Router
+- Firebase
+- Framer Motion (animations)
+- GSAP (animations)
 - Tailwind CSS
-- Framer Motion
-- GSAP
 
-### Backend
-- Node.js
-- Express
-- Google Auth Library
-- JWT (jsonwebtoken)
-- CORS
-- Cookie Parser
+## 🔐 Firebase Configuration
 
-## 🎨 Design Features
+Your Firebase project is configured with:
+- **Project ID**: turf-database
+- **Auth Domain**: turf-database.firebaseapp.com
 
-- Modern gradient backgrounds
-- Smooth scroll animations
-- Glassmorphism effects
-- Responsive design (mobile, tablet, desktop)
-- Micro-animations for better UX
-- Premium color palette
+### Next Steps for Firebase
 
-## 🔧 Development
+1. **Enable Google Authentication**:
+   - Go to Firebase Console → Authentication
+   - Enable Google sign-in method
 
-### Backend Development
-```bash
-cd backend
-npm run dev  # Starts with nodemon (auto-reload)
+2. **Create Firestore Database**:
+   - Go to Firestore Database
+   - Create database (test mode for development)
+   - Add security rules (see FIREBASE_SETUP.md)
+
+3. **Update Auth Utilities**:
+   - Replace localStorage auth with Firebase Auth
+   - Implement Google sign-in flow
+
+## 📊 Data Structure
+
+### Turfs Collection
+```typescript
+{
+  id: string;
+  name: string;
+  city: string;
+  address: string;
+  type: string; // Cricket, Football, etc.
+  pricePerHour: number;
+  rating: number;
+  amenities: string[];
+  images: string[];
+  createdAt: timestamp;
+}
 ```
 
-### Frontend Development
-```bash
-cd frontend
-npm run dev  # Starts Vite dev server
-```
-
-### Build for Production
-```bash
-# Frontend
-cd frontend
-npm run build
-
-# Backend (no build needed, runs directly)
-cd backend
-npm start
+### Bookings Collection
+```typescript
+{
+  id: string;
+  turfId: string;
+  userId: string;
+  date: string;
+  timeSlots: string[];
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  createdAt: timestamp;
+}
 ```
 
 ## 🐛 Troubleshooting
 
-### "redirect_uri_mismatch" Error
-- Add `http://localhost:5000/api/auth/google/callback` to Google Cloud Console
+### App not loading?
 
-### Backend Won't Start
-- Check `.env` file exists in `backend/` directory
-- Verify all environment variables are set
+1. **Check if server is running**:
+   ```bash
+   netstat -ano | findstr :5173
+   ```
 
-### CORS Errors
-- Verify `FRONTEND_URL` in backend `.env` is `http://localhost:5173`
-- Restart backend server
+2. **Clear browser cache** and reload
 
-### Not Logged In After OAuth
-- Check browser console for errors
-- Verify token is in URL after redirect
-- Clear localStorage and try again
+3. **Check console** for errors (F12 in browser)
 
-## 📝 Environment Variables
+4. **Verify Firebase config** in `src/lib/firebase.ts`
 
-### Backend (.env)
-```env
+### Port already in use?
 
-GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
-FRONTEND_URL=http://localhost:5173
-PORT=5000
-NODE_ENV=development
-SESSION_SECRET=your-session-secret
-JWT_SECRET=your-jwt-secret
+```bash
+# Kill process on port 5173 (Windows)
+netstat -ano | findstr :5173
+taskkill /PID <PID> /F
 ```
 
-### Frontend (.env)
-```env
-VITE_API_URL=http://localhost:5000
-```
+## 📚 Documentation
 
-## 🚀 Deployment
+- `FIREBASE_SETUP.md` - Firebase integration guide
+- Component documentation in respective files
 
-### Before Deploying to Production
+## 🎯 Roadmap
 
-1. **Update Environment Variables:**
-   - Change `FRONTEND_URL` to production domain
-   - Change `GOOGLE_REDIRECT_URI` to production callback URL
-   - Generate strong secrets for `JWT_SECRET` and `SESSION_SECRET`
+- [ ] Implement Firebase Authentication
+- [ ] Migrate mock data to Firestore
+- [ ] Add booking functionality with Firestore
+- [ ] Implement user profiles
+- [ ] Add payment integration
+- [ ] Add admin dashboard
 
-2. **Update Google Cloud Console:**
-   - Add production redirect URI
-   - Consider separate OAuth credentials for production
+## 📝 License
 
-3. **Enable HTTPS:**
-   - Both frontend and backend should use HTTPS
-   - Update CORS settings accordingly
-
-## 🤝 Contributing
-
-This is a personal project, but feel free to fork and customize!
-
-## 📄 License
-
-MIT License - feel free to use this project as you wish.
-
-## 🎉 Acknowledgments
-
-- Google OAuth for authentication
-- React and Vite teams for amazing tools
-- Tailwind CSS for styling utilities
+Private project
 
 ---
 
-**Built with ❤️ for turf enthusiasts**
-
-Need help? Check the documentation in the root directory or review the troubleshooting sections.
+**Your app is running at http://localhost:5173** 🎉

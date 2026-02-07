@@ -1,38 +1,19 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ScrollFramesHero } from "./components/ScrollFramesHero/ScrollFramesHero";
-import { HeroContent } from "./components/HeroContent/HeroContent";
-import { HeroSearch } from "./components/HeroSearch/HeroSearch";
+import { Home } from "./pages/Home/Home";
 import { TurfListings } from "./pages/TurfListings/TurfListings";
 import { SignIn } from "./pages/SignIn/SignIn";
 import { AuthCallback } from "./pages/AuthCallback/AuthCallback";
+import { Profile } from "./pages/Profile/Profile";
 
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <div>
-              <ScrollFramesHero
-                frameCount={50}
-                scrollPxPerFrame={12}
-                easing={0.08}
-                heroHeightVh={200}
-              >
-                <HeroContent
-                  title="TurfBookaro"
-                  subtitle="Book, Play, Enjoy"
-                >
-                  <HeroSearch />
-                </HeroContent>
-              </ScrollFramesHero>
-            </div>
-          }
-        />
+        <Route path="/" element={<Home />} />
         <Route path="/listings" element={<TurfListings />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </BrowserRouter>
   );

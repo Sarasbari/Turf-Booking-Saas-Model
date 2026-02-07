@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Turf, FilterState, SortOption } from '../../types/turf';
-import { mockTurfs, cities, turfTypes } from '../../data/mockTurfs';
+import { FilterState, SortOption } from '../../types/turf';
+import { mockTurfs, cities, turfTypes, type Turf } from '../../data/mockTurfs';
 import { TurfCard } from '../../components/TurfCard/TurfCard';
 import { BookingModal } from '../../components/BookingModal/BookingModal';
 import { Header } from '../../components/Header/Header';
@@ -70,7 +70,7 @@ export function TurfListings() {
         }
 
         if (filters.turfType !== 'all') {
-            result = result.filter(turf => turf.type === filters.turfType);
+            result = result.filter(turf => turf.size === filters.turfType);
         }
 
         // Apply sorting
@@ -265,8 +265,8 @@ export function TurfListings() {
                             {/* Turf Listings Grid */}
                             {filteredAndSortedTurfs.length > 0 ? (
                                 <div className={styles.grid}>
-                                    {filteredAndSortedTurfs.map(turf => (
-                                        <TurfCard key={turf.id} turf={turf} onBookNow={handleBookNow} />
+                                    {filteredAndSortedTurfs.map((turf, index) => (
+                                        <TurfCard key={turf.id} turf={turf} onBook={handleBookNow} index={index} />
                                     ))}
                                 </div>
                             ) : (

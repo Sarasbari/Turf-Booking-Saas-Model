@@ -1,0 +1,101 @@
+.page {
+    min-height: 100vh;
+    background: #F5F5F5;
+    padding-bottom: 80px;
+}
+
+/* Filters Container */
+.filtersContainer {
+    max-width: 1400px;
+    margin: 0 auto 24px;
+    padding: 0 24px;
+}
+
+.filtersBar {
+    background: #FFFFFF;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.filtersBar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Main Container */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* Section */
+.section {
+    margin-bottom: 48px;
+}
+
+/* Grid Layout */
+.grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(5, 1fr);
+}
+
+/* Responsive Grid */
+@media (max-width: 1399px) {
+    .grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 1023px) {
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .container {
+        padding: 0 16px;
+    }
+
+    .filtersContainer {
+        padding: 0 16px;
+    }
+
+    .section {
+        margin-bottom: 32px;
+    }
+}
+
+@media (max-width: 639px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page {
+        padding-top: 24px;
+    }
+}
+
+/* No Results Message */
+.noResults {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.noResults p {
+    font-size: 16px;
+    color: #999999;
+    margin: 0;
+}

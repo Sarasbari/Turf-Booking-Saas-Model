@@ -1,0 +1,154 @@
+/* Modal Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 200ms ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal Container */
+.modal {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    animation: slideUp 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Icon */
+.icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    filter: grayscale(100%);
+    opacity: 0.7;
+}
+
+/* Heading */
+.heading {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333333;
+    margin: 0 0 12px 0;
+}
+
+/* Message */
+.message {
+    font-size: 14px;
+    color: #666666;
+    line-height: 1.5;
+    margin: 0 0 24px 0;
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* Buttons */
+.cancelButton,
+.confirmButton {
+    flex: 1;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.cancelButton {
+    background: transparent;
+    border: 1px solid #e5e5e5;
+    color: #666666;
+}
+
+.cancelButton:hover {
+    background: #f9f9f9;
+    border-color: #cccccc;
+}
+
+.confirmButton {
+    color: white;
+}
+
+.confirmButton.danger {
+    background: #dc2626;
+}
+
+.confirmButton.danger:hover {
+    background: #b91c1c;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.confirmButton.primary {
+    background: #ea580c;
+}
+
+.confirmButton.primary:hover {
+    background: #dc2626;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .modal {
+        padding: 20px;
+        max-width: 320px;
+    }
+
+    .icon {
+        font-size: 48px;
+    }
+
+    .heading {
+        font-size: 18px;
+    }
+
+    .message {
+        font-size: 13px;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .cancelButton,
+    .confirmButton {
+        width: 100%;
+    }
+}

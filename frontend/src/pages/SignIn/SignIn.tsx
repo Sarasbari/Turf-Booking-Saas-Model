@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { initiateGoogleLogin } from '../../utils/auth';
 import styles from './SignIn.module.css';
 
 export function SignIn() {
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -11,12 +13,14 @@ export function SignIn() {
         setError(null);
 
         try {
-            // Initiate real Google OAuth flow
+            // Initiate Firebase Google sign-in
             await initiateGoogleLogin();
-            // User will be redirected to Google, then back to our callback
-        } catch (err) {
+
+            // Sign-in successful, redirect to listings
+            navigate('/listings');
+        } catch (err: any) {
             console.error('Error during sign in:', err);
-            setError('Failed to initiate sign in. Please try again.');
+            setError(err.message || 'Failed to initiate sign in. Please try again.');
             setIsLoading(false);
         }
     };
