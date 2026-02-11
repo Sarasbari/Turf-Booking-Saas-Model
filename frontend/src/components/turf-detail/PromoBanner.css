@@ -1,0 +1,112 @@
+/* PromoBanner Styles */
+
+.promo-banner {
+    border-radius: 8px;
+    overflow: hidden;
+    height: fit-content;
+}
+
+/* Discount Banner */
+.discount-banner {
+    background: linear-gradient(135deg, #1a1a2e 0%, #2a2a3e 100%);
+    border: 2px solid #ea580c;
+    padding: 32px 24px;
+}
+
+.promo-content {
+    text-align: center;
+    color: white;
+}
+
+.promo-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ea580c;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.promo-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 24px;
+    line-height: 1.3;
+}
+
+.promo-code-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.promo-code-label {
+    font-size: 11px;
+    color: #999999;
+    margin-bottom: 6px;
+}
+
+.promo-code {
+    font-size: 28px;
+    font-weight: 900;
+    color: #FFFFFF;
+    letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+}
+
+.promo-discount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #27ae60;
+}
+
+/* Stats Card */
+.stats-card {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 24px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #999999;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+    .promo-banner {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .promo-banner {
+        display: block;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

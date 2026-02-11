@@ -1,0 +1,145 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // HELPER FUNCTIONS
+    // ============================================================================
+    
+    /**
+     * Check if user is signed in
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    /**
+     * Get current user's data from Firestore
+     */
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    /**
+     * Check if user has owner role
+     */
+    function isOwner() {
+      return isSignedIn() && getUserData().role == 'owner';
+    }
+    
+    /**
+     * Check if user has admin role
+     */
+    function isAdmin() {
+      return isSignedIn() && getUserData().role == 'admin';
+    }
+    
+    /**
+     * Check if user owns a specific resource
+     */
+    function ownsResource(ownerId) {
+      return isSignedIn() && getUserData().ownerId == ownerId;
+    }
+    
+    // ============================================================================
+    // TURFS COLLECTION
+    // ============================================================================
+    
+    match /turfs/{turfId} {
+      // Anyone can read active turfs (for browsing)
+      // Authenticated users can read all turfs (including pending/paused)
+      allow read: if resource.data.status == 'active' || isSignedIn();
+      
+      // Only owners can create turfs
+      // The ownerId in the document must match the user's ownerId
+      allow create: if isOwner() && 
+                       request.resource.data.ownerId == getUserData().ownerId;
+      
+      // Only the turf owner can update their turf
+      // Admins can also update any turf
+      allow update: if ownsResource(resource.data.ownerId) || isAdmin();
+      
+      // Only the owner or admin can delete
+      allow delete: if ownsResource(resource.data.ownerId) || isAdmin();
+    }
+    
+    // ============================================================================
+    // USERS COLLECTION
+    // ============================================================================
+    
+    match /users/{userId} {
+      // Any authenticated user can read user profiles
+      allow read: if isSignedIn();
+      
+      // Users can only write to their own document
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // ============================================================================
+    // OWNERS COLLECTION
+    // ============================================================================
+    
+    match /owners/{ownerId} {
+      // Anyone can read approved owner profiles (for displaying on turf pages)
+      allow read: if true;
+      
+      // Only the associated user can write to their owner profile
+      // Admins can also write (for approval/rejection)
+      allow write: if isSignedIn() && 
+                      (getUserData().ownerId == ownerId || isAdmin());
+    }
+    
+    // ============================================================================
+    // BOOKINGS COLLECTION
+    // ============================================================================
+    
+    match /bookings/{bookingId} {
+      // Users can read their own bookings
+      // Owners can read bookings for their turfs
+      allow read: if isSignedIn() && 
+                     (resource.data.userId == request.auth.uid || 
+                      ownsResource(resource.data.ownerId));
+      
+      // Any authenticated user can create a booking
+      allow create: if isSignedIn();
+      
+      // Users can update their own bookings (for cancellation)
+      // Owners can update bookings for their turfs (for status changes)
+      allow update: if isSignedIn() && 
+                       (resource.data.userId == request.auth.uid || 
+                        ownsResource(resource.data.ownerId));
+      
+      // Only admins can delete bookings (for record keeping)
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================================================
+    // BLOCKED SLOTS COLLECTION
+    // ============================================================================
+    
+    match /blockedSlots/{slotId} {
+      // Anyone can read blocked slots (to check availability)
+      allow read: if true;
+      
+      // Only the turf owner can create/update/delete blocked slots
+      allow create, update, delete: if isSignedIn() && 
+        ownsResource(get(/databases/$(database)/documents/turfs/$(request.resource.data.turfId)).data.ownerId);
+    }
+    
+    // ============================================================================
+    // REVIEWS COLLECTION (Optional - for future implementation)
+    // ============================================================================
+    
+    match /reviews/{reviewId} {
+      // Anyone can read reviews
+      allow read: if true;
+      
+      // Only authenticated users who have booked the turf can create reviews
+      allow create: if isSignedIn();
+      
+      // Users can only update/delete their own reviews
+      allow update, delete: if isSignedIn() && 
+                               resource.data.userId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,168 @@
+/* TurfDetailPage Styles */
+
+.turf-detail-page {
+    min-height: 100vh;
+    background: #F5F5F5;
+}
+
+/* Loading State */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 20px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #E5E5E5;
+    border-top-color: #ea580c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error State */
+.error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.error-icon {
+    font-size: 64px;
+}
+
+.error-container h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333333;
+    margin: 0;
+}
+
+.error-container p {
+    font-size: 16px;
+    color: #666666;
+    margin: 0;
+}
+
+.back-btn {
+    background: #ea580c;
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+/* Main Content Layout */
+.main-content {
+    padding: 40px 24px;
+}
+
+.content-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 40px;
+    align-items: start;
+}
+
+.left-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.right-column {
+    /* Booking card handles its own sticky positioning */
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .content-container {
+        grid-template-columns: 1fr 350px;
+        gap: 32px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 24px 16px 100px 16px;
+        /* Extra bottom padding for fixed booking card */
+    }
+
+    .content-container {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .right-column {
+        order: -1;
+        /* Move booking card to bottom on mobile (handled by fixed positioning) */
+    }
+}
+
+/* Section Spacing */
+.turf-detail-page section {
+    animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stagger animations for sections */
+.left-column>section:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.left-column>section:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.left-column>section:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.left-column>section:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.left-column>section:nth-child(5) {
+    animation-delay: 0.5s;
+}
+
+.left-column>section:nth-child(6) {
+    animation-delay: 0.6s;
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { isLoggedIn, getUserData } from '../../utils/auth';
 import { addToFavorites, removeFromFavorites, isTurfFavorited } from '../../utils/favoritesUtils';
@@ -16,6 +17,7 @@ interface TurfCardProps {
 }
 
 export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToast }: TurfCardProps) {
+    const navigate = useNavigate();
     const [isFavorite, setIsFavorite] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
     const [showSignInModal, setShowSignInModal] = useState(false);
@@ -98,8 +100,8 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
     };
 
     const handleCardClick = () => {
-        // Could navigate to turf details page
-        console.log('Card clicked:', turf.name);
+        // Navigate to turf details page
+        navigate(`/turf/${turf.id}`);
     };
 
     return (

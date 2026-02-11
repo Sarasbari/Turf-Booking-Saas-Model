@@ -1,0 +1,238 @@
+/* BookingCard Styles */
+
+.booking-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    border: 1px solid #E5E5E5;
+    padding: 24px;
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Price Section */
+.price-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #E5E5E5;
+}
+
+.price-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.price-original {
+    font-size: 18px;
+    color: #999999;
+    text-decoration: line-through;
+}
+
+.price-current {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333333;
+}
+
+.price-unit {
+    font-size: 14px;
+    color: #666666;
+}
+
+.discount-pill {
+    background: #27ae60;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Date Picker */
+.date-picker-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333333;
+}
+
+.date-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #E5E5E5;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #333333;
+    transition: border-color 0.2s ease;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #ea580c;
+}
+
+/* Slots Section */
+.slots-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.slots-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.slots-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333333;
+}
+
+.slots-duration {
+    font-size: 12px;
+    color: #999999;
+}
+
+.slots-loading {
+    text-align: center;
+    padding: 20px;
+    color: #999999;
+}
+
+.slots-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.slot-btn {
+    padding: 12px 8px;
+    border-radius: 8px;
+    border: 2px solid #E5E5E5;
+    background: white;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.slot-btn.available:hover {
+    border-color: #ea580c;
+    background: #FFF7ED;
+}
+
+.slot-btn.selected {
+    background: #ea580c;
+    border-color: #ea580c;
+    color: white;
+}
+
+.slot-btn.booked,
+.slot-btn.blocked {
+    background: #F5F5F5;
+    color: #999999;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.slot-status-icon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 10px;
+}
+
+/* Booking Summary */
+.booking-summary {
+    background: #FFF7ED;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #333333;
+}
+
+.summary-row.discount {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.summary-row.total {
+    font-size: 16px;
+    font-weight: 700;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Book Now Button */
+.book-now-btn {
+    width: 100%;
+    background: #ea580c;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.book-now-btn:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.book-now-btn:disabled {
+    background: #CCCCCC;
+    cursor: not-allowed;
+}
+
+/* Bottom Note */
+.booking-note {
+    text-align: center;
+    font-size: 12px;
+    color: #666666;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .booking-card {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        max-height: 80px;
+        border-radius: 16px 16px 0 0;
+        z-index: 100;
+        transition: max-height 0.3s ease;
+    }
+
+    .booking-card.expanded {
+        max-height: 85vh;
+    }
+}

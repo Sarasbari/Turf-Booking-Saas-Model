@@ -1,0 +1,101 @@
+/* TimingsCard Styles */
+
+.timings-section {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.timings-card {
+    background: #F8F9FA;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.timing-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.timing-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.timing-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.timing-label {
+    font-size: 13px;
+    color: #666666;
+    font-weight: 600;
+}
+
+.timing-value {
+    font-size: 16px;
+    color: #333333;
+    font-weight: 700;
+}
+
+.status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.status-badge.open {
+    background: #27ae60;
+    color: white;
+}
+
+.status-badge.closed {
+    background: #e74c3c;
+    color: white;
+}
+
+.status-detail {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(234, 88, 12, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #ea580c;
+}
+
+.status-icon {
+    font-size: 20px;
+}
+
+.status-text {
+    font-size: 14px;
+    color: #333333;
+    font-weight: 600;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .timings-section {
+        padding: 24px 20px;
+    }
+
+    .timing-row {
+        flex-wrap: wrap;
+    }
+
+    .status-badge {
+        width: 100%;
+        text-align: center;
+    }
+}

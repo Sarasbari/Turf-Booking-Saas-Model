@@ -1,0 +1,62 @@
+/* OwnerCard Styles */
+
+.owner-section {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.owner-card {
+    background: #F8F9FA;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.owner-label {
+    font-size: 12px;
+    color: #999999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.owner-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333333;
+}
+
+.owner-phone {
+    font-size: 14px;
+    color: #666666;
+    font-family: 'Courier New', monospace;
+}
+
+.contact-owner-btn {
+    background: transparent;
+    border: 2px solid #ea580c;
+    color: #ea580c;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+}
+
+.contact-owner-btn:hover {
+    background: #ea580c;
+    color: white;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .owner-section {
+        padding: 24px 20px;
+    }
+}

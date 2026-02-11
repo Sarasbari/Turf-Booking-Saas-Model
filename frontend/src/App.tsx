@@ -4,6 +4,8 @@ import { TurfListings } from "./pages/TurfListings/TurfListings";
 import { SignIn } from "./pages/SignIn/SignIn";
 import { AuthCallback } from "./pages/AuthCallback/AuthCallback";
 import { Profile } from "./pages/Profile/Profile";
+// @ts-ignore - JSX file in TypeScript project
+import TurfDetailPage from "./pages/TurfDetailPage";
 
 export function App() {
   return (
@@ -11,6 +13,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/listings" element={<TurfListings />} />
+        <Route path="/turf/:turfId" element={<TurfDetailPage />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/profile" element={<Profile />} />
