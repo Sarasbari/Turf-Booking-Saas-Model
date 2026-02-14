@@ -23,7 +23,7 @@ const TurfDetailPage = () => {
             return;
         }
 
-        const turfRef = doc(db, 'turfs', turfId);
+        const turfRef = doc(db, 'turf', turfId);
 
         const unsubscribe = onSnapshot(
             turfRef,

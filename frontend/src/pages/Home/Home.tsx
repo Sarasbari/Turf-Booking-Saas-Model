@@ -73,7 +73,7 @@ export function Home() {
         const fetchTurfs = async () => {
             try {
                 setLoading(true);
-                const turfsRef = collection(db, 'turfs');
+                const turfsRef = collection(db, 'turf');
                 const q = query(
                     turfsRef,
                     where('status', '==', 'active'),

@@ -70,7 +70,7 @@ export async function getFavoriteTurfs(userId: string): Promise<any[]> {
         const turfs: any[] = [];
         for (const turfId of favoriteIds) {
             try {
-                const turfRef = doc(db, 'turfs', turfId);
+                const turfRef = doc(db, 'turf', turfId);
                 const turfSnap = await getDoc(turfRef);
                 if (turfSnap.exists()) {
                     const data = turfSnap.data();

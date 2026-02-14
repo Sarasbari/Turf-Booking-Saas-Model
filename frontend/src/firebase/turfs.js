@@ -20,7 +20,7 @@ import {
 import { db } from './config';
 import { getCurrentUserProfile } from './auth';
 
-const TURFS_COLLECTION = 'turfs';
+const TURFS_COLLECTION = 'turf';
 
 // ... (Rest of the file remains same, updating seedSampleTurfs at the bottom)
 
