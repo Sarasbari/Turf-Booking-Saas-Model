@@ -28,21 +28,43 @@ interface FirebaseTurf {
 }
 
 // ✅ Normalize Firebase document → shape that TurfCard expects
+// const normalizeForCard = (id: string, data: any): FirebaseTurf => ({
+//     id,
+//     name: data.name || 'Unnamed Turf',
+//     location: data.location?.address
+//         ? `${data.location.address}, ${data.location.city || ''}`
+//         : (typeof data.location === 'string' ? data.location : ''),
+//     city: data.location?.city || data.city || '',
+//     images: data.images || (data.coverImage ? [data.coverImage] : ['https://via.placeholder.com/800x1200?text=No+Image']),
+//     pricePerHour: data.pricing?.basePrice || data.pricePerHour || 0,
+//     rating: data.rating || 0,
+//     size: data.turfSize || data.size || '5-a-side',
+//     amenities: data.amenities || [],
+//     isPromoted: data.isFeatured || data.isPromoted || false,
+//     availableToday: data.status === 'active',
+//     sport: data.sport || 'Football',
+// });
+
+// ✅ FIXED: Normalize YOUR actual Firebase fields → TurfCard shape
 const normalizeForCard = (id: string, data: any): FirebaseTurf => ({
     id,
     name: data.name || 'Unnamed Turf',
     location: data.location?.address
         ? `${data.location.address}, ${data.location.city || ''}`
-        : (typeof data.location === 'string' ? data.location : ''),
+        : (data.address
+            ? `${data.address}, ${data.city || ''}`
+            : (typeof data.location === 'string' ? data.location : '')),
     city: data.location?.city || data.city || '',
-    images: data.images || (data.coverImage ? [data.coverImage] : ['https://via.placeholder.com/800x1200?text=No+Image']),
+    images: data.images && data.images.length > 0
+        ? data.images
+        : (data.coverImage ? [data.coverImage] : ['https://via.placeholder.com/800x1200?text=No+Image']),
     pricePerHour: data.pricing?.basePrice || data.pricePerHour || 0,
     rating: data.rating || 0,
-    size: data.turfSize || data.size || '5-a-side',
+    size: data.turfSize || data.groundSize || data.size || '5-a-side',
     amenities: data.amenities || [],
     isPromoted: data.isFeatured || data.isPromoted || false,
-    availableToday: data.status === 'active',
-    sport: data.sport || 'Football',
+    availableToday: true,  // ✅ No 'status' field in your data, so default to true
+    sport: data.sport || data.sports?.[0] || 'Football',
 });
 
 const filterOptions = [
@@ -69,21 +91,23 @@ export function Home() {
     const [loading, setLoading] = useState(true);
 
     // ✅ NEW: Fetch from Firebase on mount
+    // ✅ FIXED: Fetch from Firebase with fallback
+    // ✅ FIXED: Fetch ALL turfs from Firebase (no status/createdAt filter)
     useEffect(() => {
         const fetchTurfs = async () => {
             try {
                 setLoading(true);
                 const turfsRef = collection(db, 'turf');
-                const q = query(
-                    turfsRef,
-                    where('status', '==', 'active'),
-                    orderBy('createdAt', 'desc')
-                );
-                const snapshot = await getDocs(q);
+
+                // Simple fetch — get ALL documents, no filters
+                const snapshot = await getDocs(turfsRef);
+                console.log(`✅ Fetched ${snapshot.size} turfs from Firebase`);
+
                 const turfs: FirebaseTurf[] = [];
                 snapshot.forEach((doc) => {
                     turfs.push(normalizeForCard(doc.id, doc.data()));
                 });
+
                 setAllTurfs(turfs);
             } catch (error) {
                 console.error('Error fetching turfs:', error);
@@ -173,7 +197,7 @@ export function Home() {
                     {recommendedTurfs.length > 0 && (
                         <>
                             <SectionHeader title="Recommended Turfs" subtitle="Top rated venues" />
-                            <div className={styles.turfGrid}>
+                            <div className={styles.grid}>          {/* ✅ Changed from turfGrid to grid */}
                                 {recommendedTurfs.map((turf, index) => (
                                     <TurfCard
                                         key={turf.id}
@@ -190,7 +214,7 @@ export function Home() {
                     {nearbyTurfs.length > 0 && (
                         <>
                             <SectionHeader title="Near You" subtitle="Venues in your area" />
-                            <div className={styles.turfGrid}>
+                            <div className={styles.grid}>          {/* ✅ Changed from turfGrid to grid */}
                                 {nearbyTurfs.map((turf, index) => (
                                     <TurfCard
                                         key={turf.id}
@@ -207,7 +231,7 @@ export function Home() {
                     {budgetTurfs.length > 0 && (
                         <>
                             <SectionHeader title="Budget Friendly" subtitle="Under ₹500/hr" />
-                            <div className={styles.turfGrid}>
+                            <div className={styles.grid}>          {/* ✅ Changed from turfGrid to grid */}
                                 {budgetTurfs.map((turf, index) => (
                                     <TurfCard
                                         key={turf.id}
