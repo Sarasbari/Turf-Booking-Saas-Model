@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '../../components/Header/Header';
 import { SubNavigation } from '../../components/SubNavigation/SubNavigation';
 import { HeroCarousel } from '../../components/HeroCarousel/HeroCarousel';
@@ -6,15 +6,44 @@ import { FilterChip } from '../../components/FilterChip/FilterChip';
 import { SectionHeader } from '../../components/SectionHeader/SectionHeader';
 import { TurfCard } from '../../components/TurfCard/TurfCard';
 import { Footer } from '../../components/Footer/Footer';
-import {
-    mockTurfs,
-    getRecommendedTurfs,
-    getTurfsNearYou,
-    getBudgetFriendlyTurfs,
-    getTurfsBySport,
-    type Turf
-} from '../../data/mockTurfs';
+// ��� REMOVED: import { mockTurfs, getRecommendedTurfs, ... } from '../../data/mockTurfs';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 import styles from './Home.module.css';
+
+// ✅ Unified Turf type that works with both Firebase data and TurfCard component
+interface FirebaseTurf {
+    id: string;
+    name: string;
+    location: string;
+    city: string;
+    images: string[];
+    pricePerHour: number;
+    rating: number;
+    size: string;
+    amenities: string[];
+    isPromoted: boolean;
+    availableToday: boolean;
+    sport: string;
+}
+
+// ✅ Normalize Firebase document → shape that TurfCard expects
+const normalizeForCard = (id: string, data: any): FirebaseTurf => ({
+    id,
+    name: data.name || 'Unnamed Turf',
+    location: data.location?.address
+        ? `${data.location.address}, ${data.location.city || ''}`
+        : (typeof data.location === 'string' ? data.location : ''),
+    city: data.location?.city || data.city || '',
+    images: data.images || (data.coverImage ? [data.coverImage] : ['https://via.placeholder.com/800x1200?text=No+Image']),
+    pricePerHour: data.pricing?.basePrice || data.pricePerHour || 0,
+    rating: data.rating || 0,
+    size: data.turfSize || data.size || '5-a-side',
+    amenities: data.amenities || [],
+    isPromoted: data.isFeatured || data.isPromoted || false,
+    availableToday: data.status === 'active',
+    sport: data.sport || 'Football',
+});
 
 const filterOptions = [
     'All Sizes',
@@ -31,9 +60,39 @@ const filterOptions = [
 
 export function Home() {
     const [activeFilters, setActiveFilters] = useState<string[]>(['All Sizes']);
-    const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
+    const [selectedTurf, setSelectedTurf] = useState<FirebaseTurf | null>(null);
     const [activeSport, setActiveSport] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // ✅ NEW: Firebase state
+    const [allTurfs, setAllTurfs] = useState<FirebaseTurf[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // ✅ NEW: Fetch from Firebase on mount
+    useEffect(() => {
+        const fetchTurfs = async () => {
+            try {
+                setLoading(true);
+                const turfsRef = collection(db, 'turfs');
+                const q = query(
+                    turfsRef,
+                    where('status', '==', 'active'),
+                    orderBy('createdAt', 'desc')
+                );
+                const snapshot = await getDocs(q);
+                const turfs: FirebaseTurf[] = [];
+                snapshot.forEach((doc) => {
+                    turfs.push(normalizeForCard(doc.id, doc.data()));
+                });
+                setAllTurfs(turfs);
+            } catch (error) {
+                console.error('Error fetching turfs:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchTurfs();
+    }, []);
 
     const handleFilterClick = (filter: string) => {
         if (filter === 'All Sizes') {
@@ -42,14 +101,12 @@ export function Home() {
             const newFilters = activeFilters.includes(filter)
                 ? activeFilters.filter(f => f !== filter)
                 : [...activeFilters.filter(f => f !== 'All Sizes'), filter];
-
             setActiveFilters(newFilters.length === 0 ? ['All Sizes'] : newFilters);
         }
     };
 
-    const handleBookTurf = (turf: Turf) => {
+    const handleBookTurf = (turf: any) => {
         setSelectedTurf(turf);
-        // TODO: Open booking modal
         console.log('Book turf:', turf.name);
     };
 
@@ -61,33 +118,31 @@ export function Home() {
         setSearchQuery(query);
     };
 
-    // Get turfs based on active sport
+    // ✅ Filter from Firebase data instead of mockTurfs
     const filteredTurfs = activeSport === 'all'
-        ? mockTurfs
-        : getTurfsBySport(activeSport.charAt(0).toUpperCase() + activeSport.slice(1));
+        ? allTurfs
+        : allTurfs.filter(t => t.sport.toLowerCase() === activeSport);
 
-    const recommendedTurfs = getRecommendedTurfs().filter(turf =>
-        activeSport === 'all' || turf.sport.toLowerCase() === activeSport
-    );
-    const nearbyTurfs = getTurfsNearYou().filter(turf =>
-        activeSport === 'all' || turf.sport.toLowerCase() === activeSport
-    );
-    const budgetTurfs = getBudgetFriendlyTurfs().filter(turf =>
-        activeSport === 'all' || turf.sport.toLowerCase() === activeSport
-    );
+    const recommendedTurfs = allTurfs
+        .filter(t => t.isPromoted || t.rating >= 4.7)
+        .filter(t => activeSport === 'all' || t.sport.toLowerCase() === activeSport)
+        .slice(0, 10);
+
+    const nearbyTurfs = allTurfs
+        .filter(t => activeSport === 'all' || t.sport.toLowerCase() === activeSport)
+        .slice(0, 10);
+
+    const budgetTurfs = allTurfs
+        .filter(t => t.pricePerHour < 500)
+        .filter(t => activeSport === 'all' || t.sport.toLowerCase() === activeSport)
+        .slice(0, 10);
 
     return (
         <div className={styles.page}>
-            {/* Header */}
             <Header onSearchChange={handleSearchChange} />
-
-            {/* Sub Navigation */}
             <SubNavigation onSportChange={handleSportChange} />
-
-            {/* Hero Carousel */}
             <HeroCarousel />
 
-            {/* Quick Filters Bar */}
             <div className={styles.filtersContainer}>
                 <div className={styles.filtersBar}>
                     {filterOptions.map((filter) => (
@@ -101,83 +156,72 @@ export function Home() {
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className={styles.container}>
-                {/* Recommended Turfs Section */}
-                {recommendedTurfs.length > 0 && (
-                    <section className={styles.section}>
-                        <SectionHeader
-                            title="Recommended Turfs"
-                            subtitle="Popular turfs near you"
-                            showSeeAll
-                            onSeeAllClick={() => window.location.href = '/listings'}
-                        />
-                        <div className={styles.grid}>
-                            {recommendedTurfs.map((turf, index) => (
-                                <TurfCard
-                                    key={turf.id}
-                                    turf={turf}
-                                    onBook={handleBookTurf}
-                                    index={index}
-                                />
-                            ))}
-                        </div>
-                    </section>
-                )}
+            {/* ✅ Show loading state */}
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#666' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚽</div>
+                    <div style={{ fontSize: '18px' }}>Loading turfs from database...</div>
+                </div>
+            ) : allTurfs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#666' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏟️</div>
+                    <div style={{ fontSize: '18px' }}>No turfs found. Seed your database first.</div>
+                </div>
+            ) : (
+                <>
+                    {/* Recommended Section */}
+                    {recommendedTurfs.length > 0 && (
+                        <>
+                            <SectionHeader title="Recommended Turfs" subtitle="Top rated venues" />
+                            <div className={styles.turfGrid}>
+                                {recommendedTurfs.map((turf, index) => (
+                                    <TurfCard
+                                        key={turf.id}
+                                        turf={turf as any}
+                                        onBook={handleBookTurf}
+                                        index={index}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
 
-                {/* Turfs Near You Section */}
-                {nearbyTurfs.length > 0 && (
-                    <section className={styles.section}>
-                        <SectionHeader
-                            title="Turfs Near You"
-                            subtitle="Find turfs in Mumbai"
-                            showSeeAll
-                            onSeeAllClick={() => window.location.href = '/listings'}
-                        />
-                        <div className={styles.grid}>
-                            {nearbyTurfs.map((turf, index) => (
-                                <TurfCard
-                                    key={turf.id}
-                                    turf={turf}
-                                    onBook={handleBookTurf}
-                                    index={index}
-                                />
-                            ))}
-                        </div>
-                    </section>
-                )}
+                    {/* Near You Section */}
+                    {nearbyTurfs.length > 0 && (
+                        <>
+                            <SectionHeader title="Near You" subtitle="Venues in your area" />
+                            <div className={styles.turfGrid}>
+                                {nearbyTurfs.map((turf, index) => (
+                                    <TurfCard
+                                        key={turf.id}
+                                        turf={turf as any}
+                                        onBook={handleBookTurf}
+                                        index={index}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
 
-                {/* Budget-Friendly Turfs Section */}
-                {budgetTurfs.length > 0 && (
-                    <section className={styles.section}>
-                        <SectionHeader
-                            title="Budget-Friendly Turfs"
-                            subtitle="Quality turfs under ₹500"
-                            showSeeAll
-                            onSeeAllClick={() => window.location.href = '/listings'}
-                        />
-                        <div className={styles.grid}>
-                            {budgetTurfs.map((turf, index) => (
-                                <TurfCard
-                                    key={turf.id}
-                                    turf={turf}
-                                    onBook={handleBookTurf}
-                                    index={index}
-                                />
-                            ))}
-                        </div>
-                    </section>
-                )}
+                    {/* Budget Friendly Section */}
+                    {budgetTurfs.length > 0 && (
+                        <>
+                            <SectionHeader title="Budget Friendly" subtitle="Under ₹500/hr" />
+                            <div className={styles.turfGrid}>
+                                {budgetTurfs.map((turf, index) => (
+                                    <TurfCard
+                                        key={turf.id}
+                                        turf={turf as any}
+                                        onBook={handleBookTurf}
+                                        index={index}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </>
+            )}
 
-                {/* No Results Message */}
-                {recommendedTurfs.length === 0 && nearbyTurfs.length === 0 && budgetTurfs.length === 0 && (
-                    <div className={styles.noResults}>
-                        <p>No turfs found for {activeSport}. Try selecting a different sport.</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Footer */}
             <Footer />
         </div>
     );
