@@ -19,8 +19,8 @@ export interface Turf {
 export const mockTurfs: Turf[] = [
     {
         id: '1',
-        name: 'Green Arena Sports Complex',
-        location: 'Andheri West, Mumbai',
+        name: 'Green Arena Turf',
+        location: 'vasai West, Mumbai',
         city: 'Mumbai',
         images: ['https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800&h=1200&fit=crop'],
         pricePerHour: 800,
@@ -29,7 +29,7 @@ export const mockTurfs: Turf[] = [
         amenities: ['Floodlit', 'Parking', 'Changing Room', 'Water', 'First Aid'],
         isPromoted: true,
         availableToday: true,
-        sport: 'Football',
+        sport: 'Cricket',
     },
     {
         id: '2',

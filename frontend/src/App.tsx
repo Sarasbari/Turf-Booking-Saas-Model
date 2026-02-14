@@ -6,18 +6,24 @@ import { AuthCallback } from "./pages/AuthCallback/AuthCallback";
 import { Profile } from "./pages/Profile/Profile";
 // @ts-ignore - JSX file in TypeScript project
 import TurfDetailPage from "./pages/TurfDetailPage";
+// @ts-ignore - Temporary seed button
+import SeedButton from "./components/SeedButton";
 
 export function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/listings" element={<TurfListings />} />
-        <Route path="/turf/:turfId" element={<TurfDetailPage />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/profile" element={<Profile />} />
-      </Routes>
-    </BrowserRouter>
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/listings" element={<TurfListings />} />
+          <Route path="/turf/:turfId" element={<TurfDetailPage />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+      </BrowserRouter>
+      {/* TEMPORARY — Remove after seeding! */}
+      <SeedButton />
+    </>
   );
 }
