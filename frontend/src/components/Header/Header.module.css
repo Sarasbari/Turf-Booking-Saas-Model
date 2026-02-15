@@ -16,10 +16,12 @@
     display: flex;
     align-items: center;
     gap: 24px;
+    overflow: hidden;
 }
 
 /* Logo */
 .logo {
+    flex-shrink: 0;
     font-size: 24px;
     font-weight: 700;
     color: #ea580c;
@@ -37,8 +39,8 @@
 
 /* Search Container */
 .searchContainer {
-    flex: 0 1 500px;
-    max-width: 500px;
+    flex: 0 1 460px;
+    max-width: 460px;
     position: relative;
 }
 

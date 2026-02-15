@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { Header } from '../components/Header/Header';
 import './TurfDetailPage.css';
 
 // ── Icons (inline SVGs) ────────────────────────────────────────────────────
@@ -145,13 +146,21 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
 
     return (
         <section className="td-hero">
+            {/* Blurred background from active image */}
+            {turf.images?.[activeImg] && (
+                <div
+                    className="td-hero__bg-blur"
+                    style={{ backgroundImage: `url(${turf.images[activeImg]})` }}
+                />
+            )}
+
             <div className="td-hero__inner">
 
-                {/* ── POSTER ────────────────────────────────────────── */}
-                <div className="td-hero__poster">
+                {/* ── LEFT: Landscape image + thumbnail strip ── */}
+                <div className="td-hero__media">
                     <div className="td-hero__poster-main">
                         <img
-                            src={turf.images?.[activeImg] || 'https://via.placeholder.com/260x340?text=No+Image'}
+                            src={turf.images?.[activeImg] || 'https://via.placeholder.com/520x300?text=No+Image'}
                             alt={turf.name}
                         />
                         {turf.isDiscountActive && (
@@ -169,7 +178,7 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                         )}
                     </div>
                     <div className="td-hero__thumbs">
-                        {turf.images?.slice(0, 4).map((img, idx) => (
+                        {turf.images?.slice(0, 5).map((img, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => setActiveImg(idx)}
@@ -181,9 +190,8 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                     </div>
                 </div>
 
-                {/* ── INFO ──────────────────────────────────────────── */}
+                {/* ── RIGHT: Info ── */}
                 <div className="td-hero__info">
-                    <h1 className="td-hero__name">{turf.name}</h1>
 
                     {(turf.isUnderMaintenance || turf.maintenanceNote) && (
                         <div className="td-hero__notice">
@@ -196,41 +204,23 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                     )}
 
                     <div className="td-hero__meta">{turf.sports?.join(' · ')}</div>
+                    <h1 className="td-hero__name">{turf.name}</h1>
 
                     <div className="td-hero__tags">
                         <span className="td-hero__tag">{turf.groundSize}</span>
                         <span className="td-hero__tag">{turf.totalGrounds} Ground{turf.totalGrounds > 1 ? 's' : ''}</span>
-                        <span className={`td-hero__tag td-hero__tag--status ${statusClass}`}>
-                            {statusLabel}
-                        </span>
+                        <span className={`td-hero__tag td-hero__tag--status ${statusClass}`}>{statusLabel}</span>
                     </div>
 
                     <div className="td-hero__rating-row">
-                        <div className="td-hero__rating-star">
-                            <span>⭐</span> {turf.rating}
-                        </div>
+                        <div className="td-hero__rating-star"><span>⭐</span> {turf.rating}</div>
                         <span className="td-hero__rating-dot">·</span>
                         <span>{turf.totalReviews} ratings</span>
                         <span className="td-hero__rating-dot">·</span>
                         <span>{turf.totalBookings?.toLocaleString()} bookings</span>
                     </div>
 
-                    <div className="td-hero__actions">
-                        <button
-                            className="td-hero__book-btn"
-                            disabled={turf.status === 'closed' || turf.isUnderMaintenance}
-                            onClick={() => document.getElementById('td-booking')?.scrollIntoView({ behavior: 'smooth' })}
-                        >
-                            Book Now
-                        </button>
-                        <button className="td-hero__share-btn" onClick={handleShare}>
-                            <IconShare />
-                        </button>
-                    </div>
-                </div>
-
-                {/* ── SIDEBAR STATS ─────────────────────────────────── */}
-                <div className="td-hero__sidebar">
+                    {/* Inline stats strip */}
                     {turf.isDiscountActive ? (
                         <div className="td-hero__deal">
                             <div className="td-hero__deal-title">{turf.discountDescription}</div>
@@ -244,26 +234,45 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="td-hero__stats">
-                            <div className="td-hero__stats-grid">
-                                <div className="td-hero__stat">
-                                    <IconCalendar />
+                        <div className="td-hero__stats-strip">
+                            <div className="td-hero__stat-pill">
+                                <IconCalendar />
+                                <div>
                                     <div className="td-hero__stat-value">{turf.totalBookings?.toLocaleString()}</div>
                                     <div className="td-hero__stat-label">Total Bookings</div>
                                 </div>
-                                <div className="td-hero__stat">
-                                    <IconTrend />
+                            </div>
+                            <div className="td-hero__stat-divider" />
+                            <div className="td-hero__stat-pill">
+                                <IconTrend />
+                                <div>
                                     <div className="td-hero__stat-value">{turf.bookingsLast30Days}</div>
                                     <div className="td-hero__stat-label">This Month</div>
                                 </div>
-                                <div className="td-hero__stat td-hero__stat--full">
-                                    <IconClock />
+                            </div>
+                            <div className="td-hero__stat-divider" />
+                            <div className="td-hero__stat-pill">
+                                <IconClock />
+                                <div>
                                     <div className="td-hero__stat-value">{turf.openTime} – {turf.closeTime}</div>
                                     <div className="td-hero__stat-label">Working Hours</div>
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    <div className="td-hero__actions">
+                        <button
+                            className="td-hero__book-btn"
+                            disabled={turf.status === 'closed' || turf.isUnderMaintenance}
+                            onClick={() => document.getElementById('td-booking')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                            Book Now
+                        </button>
+                        <button className="td-hero__share-btn" onClick={handleShare}>
+                            <IconShare />
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -519,6 +528,11 @@ function OwnerSection({ turf }) {
 function BookingCard({ turf }) {
     const [date, setDate] = useState('');
     const [selectedSlot, setSelectedSlot] = useState(null);
+    const [selectedSport, setSelectedSport] = useState('');
+
+    useEffect(() => {
+        if (turf.sports?.length > 0) setSelectedSport(turf.sports[0]);
+    }, [turf.sports]);
 
     const price = turf.pricePerHour;
     const discountedPrice = turf.isDiscountActive ? Math.round(price * (1 - turf.discountPercent / 100)) : price;
@@ -578,6 +592,31 @@ function BookingCard({ turf }) {
                 />
             </div>
 
+            {/* Sport Type */}
+            {turf.sports?.length > 0 && (
+                <div className="td-booking__field">
+                    <label className="td-booking__label">Select Sport</label>
+                    <div className="td-booking__sport-pills">
+                        {turf.sports.map(sport => (
+                            <button
+                                key={sport}
+                                onClick={() => setSelectedSport(sport)}
+                                className={`td-booking__sport-pill ${selectedSport === sport ? 'td-booking__sport-pill--active' : ''}`}
+                            >
+                                {sport === 'Cricket' && '🏏 '}
+                                {sport === 'Football' && '⚽ '}
+                                {sport === 'Volleyball' && '🏐 '}
+                                {sport === 'Badminton' && '🏸 '}
+                                {sport === 'Basketball' && '🏀 '}
+                                {sport === 'Pickleball' && '🎾 '}
+                                {!['Cricket','Football','Volleyball','Badminton','Basketball','Pickleball'].includes(sport) && '🏅 '}
+                                {sport}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Slots */}
             <div className="td-booking__field">
                 <label className="td-booking__label">Select Time</label>
@@ -611,6 +650,12 @@ function BookingCard({ turf }) {
                         <span className="td-booking__summary-label">⏳ Duration</span>
                         <span className="td-booking__summary-value">2 hours</span>
                     </div>
+                    {selectedSport && (
+                        <div className="td-booking__summary-row">
+                            <span className="td-booking__summary-label">🏅 Sport</span>
+                            <span className="td-booking__summary-value">{selectedSport}</span>
+                        </div>
+                    )}
                     <div className="td-booking__summary-divider" />
                     <div className="td-booking__summary-total">
                         <span>Total</span>
@@ -628,7 +673,7 @@ function BookingCard({ turf }) {
             <button
                 className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
                 disabled={!date || !selectedSlot || turf.status === 'closed'}
-                onClick={() => alert(`Proceeding to book ${turf.name} on ${date} at ${selectedSlot.start}`)}
+                onClick={() => alert(`Proceeding to book ${turf.name}\nSport: ${selectedSport}\nDate: ${date}\nTime: ${selectedSlot?.start}`)}
             >
                 {!date ? 'Select Date First' : !selectedSlot ? 'Select Time Slot' : 'Proceed to Book →'}
             </button>
@@ -743,6 +788,7 @@ export default function TurfDetailPage() {
     if (loading) {
         return (
             <div className="turf-detail-page td-loading">
+                <Header />
                 <div className="td-loading__grid">
                     <div className="td-loading__block td-loading__poster" />
                     <div className="td-loading__info">
@@ -760,6 +806,7 @@ export default function TurfDetailPage() {
     if (error) {
         return (
             <div className="turf-detail-page td-error">
+                <Header />
                 <div className="td-error__icon">🏟️</div>
                 <h2 className="td-error__title">Turf Not Found</h2>
                 <p className="td-error__msg">{error}</p>
@@ -769,8 +816,10 @@ export default function TurfDetailPage() {
     }
 
     // ── MAIN RENDER ──────────────────────────────────────────────
+        // ── MAIN RENDER ──────────────────────────────────────────────
     return (
         <div className="turf-detail-page">
+            <Header />                {/* ✅ ADD THIS — same header as Home & Listings */}
             <StickyBar turf={turf} visible={showSticky} />
 
             <div ref={heroRef}>
