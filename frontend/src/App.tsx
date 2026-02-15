@@ -6,8 +6,8 @@ import { AuthCallback } from "./pages/AuthCallback/AuthCallback";
 import { Profile } from "./pages/Profile/Profile";
 // @ts-ignore - JSX file in TypeScript project
 import TurfDetailPage from "./pages/TurfDetailPage";
-// @ts-ignore - Temporary seed button
-import SeedButton from "./components/SeedButton";
+// @ts-ignore - Temporary seed button — will be used in admin dashboard
+// import SeedButton from "./components/SeedButton";
 
 export function App() {
   return (
@@ -22,8 +22,8 @@ export function App() {
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </BrowserRouter>
-      {/* TEMPORARY — Remove after seeding! */}
-      <SeedButton />
+      {/* TODO: Move SeedButton to future Admin Dashboard */}
+      {/* <SeedButton /> */}
     </>
   );
 }

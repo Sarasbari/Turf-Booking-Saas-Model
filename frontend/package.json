@@ -2,6 +2,7 @@
   "name": "turf-booking-frontend",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Frontend for Turf Booking System",
   "scripts": {
     "dev": "vite",
