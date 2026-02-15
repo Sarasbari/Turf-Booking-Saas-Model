@@ -9,7 +9,9 @@ const app = express();
 // Middleware
 app.use(cors({
     origin: config.frontend.url,
-    credentials: true, // Allow cookies to be sent
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -44,13 +46,15 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
+// Start server (only in development/local environment)
 const PORT = config.port;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📝 Environment: ${config.nodeEnv}`);
-    console.log(`🌐 Frontend URL: ${config.frontend.url}`);
-    console.log(`🔐 Google OAuth configured`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+        console.log(`📝 Environment: ${config.nodeEnv}`);
+        console.log(`🌐 Frontend URL: ${config.frontend.url}`);
+        console.log(`🔐 Google OAuth configured`);
+    });
+}
 
 export default app;
