@@ -5,6 +5,9 @@
     "description": "Backend for Turf Booking System",
     "main": "src/index.js",
     "type": "module",
+    "engines": {
+        "node": "18.x"
+    },
     "scripts": {
         "dev": "nodemon src/index.js",
         "start": "node src/index.js"
