@@ -32,8 +32,8 @@ const normalizeForCard = (id: string, data: any) => ({
 });
 
 // Filter constants
-const cities = ['All Cities', 'Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Hyderabad', 'Chennai', 'Thane', 'Navi Mumbai'];
-const turfTypes = ['all', '5-a-side', '7-a-side', '11-a-side'];
+const cities = ['All Cities', 'Virar', 'Nallasopara', 'Vasai', 'Naigaon', 'Bhayandar', 'Mira Road', 'Dahisar', 'Borivali','Kandivali','Malad'];
+const turfTypes = ['all', 'cricket', 'football', 'badminton','tennis','volleyball'];
 
 export function TurfListings() {
     const [filters, setFilters] = useState<FilterState>({
@@ -224,7 +224,7 @@ export function TurfListings() {
                                     >
                                         {turfTypes.map(type => (
                                             <option key={type} value={type}>
-                                                {type === 'all' ? 'All Sizes' : type}
+                                                {type === 'all' ? 'All Types' : type}
                                             </option>
                                         ))}
                                     </select>
