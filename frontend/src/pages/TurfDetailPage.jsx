@@ -529,13 +529,18 @@ function BookingCard({ turf }) {
     const [date, setDate] = useState('');
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [selectedSport, setSelectedSport] = useState('');
+    const [paymentStatus, setPaymentStatus] = useState(null); // 'success' | 'failed' | null
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         if (turf.sports?.length > 0) setSelectedSport(turf.sports[0]);
     }, [turf.sports]);
 
     const price = turf.pricePerHour;
-    const discountedPrice = turf.isDiscountActive ? Math.round(price * (1 - turf.discountPercent / 100)) : price;
+    const discountedPrice = turf.isDiscountActive
+        ? Math.round(price * (1 - turf.discountPercent / 100))
+        : price;
+    const totalAmount = discountedPrice * 2; // 2 hours per slot
 
     const generateSlots = () => {
         if (!turf.openTime || !turf.closeTime) return [];
@@ -553,7 +558,11 @@ function BookingCard({ turf }) {
                 const dHr = hr % 12 || 12;
                 return `${dHr}:${(mn || 0).toString().padStart(2, '0')} ${p}`;
             };
-            slots.push({ id: `${h}-${m || 0}`, label: `${format(h, m)} – ${format(endH, m)}`, start: format(h, m) });
+            slots.push({
+                id: `${h}-${m || 0}`,
+                label: `${format(h, m)} – ${format(endH, m)}`,
+                start: format(h, m),
+            });
             h = endH;
             count++;
         }
@@ -562,6 +571,89 @@ function BookingCard({ turf }) {
 
     const slots = generateSlots();
     const today = new Date().toISOString().split('T')[0];
+
+    // ✅ RAZORPAY PAYMENT HANDLER
+    const handlePayment = () => {
+        if (!date || !selectedSlot) return;
+
+        const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+        if (!RAZORPAY_KEY) {
+            alert('Razorpay is not configured. Please add VITE_RAZORPAY_KEY_ID to .env');
+            return;
+        }
+
+        setIsProcessing(true);
+        setPaymentStatus(null);
+
+        const options = {
+            key: RAZORPAY_KEY,
+            amount: totalAmount * 100, // Razorpay expects amount in PAISE (₹600 = 60000 paise)
+            currency: 'INR',
+            name: 'BookMyTurf',
+            description: `${turf.name} — ${selectedSport} | ${selectedSlot.label}`,
+            image: turf.images?.[0] || '',
+            handler: function (response) {
+                // ✅ PAYMENT SUCCESS
+                console.log('✅ Payment Success:', response);
+                setPaymentStatus('success');
+                setIsProcessing(false);
+
+                // TODO: Save booking to Firestore
+                // addDoc(collection(db, 'bookings'), {
+                //     turfId: turf.id,
+                //     turfName: turf.name,
+                //     userId: auth.currentUser?.uid,
+                //     date: date,
+                //     timeSlot: selectedSlot.label,
+                //     sport: selectedSport,
+                //     amount: totalAmount,
+                //     paymentId: response.razorpay_payment_id,
+                //     status: 'confirmed',
+                //     createdAt: serverTimestamp(),
+                // });
+            },
+            prefill: {
+                name: '',   // You can prefill from Firebase Auth: auth.currentUser?.displayName
+                email: '',  // auth.currentUser?.email
+                contact: '',
+            },
+            notes: {
+                turf_id: turf.id,
+                turf_name: turf.name,
+                sport: selectedSport,
+                date: date,
+                time_slot: selectedSlot.label,
+            },
+            theme: {
+                color: '#ea580c', // Your brand orange color
+            },
+            modal: {
+                ondismiss: function () {
+                    // User closed the popup without paying
+                    setIsProcessing(false);
+                    console.log('⚠️ Payment popup closed by user');
+                },
+            },
+        };
+
+        try {
+            const rzp = new window.Razorpay(options);
+
+            rzp.on('payment.failed', function (response) {
+                // ❌ PAYMENT FAILED
+                console.error('❌ Payment Failed:', response.error);
+                setPaymentStatus('failed');
+                setIsProcessing(false);
+            });
+
+            rzp.open();
+        } catch (err) {
+            console.error('Razorpay initialization error:', err);
+            setIsProcessing(false);
+            alert('Failed to initialize payment. Please try again.');
+        }
+    };
 
     return (
         <div id="td-booking" className="td-booking">
@@ -588,7 +680,7 @@ function BookingCard({ turf }) {
                     className="td-booking__date-input"
                     min={today}
                     value={date}
-                    onChange={(e) => { setDate(e.target.value); setSelectedSlot(null); }}
+                    onChange={(e) => { setDate(e.target.value); setSelectedSlot(null); setPaymentStatus(null); }}
                 />
             </div>
 
@@ -609,7 +701,7 @@ function BookingCard({ turf }) {
                                 {sport === 'Badminton' && '🏸 '}
                                 {sport === 'Basketball' && '🏀 '}
                                 {sport === 'Pickleball' && '🎾 '}
-                                {!['Cricket','Football','Volleyball','Badminton','Basketball','Pickleball'].includes(sport) && '🏅 '}
+                                {!['Cricket', 'Football', 'Volleyball', 'Badminton', 'Basketball', 'Pickleball'].includes(sport) && '🏅 '}
                                 {sport}
                             </button>
                         ))}
@@ -624,7 +716,7 @@ function BookingCard({ turf }) {
                     {slots.map(slot => (
                         <button
                             key={slot.id}
-                            onClick={() => setSelectedSlot(slot)}
+                            onClick={() => { setSelectedSlot(slot); setPaymentStatus(null); }}
                             className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''}`}
                         >
                             {slot.label}
@@ -659,7 +751,7 @@ function BookingCard({ turf }) {
                     <div className="td-booking__summary-divider" />
                     <div className="td-booking__summary-total">
                         <span>Total</span>
-                        <span>{formatCurrency(discountedPrice * 2)}</span>
+                        <span>{formatCurrency(totalAmount)}</span>
                     </div>
                     {turf.isDiscountActive && (
                         <div className="td-booking__summary-saved">
@@ -669,16 +761,51 @@ function BookingCard({ turf }) {
                 </div>
             )}
 
-            {/* Submit */}
+            {/* ✅ Payment Success Message */}
+            {paymentStatus === 'success' && (
+                <div style={{
+                    background: '#ecfdf5', border: '1px solid #10b981', borderRadius: '12px',
+                    padding: '16px', textAlign: 'center', marginBottom: '12px'
+                }}>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
+                    <div style={{ fontWeight: 700, color: '#065f46', fontSize: '16px' }}>Booking Confirmed!</div>
+                    <div style={{ color: '#047857', fontSize: '14px', marginTop: '4px' }}>
+                        {turf.name} · {selectedSlot?.label} · {new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    </div>
+                </div>
+            )}
+
+            {/* ❌ Payment Failed Message */}
+            {paymentStatus === 'failed' && (
+                <div style={{
+                    background: '#fef2f2', border: '1px solid #ef4444', borderRadius: '12px',
+                    padding: '16px', textAlign: 'center', marginBottom: '12px'
+                }}>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>❌</div>
+                    <div style={{ fontWeight: 700, color: '#991b1b', fontSize: '16px' }}>Payment Failed</div>
+                    <div style={{ color: '#b91c1c', fontSize: '14px', marginTop: '4px' }}>
+                        Please try again or use a different payment method.
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ Submit Button — Now triggers Razorpay */}
             <button
-                className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
-                disabled={!date || !selectedSlot || turf.status === 'closed'}
-                onClick={() => alert(`Proceeding to book ${turf.name}\nSport: ${selectedSport}\nDate: ${date}\nTime: ${selectedSlot?.start}`)}
+                className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' || isProcessing ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
+                disabled={!date || !selectedSlot || turf.status === 'closed' || isProcessing}
+                onClick={handlePayment}
             >
-                {!date ? 'Select Date First' : !selectedSlot ? 'Select Time Slot' : 'Proceed to Book →'}
+                {isProcessing
+                    ? '⏳ Processing...'
+                    : !date
+                        ? 'Select Date First'
+                        : !selectedSlot
+                            ? 'Select Time Slot'
+                            : `Pay ${formatCurrency(totalAmount)} →`
+                }
             </button>
 
-            <div className="td-booking__footer">💰 Pay on arrival &nbsp;·&nbsp; ✓ Free cancellation</div>
+            <div className="td-booking__footer">🔒 Secure payment via Razorpay &nbsp;·&nbsp; ✓ Instant confirmation</div>
         </div>
     );
 }
@@ -816,7 +943,7 @@ export default function TurfDetailPage() {
     }
 
     // ── MAIN RENDER ──────────────────────────────────────────────
-        // ── MAIN RENDER ──────────────────────────────────────────────
+    // ── MAIN RENDER ──────────────────────────────────────────────
     return (
         <div className="turf-detail-page">
             <Header />                {/* ✅ ADD THIS — same header as Home & Listings */}
