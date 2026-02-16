@@ -1,0 +1,95 @@
+.container {
+    width: 100%;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--owner-text-primary, #111827);
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: var(--owner-text-secondary, #6B7280);
+}
+
+.section {
+    background-color: var(--owner-card, #FFFFFF);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--owner-border, #E5E7EB);
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.sectionTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--owner-text-primary, #111827);
+}
+
+.editButton {
+    padding: 8px 16px;
+    background-color: var(--owner-card, #FFFFFF);
+    color: var(--owner-text-secondary, #6B7280);
+    border: 1px solid var(--owner-border, #E5E7EB);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.editButton:hover {
+    border-color: var(--owner-primary, #EA580C);
+    color: var(--owner-primary, #EA580C);
+}
+
+.formActions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.saveButton {
+    padding: 10px 24px;
+    background-color: var(--owner-primary, #EA580C);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.saveButton:hover {
+    background-color: var(--owner-primary-hover, #C2410C);
+}
+
+.cancelButton {
+    padding: 10px 24px;
+    background-color: var(--owner-card, #FFFFFF);
+    color: var(--owner-text-secondary, #6B7280);
+    border: 1px solid var(--owner-border, #E5E7EB);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancelButton:hover {
+    border-color: var(--owner-text-secondary, #6B7280);
+}

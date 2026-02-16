@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { Home } from "./pages/Home/Home";
@@ -9,15 +9,16 @@ import { Profile } from "./pages/Profile/Profile";
 // @ts-ignore - JSX file in TypeScript project
 import TurfDetailPage from "./pages/TurfDetailPage";
 
-// ✅ Placeholder until you build the real dashboard
-function OwnerDashboard() {
-    return (
-        <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-            <h1>🏟️ Owner Dashboard</h1>
-            <p>Coming soon — manage your turfs here</p>
-        </div>
-    );
-}
+// Owner Dashboard imports
+import { OwnerProtectedRoute } from "./components/Owner/OwnerProtectedRoute";
+import { OwnerLayout } from "./pages/Owner/OwnerLayout";
+import { OwnerOverview } from "./pages/Owner/OwnerOverview";
+import { OwnerBookings } from "./pages/Owner/OwnerBookings";
+import { OwnerSlots } from "./pages/Owner/OwnerSlots";
+import { OwnerTurf } from "./pages/Owner/OwnerTurf";
+import { OwnerRevenue } from "./pages/Owner/OwnerRevenue";
+import { OwnerReviews } from "./pages/Owner/OwnerReviews";
+import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 
 export function App() {
     return (
@@ -31,7 +32,20 @@ export function App() {
                     <Route path="/signin" element={<SignIn />} />
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/owner/dashboard" element={<OwnerDashboard />} />  {/* ✅ ADD */}
+                    
+                    {/* Owner Dashboard Routes */}
+                    <Route path="/owner" element={<OwnerProtectedRoute />}>
+                        <Route element={<OwnerLayout />}>
+                            <Route index element={<Navigate to="dashboard" replace />} />
+                            <Route path="dashboard" element={<OwnerOverview />} />
+                            <Route path="bookings" element={<OwnerBookings />} />
+                            <Route path="slots" element={<OwnerSlots />} />
+                            <Route path="turf" element={<OwnerTurf />} />
+                            <Route path="revenue" element={<OwnerRevenue />} />
+                            <Route path="reviews" element={<OwnerReviews />} />
+                            <Route path="settings" element={<OwnerSettings />} />
+                        </Route>
+                    </Route>
                 </Routes>
             </BrowserRouter>
             <SpeedInsights />

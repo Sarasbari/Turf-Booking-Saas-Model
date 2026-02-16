@@ -1,0 +1,161 @@
+.container {
+    width: 100%;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--owner-text-primary, #111827);
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    font-size: 14px;
+    color: var(--owner-text-secondary, #6B7280);
+}
+
+.controls {
+    background-color: var(--owner-card, #FFFFFF);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    border: 1px solid var(--owner-border, #E5E7EB);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.dateNav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dateButton {
+    padding: 10px 16px;
+    background-color: var(--owner-card, #FFFFFF);
+    color: var(--owner-text-primary, #111827);
+    border: 1px solid var(--owner-border, #E5E7EB);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dateButton:hover {
+    background-color: var(--owner-border-light, #F3F4F6);
+}
+
+.dateButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.currentDate {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--owner-text-primary, #111827);
+    min-width: 200px;
+    text-align: center;
+}
+
+.quickActions {
+    display: flex;
+    gap: 12px;
+}
+
+.actionButton {
+    padding: 10px 20px;
+    background-color: var(--owner-card, #FFFFFF);
+    color: var(--owner-text-primary, #111827);
+    border: 1px solid var(--owner-border, #E5E7EB);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.actionButton:hover {
+    border-color: var(--owner-primary, #EA580C);
+    color: var(--owner-primary, #EA580C);
+}
+
+.actionButtonDanger {
+    color: var(--owner-danger-text, #DC2626);
+}
+
+.actionButtonDanger:hover {
+    border-color: var(--owner-danger-text, #DC2626);
+    background-color: var(--owner-danger-bg, #FEF2F2);
+}
+
+.slotsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 60px 20px;
+    background-color: var(--owner-card, #FFFFFF);
+    border-radius: 12px;
+    border: 1px solid var(--owner-border, #E5E7EB);
+}
+
+.emptyStateIcon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.emptyStateText {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--owner-text-muted, #9CA3AF);
+}
+
+.loading {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.loadingIcon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.loadingText {
+    color: var(--owner-text-secondary, #6B7280);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .dateNav {
+        flex-direction: column;
+    }
+    
+    .quickActions {
+        flex-direction: column;
+    }
+    
+    .actionButton {
+        width: 100%;
+    }
+    
+    .title {
+        font-size: 20px;
+    }
+}
