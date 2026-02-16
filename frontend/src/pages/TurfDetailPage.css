@@ -1585,3 +1585,22 @@
     z-index: 200;
     width: 100%;
 }
+
+/* ── Booked/Grey Slot Styles ────────────────────────────── */
+/* Add at the bottom of TurfDetailPage.css */
+
+.td-booking__slot--booked {
+    background: #e5e7eb !important;
+    color: #9ca3af !important;
+    border-color: #d1d5db !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+    text-decoration: line-through;
+    position: relative;
+}
+
+.td-booking__slot--booked:hover {
+    background: #e5e7eb !important;
+    transform: none !important;
+    box-shadow: none !important;
+}

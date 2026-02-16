@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { doc, collection, onSnapshot, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { auth } from '../lib/firebase';
+import { createBooking } from '../firebase/bookings';
 import { Header } from '../components/Header/Header';
 import './TurfDetailPage.css';
 
@@ -526,45 +528,117 @@ function OwnerSection({ turf }) {
 }
 
 function BookingCard({ turf }) {
+    const navigate = useNavigate();
     const [date, setDate] = useState('');
+    const [duration, setDuration] = useState(1);         // ✅ NEW: Duration in hours
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [selectedSport, setSelectedSport] = useState('');
-    const [paymentStatus, setPaymentStatus] = useState(null); // 'success' | 'failed' | null
+    const [bookedSlots, setBookedSlots] = useState([]);   // ✅ NEW: Already booked slots
+    const [paymentStatus, setPaymentStatus] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [loadingSlots, setLoadingSlots] = useState(false);
 
+    // Set default sport
     useEffect(() => {
         if (turf.sports?.length > 0) setSelectedSport(turf.sports[0]);
     }, [turf.sports]);
+
+    // ✅ NEW: Fetch booked slots from Firestore whenever date changes
+    useEffect(() => {
+        if (!date || !turf.id) {
+            setBookedSlots([]);
+            return;
+        }
+
+        const fetchBookedSlots = async () => {
+            setLoadingSlots(true);
+            try {
+                const bookingsRef = collection(db, 'bookings');
+                const q = query(
+                    bookingsRef,
+                    where('turfId', '==', turf.id),
+                    where('date', '==', date),
+                    where('status', '==', 'confirmed')
+                );
+                const snapshot = await getDocs(q);
+                const booked = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Collect all hour blocks that are booked
+                    if (data.startHour !== undefined && data.duration) {
+                        for (let h = 0; h < data.duration; h++) {
+                            booked.push(data.startHour + h);
+                        }
+                    }
+                });
+                setBookedSlots(booked);
+            } catch (err) {
+                console.warn('Could not fetch booked slots:', err);
+                setBookedSlots([]);
+            } finally {
+                setLoadingSlots(false);
+            }
+        };
+
+        fetchBookedSlots();
+    }, [date, turf.id, paymentStatus]); // Re-fetch after successful payment
 
     const price = turf.pricePerHour;
     const discountedPrice = turf.isDiscountActive
         ? Math.round(price * (1 - turf.discountPercent / 100))
         : price;
-    const totalAmount = discountedPrice * 2; // 2 hours per slot
 
+    // ✅ Bill Calculation
+    const subtotal = discountedPrice * duration;
+    const convenienceFee = Math.round(subtotal * 0.02);  // 2% convenience fee
+    const totalAmount = subtotal + convenienceFee;
+
+    // ✅ UPDATED: Generate 1-hour slots, respecting duration & booked status
     const generateSlots = () => {
         if (!turf.openTime || !turf.closeTime) return [];
         const slots = [];
-        let [h, m] = turf.openTime.split(':').map(Number);
-        const [ch2, cm2] = turf.closeTime.split(':').map(Number);
-        let count = 0;
-        while (count < 20) {
-            const startMins = h * 60 + (m || 0);
-            const endMinsLine = ch2 * 60 + (cm2 || 0);
-            if (startMins + 120 > endMinsLine) break;
-            const endH = h + 2;
-            const format = (hr, mn) => {
+        let [oh, om] = turf.openTime.split(':').map(Number);
+        const [ch, cm] = turf.closeTime.split(':').map(Number);
+        const openMins = oh * 60 + (om || 0);
+        const closeMins = ch * 60 + (cm || 0);
+
+        let currentHour = oh;
+
+        while (true) {
+            const startMins = currentHour * 60;
+            const endMins = (currentHour + duration) * 60;
+
+            // Stop if the slot would go past closing time
+            if (endMins > closeMins || startMins < openMins) {
+                currentHour++;
+                if (currentHour * 60 >= closeMins) break;
+                continue;
+            }
+
+            const format = (hr) => {
                 const p = hr >= 12 ? 'PM' : 'AM';
                 const dHr = hr % 12 || 12;
-                return `${dHr}:${(mn || 0).toString().padStart(2, '0')} ${p}`;
+                return `${dHr}:00 ${p}`;
             };
+
+            // ✅ Check if ANY hour in this slot's range is already booked
+            let isBooked = false;
+            for (let h = 0; h < duration; h++) {
+                if (bookedSlots.includes(currentHour + h)) {
+                    isBooked = true;
+                    break;
+                }
+            }
+
             slots.push({
-                id: `${h}-${m || 0}`,
-                label: `${format(h, m)} – ${format(endH, m)}`,
-                start: format(h, m),
+                id: `slot-${currentHour}`,
+                startHour: currentHour,
+                label: `${format(currentHour)} – ${format(currentHour + duration)}`,
+                isBooked,
             });
-            h = endH;
-            count++;
+
+            currentHour++;
+            if (slots.length > 30) break; // Safety limit
         }
         return slots;
     };
@@ -572,51 +646,85 @@ function BookingCard({ turf }) {
     const slots = generateSlots();
     const today = new Date().toISOString().split('T')[0];
 
-    // ✅ RAZORPAY PAYMENT HANDLER
-    const handlePayment = () => {
+    // ✅ DURATION OPTIONS
+    const durationOptions = [1, 2, 3, 4];
+
+    // ✅ PAYMENT + BOOKING HANDLER
+    const handlePayment = async () => {
         if (!date || !selectedSlot) return;
+
+        // Check if user is logged in
+        const user = auth.currentUser;
+        if (!user) {
+            alert('Please sign in to book a turf.');
+            navigate('/signin');
+            return;
+        }
 
         const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
         if (!RAZORPAY_KEY) {
-            alert('Razorpay is not configured. Please add VITE_RAZORPAY_KEY_ID to .env');
+            alert('Payment is not configured. Please contact support.');
             return;
         }
 
         setIsProcessing(true);
         setPaymentStatus(null);
 
+        const format12 = (hr) => {
+            const p = hr >= 12 ? 'PM' : 'AM';
+            const dHr = hr % 12 || 12;
+            return `${dHr}:00 ${p}`;
+        };
+
         const options = {
             key: RAZORPAY_KEY,
-            amount: totalAmount * 100, // Razorpay expects amount in PAISE (₹600 = 60000 paise)
+            amount: totalAmount * 100, // Paise
             currency: 'INR',
             name: 'BookMyTurf',
             description: `${turf.name} — ${selectedSport} | ${selectedSlot.label}`,
             image: turf.images?.[0] || '',
-            handler: function (response) {
-                // ✅ PAYMENT SUCCESS
-                console.log('✅ Payment Success:', response);
-                setPaymentStatus('success');
-                setIsProcessing(false);
+            handler: async function (response) {
+                // ✅ PAYMENT SUCCESS → SAVE BOOKING TO FIRESTORE
+                try {
+                    const bookingData = {
+                        turfId: turf.id,
+                        turfName: turf.name,
+                        turfLocation: `${turf.address}, ${turf.city}`,
+                        userName: user.displayName || 'User',
+                        userEmail: user.email || '',
+                        ownerId: turf.ownerId || '',
+                        date: date,
+                        startTime: format12(selectedSlot.startHour),
+                        endTime: format12(selectedSlot.startHour + duration),
+                        startHour: selectedSlot.startHour,
+                        duration: duration,
+                        sport: selectedSport,
+                        pricePerHour: discountedPrice,
+                        subtotal: subtotal,                     // ✅ Turf charges
+                        convenienceFee: convenienceFee,         // ✅ 2% fee
+                        totalAmount: totalAmount,               // ✅ Final amount
+                        paymentId: response.razorpay_payment_id,
+                        paymentStatus: 'paid',
+                        status: 'upcoming',
+                        time: `${format12(selectedSlot.startHour)} - ${format12(selectedSlot.startHour + duration)}`,
+                        price: totalAmount,                     // ✅ Matches MyBookings display
+                    };
 
-                // TODO: Save booking to Firestore
-                // addDoc(collection(db, 'bookings'), {
-                //     turfId: turf.id,
-                //     turfName: turf.name,
-                //     userId: auth.currentUser?.uid,
-                //     date: date,
-                //     timeSlot: selectedSlot.label,
-                //     sport: selectedSport,
-                //     amount: totalAmount,
-                //     paymentId: response.razorpay_payment_id,
-                //     status: 'confirmed',
-                //     createdAt: serverTimestamp(),
-                // });
+                    await createBooking(bookingData);
+                    console.log('✅ Booking saved to Firestore');
+
+                    setPaymentStatus('success');
+                } catch (err) {
+                    console.error('Booking save error:', err);
+                    setPaymentStatus('success'); // Payment went through, show success
+                    alert('Payment successful! But booking save failed. Contact support with payment ID: ' + response.razorpay_payment_id);
+                }
+                setIsProcessing(false);
             },
             prefill: {
-                name: '',   // You can prefill from Firebase Auth: auth.currentUser?.displayName
-                email: '',  // auth.currentUser?.email
-                contact: '',
+                name: user.displayName || '',
+                email: user.email || '',
             },
             notes: {
                 turf_id: turf.id,
@@ -624,32 +732,26 @@ function BookingCard({ turf }) {
                 sport: selectedSport,
                 date: date,
                 time_slot: selectedSlot.label,
+                duration: `${duration} hours`,
             },
-            theme: {
-                color: '#ea580c', // Your brand orange color
-            },
+            theme: { color: '#ea580c' },
             modal: {
                 ondismiss: function () {
-                    // User closed the popup without paying
                     setIsProcessing(false);
-                    console.log('⚠️ Payment popup closed by user');
                 },
             },
         };
 
         try {
             const rzp = new window.Razorpay(options);
-
             rzp.on('payment.failed', function (response) {
-                // ❌ PAYMENT FAILED
                 console.error('❌ Payment Failed:', response.error);
                 setPaymentStatus('failed');
                 setIsProcessing(false);
             });
-
             rzp.open();
         } catch (err) {
-            console.error('Razorpay initialization error:', err);
+            console.error('Razorpay error:', err);
             setIsProcessing(false);
             alert('Failed to initialize payment. Please try again.');
         }
@@ -684,6 +786,22 @@ function BookingCard({ turf }) {
                 />
             </div>
 
+            {/* ✅ NEW: Duration Selector */}
+            <div className="td-booking__field">
+                <label className="td-booking__label">Select Duration</label>
+                <div className="td-booking__sport-pills">
+                    {durationOptions.map((d) => (
+                        <button
+                            key={d}
+                            onClick={() => { setDuration(d); setSelectedSlot(null); }}
+                            className={`td-booking__sport-pill ${duration === d ? 'td-booking__sport-pill--active' : ''}`}
+                        >
+                            🕐 {d} Hour{d > 1 ? 's' : ''}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* Sport Type */}
             {turf.sports?.length > 0 && (
                 <div className="td-booking__field">
@@ -709,25 +827,53 @@ function BookingCard({ turf }) {
                 </div>
             )}
 
-            {/* Slots */}
+            {/* ✅ UPDATED: Slots with booked/greyed out logic */}
             <div className="td-booking__field">
-                <label className="td-booking__label">Select Time</label>
-                <div className="td-booking__slots">
-                    {slots.map(slot => (
-                        <button
-                            key={slot.id}
-                            onClick={() => { setSelectedSlot(slot); setPaymentStatus(null); }}
-                            className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''}`}
-                        >
-                            {slot.label}
-                        </button>
-                    ))}
-                </div>
+                <label className="td-booking__label">
+                    Select Time
+                    {loadingSlots && <span style={{ fontSize: '12px', color: '#999', marginLeft: '8px' }}>Loading availability...</span>}
+                </label>
+                {!date ? (
+                    <div style={{ color: '#999', fontSize: '14px', padding: '12px 0' }}>
+                        Please select a date first to see available slots
+                    </div>
+                ) : (
+                    <div className="td-booking__slots">
+                        {slots.map(slot => (
+                            <button
+                                key={slot.id}
+                                onClick={() => !slot.isBooked && setSelectedSlot(slot)}
+                                disabled={slot.isBooked}
+                                className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''
+                                    } ${slot.isBooked ? 'td-booking__slot--booked' : ''}`}
+                                title={slot.isBooked ? 'This slot is already booked' : `Book ${slot.label}`}
+                            >
+                                {slot.label}
+                                {slot.isBooked && <span style={{ display: 'block', fontSize: '10px', marginTop: '2px' }}>Booked</span>}
+                            </button>
+                        ))}
+                        {slots.length === 0 && date && (
+                            <div style={{ color: '#999', fontSize: '14px' }}>
+                                No slots available for {duration}-hour duration
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* Summary */}
+            {/* ✅ Bill Breakdown */}
             {selectedSlot && date && (
                 <div className="td-booking__summary">
+                    {/* Bill Header */}
+                    <div style={{
+                        fontWeight: 700, fontSize: '15px', color: '#1f2937',
+                        marginBottom: '12px', paddingBottom: '8px',
+                        borderBottom: '1px dashed #e5e7eb'
+                    }}>
+                        🧾 Bill Details
+                    </div>
+
+                    {/* Booking Info */}
                     <div className="td-booking__summary-row">
                         <span className="td-booking__summary-label">📅 Date</span>
                         <span className="td-booking__summary-value">
@@ -740,7 +886,7 @@ function BookingCard({ turf }) {
                     </div>
                     <div className="td-booking__summary-row">
                         <span className="td-booking__summary-label">⏳ Duration</span>
-                        <span className="td-booking__summary-value">2 hours</span>
+                        <span className="td-booking__summary-value">{duration} hour{duration > 1 ? 's' : ''}</span>
                     </div>
                     {selectedSport && (
                         <div className="td-booking__summary-row">
@@ -748,20 +894,48 @@ function BookingCard({ turf }) {
                             <span className="td-booking__summary-value">{selectedSport}</span>
                         </div>
                     )}
+
+                    {/* Price Breakdown */}
                     <div className="td-booking__summary-divider" />
+
+                    <div className="td-booking__summary-row">
+                        <span className="td-booking__summary-label">
+                            Turf Charges ({formatCurrency(discountedPrice)} × {duration}hr)
+                        </span>
+                        <span className="td-booking__summary-value">{formatCurrency(subtotal)}</span>
+                    </div>
+
+                    {turf.isDiscountActive && (
+                        <div className="td-booking__summary-row" style={{ color: '#059669' }}>
+                            <span className="td-booking__summary-label">🎉 Discount ({turf.discountPercent}%)</span>
+                            <span className="td-booking__summary-value">
+                                − {formatCurrency((price - discountedPrice) * duration)}
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="td-booking__summary-row">
+                        <span className="td-booking__summary-label">Convenience Fee (2%)</span>
+                        <span className="td-booking__summary-value">+ {formatCurrency(convenienceFee)}</span>
+                    </div>
+
+                    {/* Total */}
+                    <div className="td-booking__summary-divider" />
+
                     <div className="td-booking__summary-total">
-                        <span>Total</span>
+                        <span>Total Amount</span>
                         <span>{formatCurrency(totalAmount)}</span>
                     </div>
+
                     {turf.isDiscountActive && (
                         <div className="td-booking__summary-saved">
-                            You saved {formatCurrency((price - discountedPrice) * 2)}!
+                            You saved {formatCurrency((price - discountedPrice) * duration)}!
                         </div>
                     )}
                 </div>
             )}
 
-            {/* ✅ Payment Success Message */}
+            {/* ✅ Success Message */}
             {paymentStatus === 'success' && (
                 <div style={{
                     background: '#ecfdf5', border: '1px solid #10b981', borderRadius: '12px',
@@ -770,12 +944,21 @@ function BookingCard({ turf }) {
                     <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
                     <div style={{ fontWeight: 700, color: '#065f46', fontSize: '16px' }}>Booking Confirmed!</div>
                     <div style={{ color: '#047857', fontSize: '14px', marginTop: '4px' }}>
-                        {turf.name} · {selectedSlot?.label} · {new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        {turf.name} · {selectedSlot?.label} · {duration}hr · {new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                     </div>
+                    <button
+                        onClick={() => navigate('/profile')}
+                        style={{
+                            marginTop: '12px', background: '#059669', color: 'white', border: 'none',
+                            padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer'
+                        }}
+                    >
+                        View My Bookings →
+                    </button>
                 </div>
             )}
 
-            {/* ❌ Payment Failed Message */}
+            {/* ❌ Failed Message */}
             {paymentStatus === 'failed' && (
                 <div style={{
                     background: '#fef2f2', border: '1px solid #ef4444', borderRadius: '12px',
@@ -789,7 +972,7 @@ function BookingCard({ turf }) {
                 </div>
             )}
 
-            {/* ✅ Submit Button — Now triggers Razorpay */}
+            {/* Submit */}
             <button
                 className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' || isProcessing ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
                 disabled={!date || !selectedSlot || turf.status === 'closed' || isProcessing}
@@ -797,11 +980,13 @@ function BookingCard({ turf }) {
             >
                 {isProcessing
                     ? '⏳ Processing...'
-                    : !date
-                        ? 'Select Date First'
-                        : !selectedSlot
-                            ? 'Select Time Slot'
-                            : `Pay ${formatCurrency(totalAmount)} →`
+                    : paymentStatus === 'success'
+                        ? '✅ Booked!'
+                        : !date
+                            ? 'Select Date First'
+                            : !selectedSlot
+                                ? 'Select Time Slot'
+                                : `Pay ${formatCurrency(totalAmount)} →`
                 }
             </button>
 
