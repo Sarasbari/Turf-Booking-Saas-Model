@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { SpeedInsights } from "@vercel/speed-insights/react";   // ✅ ADD THIS
+import { Analytics } from "@vercel/analytics/react"; 
 import { Home } from "./pages/Home/Home";
 import { TurfListings } from "./pages/TurfListings/TurfListings";
 import { SignIn } from "./pages/SignIn/SignIn";
@@ -20,6 +22,8 @@ export function App() {
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </BrowserRouter>
+      <SpeedInsights />                                          {/* ✅ ADD THIS */}
+      <Analytics />                                             {/* ✅ ADD THIS */}
     </>
   );
 }
