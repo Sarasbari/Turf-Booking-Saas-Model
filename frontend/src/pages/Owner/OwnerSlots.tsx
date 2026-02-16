@@ -3,6 +3,7 @@ import { doc, getDoc, collection, query, where, getDocs, setDoc, deleteDoc, upda
 import { auth, db } from '../../firebase/config';
 import { OwnerData, TurfData, BookingType, SlotType, BlockedSlot } from '../../types/owner';
 import { SlotItem } from '../../components/Owner/SlotItem';
+import { generateTimeSlots } from '../../utils/slotUtils';
 import styles from '../../styles/Owner/OwnerSlots.module.css';
 
 export function OwnerSlots() {
@@ -92,27 +93,6 @@ export function OwnerSlots() {
         } catch (error) {
             console.error('Error fetching slots for date:', error);
         }
-    };
-
-    const generateTimeSlots = (turf: TurfData): SlotType[] => {
-        const slots: SlotType[] = [];
-        const openHour = parseInt(turf.openTime?.split(':')[0] || '6');
-        const closeHour = parseInt(turf.closeTime?.split(':')[0] || '22');
-        
-        for (let hour = openHour; hour < closeHour; hour++) {
-            const startTime = `${hour.toString().padStart(2, '0')}:00`;
-            const endHour = hour + 1;
-            const endTime = `${endHour.toString().padStart(2, '0')}:00`;
-            
-            slots.push({
-                id: `slot-${hour}`,
-                startTime,
-                endTime,
-                label: `${startTime} - ${endTime}`
-            });
-        }
-        
-        return slots;
     };
 
     const getSlotStatus = (slot: SlotType): { status: 'available' | 'booked' | 'blocked' | 'pending'; booking?: BookingType } => {

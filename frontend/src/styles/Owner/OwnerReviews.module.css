@@ -17,3 +17,11 @@
     font-size: 14px;
     color: var(--owner-text-secondary, #6B7280);
 }
+
+.section {
+    background-color: var(--owner-card, #FFFFFF);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--owner-border, #E5E7EB);
+}

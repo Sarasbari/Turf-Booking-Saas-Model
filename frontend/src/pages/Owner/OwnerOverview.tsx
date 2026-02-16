@@ -3,6 +3,7 @@ import { doc, getDoc, collection, query, where, getDocs, Timestamp } from 'fireb
 import { auth, db } from '../../firebase/config';
 import { OwnerData, TurfData, BookingType, ActivityData } from '../../types/owner';
 import { StatCard } from '../../components/Owner/StatCard';
+import { generateTimeSlots } from '../../utils/slotUtils';
 import styles from '../../styles/Owner/OwnerOverview.module.css';
 
 export function OwnerOverview() {
@@ -190,35 +191,6 @@ export function OwnerOverview() {
         return 'Good Evening';
     };
 
-    const generateTimeSlots = (): string[] => {
-        if (!turfData) return [];
-        
-        const slots: string[] = [];
-        const openHour = parseInt(turfData.openTime?.split(':')[0] || '6');
-        const closeHour = parseInt(turfData.closeTime?.split(':')[0] || '22');
-        
-        for (let hour = openHour; hour < closeHour; hour++) {
-            const endHour = hour + 1;
-            slots.push(`${hour.toString().padStart(2, '0')}:00 - ${endHour.toString().padStart(2, '0')}:00`);
-        }
-        
-        return slots;
-    };
-
-    const getSlotStatus = (slot: string): { status: string; booking?: BookingType } => {
-        const [startTime] = slot.split(' - ');
-        const booking = todayBookings.find(b => b.startTime === startTime);
-        
-        if (booking) {
-            return { 
-                status: booking.status === 'pending' ? 'pending' : 'booked', 
-                booking 
-            };
-        }
-        
-        return { status: 'available' };
-    };
-
     const formatTimestamp = (timestamp: Timestamp): string => {
         if (!timestamp) return '';
         const date = timestamp.toDate();
@@ -249,7 +221,20 @@ export function OwnerOverview() {
         );
     }
 
-    const timeSlots = generateTimeSlots();
+    const timeSlots = turfData ? generateTimeSlots(turfData) : [];
+
+    const getSlotStatusFromSlot = (slot: { label: string; startTime: string }): { status: string; booking?: BookingType } => {
+        const booking = todayBookings.find(b => b.startTime === slot.startTime);
+        
+        if (booking) {
+            return { 
+                status: booking.status === 'pending' ? 'pending' : 'booked', 
+                booking 
+            };
+        }
+        
+        return { status: 'available' };
+    };
 
     return (
         <div className={styles.container}>
@@ -308,10 +293,10 @@ export function OwnerOverview() {
                 {timeSlots.length > 0 ? (
                     <div className={styles.scheduleGrid}>
                         {timeSlots.map((slot, index) => {
-                            const { status, booking } = getSlotStatus(slot);
+                            const { status, booking } = getSlotStatusFromSlot(slot);
                             return (
                                 <div key={index} className={styles.slotCard}>
-                                    <div className={styles.slotTime}>{slot}</div>
+                                    <div className={styles.slotTime}>{slot.label}</div>
                                     <div className={`${styles.slotStatus} ${
                                         status === 'available' ? styles.slotStatusAvailable :
                                         status === 'booked' ? styles.slotStatusBooked :

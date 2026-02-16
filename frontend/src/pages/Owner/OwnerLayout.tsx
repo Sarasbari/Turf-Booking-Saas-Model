@@ -47,13 +47,11 @@ export function OwnerLayout() {
                         const bookingsSnapshot = await getDocs(bookingsQuery);
                         setPendingBookingsCount(bookingsSnapshot.size);
 
-                        // Fetch unreplied reviews count
-                        const reviewsQuery = query(
-                            collection(db, 'turf', owner.turfId, 'reviews'),
-                            where('ownerReply', '==', null)
-                        );
-                        const reviewsSnapshot = await getDocs(reviewsQuery);
-                        setUnrepliedReviewsCount(reviewsSnapshot.size);
+                        // Fetch unreplied reviews count - get all and filter
+                        const reviewsRef = collection(db, 'turf', owner.turfId, 'reviews');
+                        const reviewsSnapshot = await getDocs(reviewsRef);
+                        const unrepliedCount = reviewsSnapshot.docs.filter(doc => !doc.data().ownerReply).length;
+                        setUnrepliedReviewsCount(unrepliedCount);
                     }
                 }
             } catch (error) {
