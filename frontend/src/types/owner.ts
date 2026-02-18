@@ -1,5 +1,12 @@
 import { Timestamp } from 'firebase/firestore';
 
+export interface GroundConfig {
+    id: string;
+    name: string;
+    openTime: string;
+    closeTime: string;
+}
+
 export interface OwnerData {
     uid: string;
     name: string;
@@ -21,6 +28,7 @@ export interface OwnerData {
 export interface BookingType {
     id: string;
     turfId: string;
+    groundId?: string;
     userId: string;
     customerName: string;
     customerPhone: string;
@@ -43,6 +51,7 @@ export interface SlotType {
 
 export interface BlockedSlot {
     turfId: string;
+    groundId?: string;
     date: string;
     startTime: string;
     endTime: string;
@@ -60,6 +69,7 @@ export interface TurfData {
     sports: string[];
     groundSize: string;
     totalGrounds: number;
+    grounds?: GroundConfig[];
     amenities: string[];
     openTime: string;
     closeTime: string;

@@ -45,7 +45,7 @@ service cloud.firestore {
     // TURFS COLLECTION
     // ============================================================================
     
-    match /turfs/{turfId} {
+    match /turf/{turfId} {
       // Anyone can read active turfs (for browsing)
       // Authenticated users can read all turfs (including pending/paused)
       allow read: if resource.data.status == 'active' || isSignedIn();
@@ -123,7 +123,7 @@ service cloud.firestore {
       
       // Only the turf owner can create/update/delete blocked slots
       allow create, update, delete: if isSignedIn() && 
-        ownsResource(get(/databases/$(database)/documents/turfs/$(request.resource.data.turfId)).data.ownerId);
+        ownsResource(get(/databases/$(database)/documents/turf/$(request.resource.data.turfId)).data.ownerId);
     }
     
     // ============================================================================

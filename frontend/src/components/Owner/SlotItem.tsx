@@ -1,9 +1,11 @@
 import { SlotType, BookingType } from '../../types/owner';
+import { formatSlotLabel } from '../../utils/slotUtils';
 
 interface SlotItemProps {
     slot: SlotType;
     status: 'available' | 'booked' | 'blocked' | 'pending';
     booking?: BookingType;
+    timeFormat?: '12hr' | '24hr';
     onBlock?: () => void;
     onUnblock?: () => void;
     onConfirm?: () => void;
@@ -14,11 +16,14 @@ export function SlotItem({
     slot,
     status,
     booking,
+    timeFormat = '12hr',
     onBlock,
     onUnblock,
     onConfirm,
     onCancel
 }: SlotItemProps) {
+    const use12hr = timeFormat === '12hr';
+    const displayLabel = formatSlotLabel(slot.startTime, slot.endTime, use12hr);
     const getStatusConfig = () => {
         switch (status) {
             case 'available':
@@ -67,12 +72,12 @@ export function SlotItem({
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             transition: 'all 0.2s'
         }}
-        onMouseOver={(e) => {
-            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.07)';
-        }}
-        onMouseOut={(e) => {
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
-        }}
+            onMouseOver={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.07)';
+            }}
+            onMouseOut={(e) => {
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+            }}
         >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: booking ? '16px' : '0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -81,7 +86,7 @@ export function SlotItem({
                         fontWeight: 700,
                         color: '#111827'
                     }}>
-                        {slot.label}
+                        {displayLabel}
                     </div>
                     <span style={{
                         padding: '4px 12px',
@@ -102,7 +107,7 @@ export function SlotItem({
                     fontSize: '14px',
                     color: '#6B7280'
                 }}>
-                    {slot.startTime} - {slot.endTime}
+                    {use12hr ? displayLabel : `${slot.startTime} - ${slot.endTime}`}
                 </div>
             </div>
 

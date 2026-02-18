@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, collection, onSnapshot, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
+import { doc, collection, onSnapshot, query, orderBy, limit, getDocs, where, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { auth } from '../lib/firebase';
 import { createBooking } from '../firebase/bookings';
@@ -439,10 +439,130 @@ function LocationSection({ turf }) {
     );
 }
 
-function ReviewsSection({ turf, reviews }) {
+function ReviewsSection({ turf, reviews, turfId }) {
+    const [showForm, setShowForm] = useState(false);
+    const [hoverStar, setHoverStar] = useState(0);
+    const [selectedStar, setSelectedStar] = useState(0);
+    const [comment, setComment] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [submitMsg, setSubmitMsg] = useState(null);
+
+    const handleSubmitReview = async () => {
+        const user = auth.currentUser;
+        if (!user) {
+            alert('Please sign in to write a review.');
+            return;
+        }
+        if (selectedStar === 0) {
+            alert('Please select a star rating.');
+            return;
+        }
+        if (!comment.trim()) {
+            alert('Please write a comment.');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await addDoc(collection(db, 'turf', turfId, 'reviews'), {
+                userId: user.uid,
+                userName: user.displayName || 'Anonymous',
+                userPicture: user.photoURL || '',
+                rating: selectedStar,
+                comment: comment.trim(),
+                timestamp: Timestamp.now(),
+                isVerifiedBooking: false,
+            });
+            setSubmitMsg('success');
+            setComment('');
+            setSelectedStar(0);
+            setShowForm(false);
+            setTimeout(() => setSubmitMsg(null), 4000);
+        } catch (err) {
+            console.error('Error submitting review:', err);
+            setSubmitMsg('error');
+            setTimeout(() => setSubmitMsg(null), 4000);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="td-card">
-            <h2 className="td-card__title">Ratings &amp; Reviews</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <h2 className="td-card__title" style={{ marginBottom: 0 }}>Ratings &amp; Reviews</h2>
+                <button
+                    onClick={() => {
+                        if (!auth.currentUser) {
+                            alert('Please sign in to write a review.');
+                            return;
+                        }
+                        setShowForm(!showForm);
+                    }}
+                    className="td-review__write-btn"
+                >
+                    {showForm ? '✕ Cancel' : '✍️ Write a Review'}
+                </button>
+            </div>
+
+            {/* Success / Error Messages */}
+            {submitMsg === 'success' && (
+                <div className="td-review__alert td-review__alert--success">
+                    ✅ Your review has been submitted! Thank you.
+                </div>
+            )}
+            {submitMsg === 'error' && (
+                <div className="td-review__alert td-review__alert--error">
+                    ❌ Failed to submit review. Please try again.
+                </div>
+            )}
+
+            {/* Write Review Form */}
+            {showForm && (
+                <div className="td-review__form">
+                    <div className="td-review__form-label">Your Rating</div>
+                    <div className="td-review__star-picker">
+                        {[1, 2, 3, 4, 5].map(star => (
+                            <button
+                                key={star}
+                                className={`td-review__star-btn ${star <= (hoverStar || selectedStar) ? 'td-review__star-btn--active' : ''}`}
+                                onMouseEnter={() => setHoverStar(star)}
+                                onMouseLeave={() => setHoverStar(0)}
+                                onClick={() => setSelectedStar(star)}
+                                type="button"
+                            >
+                                ★
+                            </button>
+                        ))}
+                        <span className="td-review__star-label">
+                            {selectedStar === 1 && 'Poor'}
+                            {selectedStar === 2 && 'Fair'}
+                            {selectedStar === 3 && 'Good'}
+                            {selectedStar === 4 && 'Very Good'}
+                            {selectedStar === 5 && 'Excellent'}
+                        </span>
+                    </div>
+                    <div className="td-review__form-label" style={{ marginTop: '16px' }}>Your Review</div>
+                    <textarea
+                        className="td-review__textarea"
+                        placeholder="Share your experience at this turf..."
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        rows={4}
+                        maxLength={500}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{comment.length}/500</span>
+                        <button
+                            className="td-review__submit-btn"
+                            onClick={handleSubmitReview}
+                            disabled={submitting || selectedStar === 0 || !comment.trim()}
+                        >
+                            {submitting ? 'Submitting...' : 'Submit Review'}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Summary */}
             <div className="td-reviews__summary">
@@ -530,41 +650,62 @@ function OwnerSection({ turf }) {
 function BookingCard({ turf }) {
     const navigate = useNavigate();
     const [date, setDate] = useState('');
-    const [duration, setDuration] = useState(1);         // ✅ NEW: Duration in hours
+    const [duration, setDuration] = useState(1);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [selectedSport, setSelectedSport] = useState('');
-    const [bookedSlots, setBookedSlots] = useState([]);   // ✅ NEW: Already booked slots
+    const [bookedSlots, setBookedSlots] = useState([]);
+    const [blockedSlots, setBlockedSlots] = useState([]);
     const [paymentStatus, setPaymentStatus] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [loadingSlots, setLoadingSlots] = useState(false);
+
+    // Ground support — use totalGrounds from database
+    const grounds = (() => {
+        if (turf.grounds && turf.grounds.length > 0) return turf.grounds;
+        const count = turf.totalGrounds && turf.totalGrounds > 0 ? turf.totalGrounds : 1;
+        const arr = [];
+        for (let i = 1; i <= count; i++) {
+            arr.push({
+                id: `ground-${i}`,
+                name: `Ground ${i}`,
+                openTime: turf.openTime || '06:00',
+                closeTime: turf.closeTime || '22:00',
+            });
+        }
+        return arr;
+    })();
+    const [selectedGround, setSelectedGround] = useState(grounds[0]);
 
     // Set default sport
     useEffect(() => {
         if (turf.sports?.length > 0) setSelectedSport(turf.sports[0]);
     }, [turf.sports]);
 
-    // ✅ NEW: Fetch booked slots from Firestore whenever date changes
+    // Fetch booked + blocked slots from Firestore whenever date or ground changes
     useEffect(() => {
         if (!date || !turf.id) {
             setBookedSlots([]);
+            setBlockedSlots([]);
             return;
         }
 
-        const fetchBookedSlots = async () => {
+        const fetchSlotData = async () => {
             setLoadingSlots(true);
             try {
+                // Fetch bookings
                 const bookingsRef = collection(db, 'bookings');
-                const q = query(
+                const bq = query(
                     bookingsRef,
                     where('turfId', '==', turf.id),
                     where('date', '==', date),
                     where('status', '==', 'confirmed')
                 );
-                const snapshot = await getDocs(q);
+                const bookingsSnap = await getDocs(bq);
                 const booked = [];
-                snapshot.forEach((doc) => {
+                bookingsSnap.forEach((doc) => {
                     const data = doc.data();
-                    // Collect all hour blocks that are booked
+                    // Filter by ground
+                    if (data.groundId && data.groundId !== selectedGround.id) return;
                     if (data.startHour !== undefined && data.duration) {
                         for (let h = 0; h < data.duration; h++) {
                             booked.push(data.startHour + h);
@@ -572,16 +713,37 @@ function BookingCard({ turf }) {
                     }
                 });
                 setBookedSlots(booked);
+
+                // Fetch blocked slots
+                const blockedRef = collection(db, 'blockedSlots');
+                const blq = query(
+                    blockedRef,
+                    where('turfId', '==', turf.id),
+                    where('date', '==', date)
+                );
+                const blockedSnap = await getDocs(blq);
+                const blocked = [];
+                blockedSnap.forEach((doc) => {
+                    const data = doc.data();
+                    // Filter by ground
+                    if (data.groundId && data.groundId !== selectedGround.id) return;
+                    if (data.startTime) {
+                        const hour = parseInt(data.startTime.split(':')[0]);
+                        if (!isNaN(hour)) blocked.push(hour);
+                    }
+                });
+                setBlockedSlots(blocked);
             } catch (err) {
-                console.warn('Could not fetch booked slots:', err);
+                console.warn('Could not fetch slot data:', err);
                 setBookedSlots([]);
+                setBlockedSlots([]);
             } finally {
                 setLoadingSlots(false);
             }
         };
 
-        fetchBookedSlots();
-    }, [date, turf.id, paymentStatus]); // Re-fetch after successful payment
+        fetchSlotData();
+    }, [date, turf.id, selectedGround?.id, paymentStatus]);
 
     const price = turf.pricePerHour;
     const discountedPrice = turf.isDiscountActive
@@ -593,14 +755,23 @@ function BookingCard({ turf }) {
     const convenienceFee = Math.round(subtotal * 0.02);  // 2% convenience fee
     const totalAmount = subtotal + convenienceFee;
 
-    // ✅ UPDATED: Generate 1-hour slots, respecting duration & booked status
+    // Generate 1-hour slots, respecting duration, booked, blocked & past-time status
     const generateSlots = () => {
-        if (!turf.openTime || !turf.closeTime) return [];
+        const openTime = selectedGround.openTime || turf.openTime;
+        const closeTime = selectedGround.closeTime || turf.closeTime;
+        if (!openTime || !closeTime) return [];
         const slots = [];
-        let [oh, om] = turf.openTime.split(':').map(Number);
-        const [ch, cm] = turf.closeTime.split(':').map(Number);
+        let [oh, om] = openTime.split(':').map(Number);
+        const [ch, cm] = closeTime.split(':').map(Number);
         const openMins = oh * 60 + (om || 0);
         const closeMins = ch * 60 + (cm || 0);
+
+        // Past-time detection
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+        const isToday = date === todayStr;
+        const currentHourNow = now.getHours();
+        const currentMinuteNow = now.getMinutes();
 
         let currentHour = oh;
 
@@ -608,7 +779,6 @@ function BookingCard({ turf }) {
             const startMins = currentHour * 60;
             const endMins = (currentHour + duration) * 60;
 
-            // Stop if the slot would go past closing time
             if (endMins > closeMins || startMins < openMins) {
                 currentHour++;
                 if (currentHour * 60 >= closeMins) break;
@@ -621,7 +791,7 @@ function BookingCard({ turf }) {
                 return `${dHr}:00 ${p}`;
             };
 
-            // ✅ Check if ANY hour in this slot's range is already booked
+            // Check booked
             let isBooked = false;
             for (let h = 0; h < duration; h++) {
                 if (bookedSlots.includes(currentHour + h)) {
@@ -630,15 +800,29 @@ function BookingCard({ turf }) {
                 }
             }
 
+            // Check blocked
+            let isBlocked = false;
+            for (let h = 0; h < duration; h++) {
+                if (blockedSlots.includes(currentHour + h)) {
+                    isBlocked = true;
+                    break;
+                }
+            }
+
+            // Check past
+            const isPast = isToday && (currentHour < currentHourNow || (currentHour === currentHourNow && currentMinuteNow > 0));
+
             slots.push({
                 id: `slot-${currentHour}`,
                 startHour: currentHour,
                 label: `${format(currentHour)} – ${format(currentHour + duration)}`,
                 isBooked,
+                isBlocked,
+                isPast,
             });
 
             currentHour++;
-            if (slots.length > 30) break; // Safety limit
+            if (slots.length > 30) break;
         }
         return slots;
     };
@@ -691,6 +875,8 @@ function BookingCard({ turf }) {
                         turfId: turf.id,
                         turfName: turf.name,
                         turfLocation: `${turf.address}, ${turf.city}`,
+                        groundId: selectedGround.id,
+                        groundName: selectedGround.name,
                         userName: user.displayName || 'User',
                         userEmail: user.email || '',
                         ownerId: turf.ownerId || '',
@@ -786,7 +972,23 @@ function BookingCard({ turf }) {
                 />
             </div>
 
-            {/* ✅ NEW: Duration Selector */}
+            {/* Ground Selector */}
+            <div className="td-booking__field">
+                <label className="td-booking__label">Select Ground</label>
+                <div className="td-booking__sport-pills">
+                    {grounds.map((g) => (
+                        <button
+                            key={g.id}
+                            onClick={() => { setSelectedGround(g); setSelectedSlot(null); }}
+                            className={`td-booking__sport-pill ${selectedGround?.id === g.id ? 'td-booking__sport-pill--active' : ''}`}
+                        >
+                            🏟️ {g.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Duration Selector */}
             <div className="td-booking__field">
                 <label className="td-booking__label">Select Duration</label>
                 <div className="td-booking__sport-pills">
@@ -827,7 +1029,7 @@ function BookingCard({ turf }) {
                 </div>
             )}
 
-            {/* ✅ UPDATED: Slots with booked/greyed out logic */}
+            {/* Slots with booked/blocked/past greyed out logic */}
             <div className="td-booking__field">
                 <label className="td-booking__label">
                     Select Time
@@ -839,19 +1041,25 @@ function BookingCard({ turf }) {
                     </div>
                 ) : (
                     <div className="td-booking__slots">
-                        {slots.map(slot => (
-                            <button
-                                key={slot.id}
-                                onClick={() => !slot.isBooked && setSelectedSlot(slot)}
-                                disabled={slot.isBooked}
-                                className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''
-                                    } ${slot.isBooked ? 'td-booking__slot--booked' : ''}`}
-                                title={slot.isBooked ? 'This slot is already booked' : `Book ${slot.label}`}
-                            >
-                                {slot.label}
-                                {slot.isBooked && <span style={{ display: 'block', fontSize: '10px', marginTop: '2px' }}>Booked</span>}
-                            </button>
-                        ))}
+                        {slots.map(slot => {
+                            const isDisabled = slot.isBooked || slot.isBlocked || slot.isPast;
+                            const statusLabel = slot.isPast ? 'Passed' : slot.isBlocked ? 'Blocked' : slot.isBooked ? 'Booked' : null;
+                            return (
+                                <button
+                                    key={slot.id}
+                                    onClick={() => !isDisabled && setSelectedSlot(slot)}
+                                    disabled={isDisabled}
+                                    className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''
+                                        } ${slot.isBooked ? 'td-booking__slot--booked' : ''}
+                                        ${slot.isBlocked ? 'td-booking__slot--blocked' : ''}
+                                        ${slot.isPast ? 'td-booking__slot--past' : ''}`}
+                                    title={statusLabel ? `This slot is ${statusLabel.toLowerCase()}` : `Book ${slot.label}`}
+                                >
+                                    {slot.label}
+                                    {statusLabel && <span style={{ display: 'block', fontSize: '10px', marginTop: '2px' }}>{statusLabel}</span>}
+                                </button>
+                            );
+                        })}
                         {slots.length === 0 && date && (
                             <div style={{ color: '#999', fontSize: '14px' }}>
                                 No slots available for {duration}-hour duration
@@ -1146,7 +1354,7 @@ export default function TurfDetailPage() {
                     <AmenitiesSection turf={turf} />
                     <TimingsSection turf={turf} />
                     <LocationSection turf={turf} />
-                    <ReviewsSection turf={turf} reviews={reviews} />
+                    <ReviewsSection turf={turf} reviews={reviews} turfId={turfId} />
                     {turf.ownerName && <OwnerSection turf={turf} />}
                 </div>
 
