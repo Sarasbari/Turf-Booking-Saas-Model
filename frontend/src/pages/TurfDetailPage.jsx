@@ -681,18 +681,16 @@ function BookingCard({ turf }) {
         if (turf.sports?.length > 0) setSelectedSport(turf.sports[0]);
     }, [turf.sports]);
 
-    // Fetch booked + blocked slots from Firestore whenever date or ground changes
+    // Fetch booked slots from Firestore (one-time fetch)
     useEffect(() => {
         if (!date || !turf.id) {
             setBookedSlots([]);
-            setBlockedSlots([]);
             return;
         }
 
-        const fetchSlotData = async () => {
+        const fetchBookings = async () => {
             setLoadingSlots(true);
             try {
-                // Fetch bookings
                 const bookingsRef = collection(db, 'bookings');
                 const bq = query(
                     bookingsRef,
@@ -704,7 +702,6 @@ function BookingCard({ turf }) {
                 const booked = [];
                 bookingsSnap.forEach((doc) => {
                     const data = doc.data();
-                    // Filter by ground
                     if (data.groundId && data.groundId !== selectedGround.id) return;
                     if (data.startHour !== undefined && data.duration) {
                         for (let h = 0; h < data.duration; h++) {
@@ -713,37 +710,49 @@ function BookingCard({ turf }) {
                     }
                 });
                 setBookedSlots(booked);
-
-                // Fetch blocked slots
-                const blockedRef = collection(db, 'blockedSlots');
-                const blq = query(
-                    blockedRef,
-                    where('turfId', '==', turf.id),
-                    where('date', '==', date)
-                );
-                const blockedSnap = await getDocs(blq);
-                const blocked = [];
-                blockedSnap.forEach((doc) => {
-                    const data = doc.data();
-                    // Filter by ground
-                    if (data.groundId && data.groundId !== selectedGround.id) return;
-                    if (data.startTime) {
-                        const hour = parseInt(data.startTime.split(':')[0]);
-                        if (!isNaN(hour)) blocked.push(hour);
-                    }
-                });
-                setBlockedSlots(blocked);
             } catch (err) {
-                console.warn('Could not fetch slot data:', err);
+                console.warn('Could not fetch bookings:', err);
                 setBookedSlots([]);
-                setBlockedSlots([]);
             } finally {
                 setLoadingSlots(false);
             }
         };
 
-        fetchSlotData();
+        fetchBookings();
     }, [date, turf.id, selectedGround?.id, paymentStatus]);
+
+    // Real-time listener for blocked slots — updates instantly when owner blocks/unblocks
+    useEffect(() => {
+        if (!date || !turf.id) {
+            setBlockedSlots([]);
+            return;
+        }
+
+        const blockedRef = collection(db, 'blockedSlots');
+        const blq = query(
+            blockedRef,
+            where('turfId', '==', turf.id),
+            where('date', '==', date)
+        );
+
+        const unsubscribe = onSnapshot(blq, (snapshot) => {
+            const blocked = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.groundId && data.groundId !== selectedGround.id) return;
+                if (data.startTime) {
+                    const hour = parseInt(data.startTime.split(':')[0]);
+                    if (!isNaN(hour)) blocked.push(hour);
+                }
+            });
+            setBlockedSlots(blocked);
+        }, (error) => {
+            console.warn('Could not listen to blocked slots:', error);
+            setBlockedSlots([]);
+        });
+
+        return () => unsubscribe();
+    }, [date, turf.id, selectedGround?.id]);
 
     const price = turf.pricePerHour;
     const discountedPrice = turf.isDiscountActive
@@ -1043,7 +1052,7 @@ function BookingCard({ turf }) {
                     <div className="td-booking__slots">
                         {slots.map(slot => {
                             const isDisabled = slot.isBooked || slot.isBlocked || slot.isPast;
-                            const statusLabel = slot.isPast ? 'Passed' : slot.isBlocked ? 'Blocked' : slot.isBooked ? 'Booked' : null;
+                            const statusLabel = slot.isPast ? 'Passed' : (slot.isBlocked || slot.isBooked) ? 'Booked' : null;
                             return (
                                 <button
                                     key={slot.id}
@@ -1051,7 +1060,7 @@ function BookingCard({ turf }) {
                                     disabled={isDisabled}
                                     className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''
                                         } ${slot.isBooked ? 'td-booking__slot--booked' : ''}
-                                        ${slot.isBlocked ? 'td-booking__slot--blocked' : ''}
+                                        ${slot.isBlocked ? 'td-booking__slot--booked' : ''}
                                         ${slot.isPast ? 'td-booking__slot--past' : ''}`}
                                     title={statusLabel ? `This slot is ${statusLabel.toLowerCase()}` : `Book ${slot.label}`}
                                 >

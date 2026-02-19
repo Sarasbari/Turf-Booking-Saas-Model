@@ -31,9 +31,9 @@ export function OwnerRevenue() {
 
             const ownerDocRef = doc(db, 'owners', user.uid);
             const ownerDoc = await getDoc(ownerDocRef);
-            
+
             if (!ownerDoc.exists()) return;
-            
+
             const owner = ownerDoc.data() as OwnerData;
             setOwnerData(owner);
 

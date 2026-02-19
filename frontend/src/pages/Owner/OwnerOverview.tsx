@@ -36,18 +36,18 @@ export function OwnerOverview() {
             // Fetch owner data
             const ownerDocRef = doc(db, 'owners', user.uid);
             const ownerDoc = await getDoc(ownerDocRef);
-            
+
             if (!ownerDoc.exists()) return;
-            
+
             const owner = ownerDoc.data() as OwnerData;
             setOwnerData(owner);
 
             // Fetch turf data
             const turfDocRef = doc(db, 'turf', owner.turfId);
             const turfDoc = await getDoc(turfDocRef);
-            
+
             if (!turfDoc.exists()) return;
-            
+
             const turf = { id: turfDoc.id, ...turfDoc.data() } as TurfData;
             setTurfData(turf);
 
@@ -76,7 +76,7 @@ export function OwnerOverview() {
 
             // Filter bookings for today
             const today = new Date().toISOString().split('T')[0];
-            const todaysBookings = allBookings.filter(booking => 
+            const todaysBookings = allBookings.filter(booking =>
                 booking.date === today && booking.status !== 'cancelled'
             );
             setTodayBookings(todaysBookings);
@@ -91,7 +91,7 @@ export function OwnerOverview() {
             // Calculate last month for trends
             const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
             const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-            
+
             const lastMonthBookings = allBookings.filter(booking => {
                 const bookingDate = new Date(booking.date);
                 return bookingDate >= firstDayOfLastMonth && bookingDate <= lastDayOfLastMonth;
@@ -102,11 +102,11 @@ export function OwnerOverview() {
                 .reduce((sum, b) => sum + (b.amount || 0), 0);
             const lastMonthCount = lastMonthBookings.filter(b => b.status !== 'cancelled').length;
 
-            const revenueTrend = lastMonthRevenue > 0 
-                ? ((revenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+            const revenueTrend = lastMonthRevenue > 0
+                ? ((revenue - lastMonthRevenue) / lastMonthRevenue) * 100
                 : 0;
-            const bookingsTrend = lastMonthCount > 0 
-                ? ((totalBookings - lastMonthCount) / lastMonthCount) * 100 
+            const bookingsTrend = lastMonthCount > 0
+                ? ((totalBookings - lastMonthCount) / lastMonthCount) * 100
                 : 0;
 
             setStats({
@@ -132,11 +132,11 @@ export function OwnerOverview() {
     const calculateOccupancyRate = (bookings: BookingType[], turf: TurfData): number => {
         const now = new Date();
         const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        
+
         // Assume 12 hours per day (typical turf operation)
         const totalSlotsInMonth = daysInMonth * 12;
         const bookedSlots = bookings.filter(b => b.status !== 'cancelled').length;
-        
+
         return totalSlotsInMonth > 0 ? Math.round((bookedSlots / totalSlotsInMonth) * 100) : 0;
     };
 
@@ -197,7 +197,7 @@ export function OwnerOverview() {
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / 60000);
-        
+
         if (diffMins < 60) return `${diffMins} minutes ago`;
         if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
         return date.toLocaleDateString();
@@ -225,14 +225,14 @@ export function OwnerOverview() {
 
     const getSlotStatusFromSlot = (slot: { label: string; startTime: string }): { status: string; booking?: BookingType } => {
         const booking = todayBookings.find(b => b.startTime === slot.startTime);
-        
+
         if (booking) {
-            return { 
-                status: booking.status === 'pending' ? 'pending' : 'booked', 
-                booking 
+            return {
+                status: booking.status === 'pending' ? 'pending' : 'booked',
+                booking
             };
         }
-        
+
         return { status: 'available' };
     };
 
@@ -297,12 +297,11 @@ export function OwnerOverview() {
                             return (
                                 <div key={index} className={styles.slotCard}>
                                     <div className={styles.slotTime}>{slot.label}</div>
-                                    <div className={`${styles.slotStatus} ${
-                                        status === 'available' ? styles.slotStatusAvailable :
-                                        status === 'booked' ? styles.slotStatusBooked :
-                                        status === 'blocked' ? styles.slotStatusBlocked :
-                                        styles.slotStatusPending
-                                    }`}>
+                                    <div className={`${styles.slotStatus} ${status === 'available' ? styles.slotStatusAvailable :
+                                            status === 'booked' ? styles.slotStatusBooked :
+                                                status === 'blocked' ? styles.slotStatusBlocked :
+                                                    styles.slotStatusPending
+                                        }`}>
                                         {status === 'available' && '🟢 Available'}
                                         {status === 'booked' && '🔴 Booked'}
                                         {status === 'blocked' && '⚫ Blocked'}
@@ -333,7 +332,7 @@ export function OwnerOverview() {
                     <div className={styles.activityFeed}>
                         {activities.map((activity) => (
                             <div key={activity.id} className={styles.activityItem}>
-                                <div 
+                                <div
                                     className={styles.activityIcon}
                                     style={{ backgroundColor: `${activity.color}20`, color: activity.color }}
                                 >

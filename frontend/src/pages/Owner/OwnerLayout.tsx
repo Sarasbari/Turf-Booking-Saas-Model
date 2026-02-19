@@ -24,7 +24,7 @@ export function OwnerLayout() {
                 // Fetch owner data
                 const ownerDocRef = doc(db, 'owners', user.uid);
                 const ownerDoc = await getDoc(ownerDocRef);
-                
+
                 if (ownerDoc.exists()) {
                     const owner = ownerDoc.data() as OwnerData;
                     setOwnerData(owner);
@@ -33,7 +33,7 @@ export function OwnerLayout() {
                     if (owner.turfId) {
                         const turfDocRef = doc(db, 'turf', owner.turfId);
                         const turfDoc = await getDoc(turfDocRef);
-                        
+
                         if (turfDoc.exists()) {
                             setTurfData({ id: turfDoc.id, ...turfDoc.data() } as TurfData);
                         }
@@ -88,7 +88,7 @@ export function OwnerLayout() {
                 {ownerData && turfData && (
                     <div className={styles.ownerInfo}>
                         <div className={styles.ownerCard}>
-                            <img 
+                            <img
                                 src={ownerData.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(ownerData.name)}
                                 alt={ownerData.name}
                                 className={styles.ownerAvatar}
@@ -185,7 +185,7 @@ export function OwnerLayout() {
             </aside>
 
             {/* Overlay for mobile */}
-            <div 
+            <div
                 className={`${styles.overlay} ${sidebarOpen ? styles.overlayVisible : ''}`}
                 onClick={closeSidebar}
             ></div>
@@ -195,7 +195,7 @@ export function OwnerLayout() {
                 {/* Topbar */}
                 <header className={styles.topbar}>
                     <div className={styles.topbarLeft}>
-                        <button 
+                        <button
                             className={styles.hamburger}
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                         >

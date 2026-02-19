@@ -121,25 +121,32 @@ service cloud.firestore {
       // Anyone can read blocked slots (to check availability)
       allow read: if true;
       
-      // Only the turf owner can create/update/delete blocked slots
-      allow create, update, delete: if isSignedIn() && 
-        ownsResource(get(/databases/$(database)/documents/turf/$(request.resource.data.turfId)).data.ownerId);
+      // Only the turf owner can block slots (create)
+      // Checks if the user is an owner and the turfId matches their assigned turf
+      allow create: if isSignedIn() && 
+        exists(/databases/$(database)/documents/owners/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/owners/$(request.auth.uid)).data.turfId == request.resource.data.turfId;
+
+      // Only the turf owner can unblock slots (delete)
+      // Checks if the user is an owner and the turfId of the slot matches their assigned turf
+      allow delete: if isSignedIn() && 
+        exists(/databases/$(database)/documents/owners/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/owners/$(request.auth.uid)).data.turfId == resource.data.turfId;
+
+      // Only the turf owner can update blocked slots
+      allow update: if isSignedIn() && 
+        exists(/databases/$(database)/documents/owners/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/owners/$(request.auth.uid)).data.turfId == request.resource.data.turfId;
     }
-    
+
     // ============================================================================
-    // REVIEWS COLLECTION (Optional - for future implementation)
+    // REVIEWS COLLECTION
     // ============================================================================
     
     match /reviews/{reviewId} {
-      // Anyone can read reviews
       allow read: if true;
-      
-      // Only authenticated users who have booked the turf can create reviews
       allow create: if isSignedIn();
-      
-      // Users can only update/delete their own reviews
-      allow update, delete: if isSignedIn() && 
-                               resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }
