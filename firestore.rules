@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read access to turfs
+    match /turf/{turfId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      
+      // Allow public read access to reviews
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
+    }
+    
+    // Bookings require authentication
+    match /bookings/{bookingId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // User profiles require authentication and ownership
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Owner profiles require authentication and ownership
+    match /owners/{ownerId} {
+      allow read, write: if request.auth != null && request.auth.uid == ownerId;
+    }
+    
+    // Blocked slots
+    match /blockedSlots/{slotId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

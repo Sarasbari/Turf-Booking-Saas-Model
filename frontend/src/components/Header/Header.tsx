@@ -96,7 +96,7 @@ export function Header({ onSearchChange }: HeaderProps) {
                             onClick={() => setIsDrawerOpen(true)}
                             aria-label="User menu"
                         >
-                            <img src={user.picture} alt={user.name} className={styles.avatar} />
+                            <img src={user.picture} alt={user.name} className={styles.avatar} referrerPolicy="no-referrer" />
                         </button>
                     )}
 
