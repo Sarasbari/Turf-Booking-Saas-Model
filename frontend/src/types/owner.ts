@@ -38,6 +38,12 @@ export interface BookingType {
     startTime: string;
     endTime: string;
     amount: number;
+    paymentMethod?: string;
+    paymentStatus?: 'paid' | 'pending' | 'failed';
+    bookedBy?: 'owner' | 'user';
+    game?: string; // Some parts use 'sport', others might use this? keeping 'sport' as primary
+    teamName?: string;
+    notes?: string;
     status: 'confirmed' | 'pending' | 'cancelled';
     createdAt: Timestamp;
 }

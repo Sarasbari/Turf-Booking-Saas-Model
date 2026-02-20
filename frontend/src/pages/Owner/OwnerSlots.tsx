@@ -5,6 +5,8 @@ import { OwnerData, TurfData, BookingType, SlotType, BlockedSlot, GroundConfig }
 import { generateTimeSlots, getGroundsForTurf } from '../../utils/slotUtils';
 import styles from '../../styles/Owner/OwnerSlots.module.css';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDashboard } from '../../context/DashboardContext';
+import { BookSlotModal } from '../../components/Owner/BookSlotModal';
 
 // --- Sub-Components ---
 
@@ -46,9 +48,10 @@ export function OwnerSlots() {
     const [turfData, setTurfData] = useState<TurfData | null>(null);
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [slots, setSlots] = useState<SlotType[]>([]);
-    const [bookings, setBookings] = useState<BookingType[]>([]);
+    const { bookings, bookSlot, cancelBooking, loading: contextLoading } = useDashboard();
     const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isBookModalOpen, setIsBookModalOpen] = useState(false);
 
     // Ground & time format state
     const [grounds, setGrounds] = useState<GroundConfig[]>([]);
@@ -102,29 +105,13 @@ export function OwnerSlots() {
         }
     }, [turfData, selectedGround]);
 
-    // Fetch Bookings
-    useEffect(() => {
-        if (!ownerData || !turfData || !selectedGround) return;
-        const fetchBookings = async () => {
-            try {
-                const bookingsQuery = query(
-                    collection(db, 'bookings'),
-                    where('turfId', '==', ownerData.turfId),
-                    where('date', '==', selectedDate)
-                );
-                const bookingsSnapshot = await getDocs(bookingsQuery);
-                const bookingsData = bookingsSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() })) as BookingType[];
-                const filteredBookings = bookingsData.filter(b =>
-                    !b.groundId || b.groundId === selectedGround.id
-                );
-                setBookings(filteredBookings);
-            } catch (error) {
-                console.error('Error fetching bookings:', error);
-            }
-        };
-        fetchBookings();
-    }, [selectedDate, ownerData, turfData, selectedGround]);
+    // Filter bookings for selected ground and date
+    const filteredBookings = useMemo(() => {
+        return bookings.filter(b =>
+            b.date === selectedDate &&
+            (!b.groundId || (selectedGround && b.groundId === selectedGround.id))
+        );
+    }, [bookings, selectedDate, selectedGround]);
 
     // Real-time Blocked Slots
     useEffect(() => {
@@ -171,7 +158,9 @@ export function OwnerSlots() {
         const isBlocked = blockedSlots.some(bs => bs.startTime === slot.startTime);
         if (isBlocked) return { status: 'blocked' };
 
-        const booking = bookings.find(b => b.startTime === slot.startTime && b.status !== 'cancelled');
+
+
+        const booking = filteredBookings.find(b => b.startTime === slot.startTime && b.status !== 'cancelled');
         if (booking) return { status: booking.status === 'pending' ? 'pending' : 'booked', booking };
 
         return { status: 'available' };
@@ -189,8 +178,9 @@ export function OwnerSlots() {
                 }
             }
         });
+
         return { available, booked, revenue, total: slots.length };
-    }, [slots, bookings, blockedSlots]);
+    }, [slots, filteredBookings, blockedSlots]);
 
     // --- Actions ---
 
@@ -255,6 +245,38 @@ export function OwnerSlots() {
             await deleteDoc(doc(db, 'blockedSlots', slotId));
         });
         await Promise.all(promises);
+    };
+
+    const handleManualBooking = async (formData: any) => {
+        if (!popup.slot || !selectedGround || !ownerData) return;
+
+        try {
+            await bookSlot(
+                { ...popup.slot, date: selectedDate, price: turfData?.pricePerHour || 0 },
+                selectedGround.id,
+                selectedGround.name,
+                formData
+            );
+            alert('Slot booked successfully ✓');
+            setIsBookModalOpen(false);
+            setPopup(prev => ({ ...prev, isOpen: false }));
+        } catch (error) {
+            console.error(error);
+            alert('Failed to book slot.');
+        }
+    };
+
+    const handleCancelBookingAction = async () => {
+        if (!popup.booking || !popup.slot) return;
+        if (!confirm(`Cancel this booking for ${popup.booking.customerName}?`)) return;
+
+        try {
+            const slotRefId = `${ownerData?.turfId}_${selectedGround?.id}_${selectedDate}_${popup.slot.startTime}`;
+            await cancelBooking(popup.booking.id, slotRefId);
+            setPopup(prev => ({ ...prev, isOpen: false }));
+        } catch (error) {
+            alert('Failed to cancel booking');
+        }
     };
 
     const openPopup = (e: React.MouseEvent, slot: SlotType) => {
@@ -495,6 +517,16 @@ export function OwnerSlots() {
                     </span>
                 </div>
             </div>
+            {/* Book Slot Modal */}
+            {popup.slot && (
+                <BookSlotModal
+                    isOpen={isBookModalOpen}
+                    onClose={() => setIsBookModalOpen(false)}
+                    onConfirm={handleManualBooking}
+                    slot={{ ...popup.slot, date: selectedDate, price: turfData?.pricePerHour || 0 }}
+                    groundName={selectedGround?.name || ''}
+                />
+            )}
         </div>
     );
 }

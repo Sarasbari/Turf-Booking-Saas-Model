@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { OwnerData, TurfData } from '../../types/owner';
+import { DashboardProvider } from '../../context/DashboardContext';
 import styles from '../../styles/Owner/OwnerLayout.module.css';
 
 export function OwnerLayout() {
@@ -222,7 +223,9 @@ export function OwnerLayout() {
 
                 {/* Page Content */}
                 <main className={styles.content}>
-                    <Outlet />
+                    <DashboardProvider ownerData={ownerData} turfData={turfData}>
+                        <Outlet />
+                    </DashboardProvider>
                 </main>
             </div>
         </div>
