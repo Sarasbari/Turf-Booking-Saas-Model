@@ -52,6 +52,8 @@ export function OwnerSlots() {
     const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
     const [loading, setLoading] = useState(true);
     const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editingBooking, setEditingBooking] = useState<BookingType | null>(null);
 
     // Ground & time format state
     const [grounds, setGrounds] = useState<GroundConfig[]>([]);
@@ -166,11 +168,16 @@ export function OwnerSlots() {
         return { status: 'available' };
     };
 
+    const pricePerHour = turfData?.pricePerHour || 0;
+
     const stats = useMemo(() => {
-        let available = 0, booked = 0, revenue = 0;
+        let available = 0, booked = 0, revenue = 0, potentialRevenue = 0;
         slots.forEach(slot => {
             const { status, booking } = getSlotStatus(slot);
-            if (status === 'available') available++;
+            if (status === 'available') {
+                available++;
+                potentialRevenue += pricePerHour;
+            }
             if (status === 'booked' || status === 'pending' || status === 'blocked') {
                 booked++;
                 if ((status === 'booked' || status === 'pending') && booking?.amount) {
@@ -179,8 +186,8 @@ export function OwnerSlots() {
             }
         });
 
-        return { available, booked, revenue, total: slots.length };
-    }, [slots, filteredBookings, blockedSlots]);
+        return { available, booked, revenue, potentialRevenue, total: slots.length };
+    }, [slots, filteredBookings, blockedSlots, pricePerHour]);
 
     // --- Actions ---
 
@@ -251,18 +258,36 @@ export function OwnerSlots() {
         if (!popup.slot || !selectedGround || !ownerData) return;
 
         try {
-            await bookSlot(
-                { ...popup.slot, date: selectedDate, price: turfData?.pricePerHour || 0 },
-                selectedGround.id,
-                selectedGround.name,
-                formData
-            );
-            alert('Slot booked successfully ✓');
+            if (isEditMode && editingBooking) {
+                // Update existing booking
+                const bookingRef = doc(db, 'bookings', editingBooking.id);
+                await updateDoc(bookingRef, {
+                    customerName: formData.customerName,
+                    customerPhone: formData.customerPhone,
+                    sport: formData.sportType,
+                    teamName: formData.teamName || null,
+                    amount: Number(formData.amount),
+                    paymentMethod: formData.paymentMethod,
+                    notes: formData.notes || null,
+                });
+                alert('Booking updated successfully ✓');
+            } else {
+                // Create new booking
+                await bookSlot(
+                    { ...popup.slot, date: selectedDate, price: turfData?.pricePerHour || 0 },
+                    selectedGround.id,
+                    selectedGround.name,
+                    formData
+                );
+                alert('Slot booked successfully ✓');
+            }
             setIsBookModalOpen(false);
+            setIsEditMode(false);
+            setEditingBooking(null);
             setPopup(prev => ({ ...prev, isOpen: false }));
         } catch (error) {
             console.error(error);
-            alert('Failed to book slot.');
+            alert(isEditMode ? 'Failed to update booking.' : 'Failed to book slot.');
         }
     };
 
@@ -342,7 +367,8 @@ export function OwnerSlots() {
             <div className={styles.statsGrid}>
                 <StatCard label="Available Slots" value={stats.available} color="#10B981" icon="🟢" delay={0.1} />
                 <StatCard label="Booked Slots" value={stats.booked} color="#EF4444" icon="🔴" delay={0.2} />
-                <StatCard label="Est. Revenue" value={`₹${stats.revenue}`} color="#3B82F6" icon="💰" delay={0.4} />
+                <StatCard label="Booked Revenue" value={`₹${stats.revenue.toLocaleString()}`} color="#3B82F6" icon="💰" delay={0.3} />
+                <StatCard label="Est. Total" value={`₹${(stats.revenue + stats.potentialRevenue).toLocaleString()}`} color="#8B5CF6" icon="📊" delay={0.4} />
             </div>
 
             {/* Controls */}
@@ -359,12 +385,12 @@ export function OwnerSlots() {
                         })}>Next →</button>
                     </div>
 
-                    {/* Ground Tabs */}
+                    {/* Ground Toggle */}
                     <div className={styles.groundPills}>
                         {grounds.map(g => (
                             <button
                                 key={g.id}
-                                className={selectedGround?.id === g.id ? 'active' : ''}
+                                className={`${styles.groundPill} ${selectedGround?.id === g.id ? styles.groundPillActive : ''}`}
                                 onClick={() => setSelectedGround(g)}
                             >
                                 🏟️ {g.name}
@@ -447,6 +473,9 @@ export function OwnerSlots() {
                                 <div className={styles.slotTime}>
                                     {formatHour(slot.startTime)} - {formatHour(slot.endTime)}
                                 </div>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: (status === 'booked' || status === 'pending') && booking?.amount ? '#059669' : '#6B7280', margin: '2px 0' }}>
+                                    ₹{(status === 'booked' || status === 'pending') && booking?.amount ? Number(booking.amount).toLocaleString() : pricePerHour.toLocaleString()}
+                                </div>
                                 <span className={`${styles.slotStatusBadge} ${status === 'available' ? styles.badgeAvailable : (status === 'booked' || status === 'blocked') ? styles.badgeBooked : styles.badgeBlocked}`}>
                                     {isPassed ? 'Passed' : (status === 'blocked' ? 'Booked' : status)}
                                 </span>
@@ -472,9 +501,17 @@ export function OwnerSlots() {
                         </div>
                         <div className={styles.popupBody}>
                             {popup.status === 'available' && (
-                                <button className={`${styles.popupBtn} ${styles.btnDanger}`} onClick={handleBlockSlot}>
-                                    🚫 Block This Slot
-                                </button>
+                                <>
+                                    <div style={{ fontSize: '13px', color: '#059669', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        💰 Price: ₹{pricePerHour.toLocaleString()}
+                                    </div>
+                                    <button className={`${styles.popupBtn} ${styles.btnPrimary}`} onClick={() => { setIsBookModalOpen(true); }} style={{ marginBottom: '4px' }}>
+                                        📋 Book This Slot
+                                    </button>
+                                    <button className={`${styles.popupBtn} ${styles.btnDanger}`} onClick={handleBlockSlot}>
+                                        🚫 Block This Slot
+                                    </button>
+                                </>
                             )}
                             {popup.status === 'blocked' && (
                                 <button className={`${styles.popupBtn} ${styles.btnPrimary}`} onClick={handleUnblockSlot}>
@@ -485,11 +522,23 @@ export function OwnerSlots() {
                                 <>
                                     <div style={{ fontSize: '13px', color: '#4B5563', marginBottom: '8px' }}>
                                         Booked by <strong>{popup.booking.customerName}</strong><br />
-                                        {popup.booking.customerPhone}
+                                        {popup.booking.customerPhone}<br />
+                                        <span style={{ color: '#059669', fontWeight: 600 }}>Amount: ₹{Number(popup.booking.amount).toLocaleString()}</span>
+                                        {popup.booking.bookedBy && <><br /><span style={{ fontSize: '11px', color: '#9CA3AF' }}>via {popup.booking.bookedBy === 'owner' ? 'Owner' : 'User'}</span></>}
                                     </div>
                                     <a href={`tel:${popup.booking.customerPhone}`} className={`${styles.popupBtn} ${styles.btnAction}`} style={{ display: 'block', textDecoration: 'none' }}>
                                         📞 Call Customer
                                     </a>
+                                    <button className={`${styles.popupBtn} ${styles.btnEdit}`} onClick={() => {
+                                        setEditingBooking(popup.booking!);
+                                        setIsEditMode(true);
+                                        setIsBookModalOpen(true);
+                                    }} style={{ marginTop: '4px' }}>
+                                        ✏️ Edit Booking
+                                    </button>
+                                    <button className={`${styles.popupBtn} ${styles.btnDanger}`} onClick={handleCancelBookingAction} style={{ marginTop: '4px' }}>
+                                        ✕ Cancel Booking
+                                    </button>
                                 </>
                             )}
                             <button className={styles.popupBtn} style={{ marginTop: '4px', color: '#6B7280' }} onClick={() => setPopup(prev => ({ ...prev, isOpen: false }))}>
@@ -516,15 +565,36 @@ export function OwnerSlots() {
                         {stats.total > 0 ? Math.round((stats.booked / stats.total) * 100) : 0}%
                     </span>
                 </div>
+                <div className={styles.summaryItem}>
+                    <span className={styles.summaryLabel}>Price/Slot</span>
+                    <span className={styles.summaryValue} style={{ color: '#8B5CF6' }}>₹{pricePerHour.toLocaleString()}</span>
+                </div>
+                <div className={styles.summaryItem}>
+                    <span className={styles.summaryLabel}>Revenue</span>
+                    <span className={styles.summaryValue} style={{ color: '#3B82F6' }}>₹{stats.revenue.toLocaleString()}</span>
+                </div>
+                <div className={styles.summaryItem}>
+                    <span className={styles.summaryLabel}>Est. Total</span>
+                    <span className={styles.summaryValue} style={{ color: '#8B5CF6' }}>₹{(stats.revenue + stats.potentialRevenue).toLocaleString()}</span>
+                </div>
             </div>
-            {/* Book Slot Modal */}
+            {/* Book/Edit Slot Modal */}
             {popup.slot && (
                 <BookSlotModal
                     isOpen={isBookModalOpen}
-                    onClose={() => setIsBookModalOpen(false)}
+                    onClose={() => { setIsBookModalOpen(false); setIsEditMode(false); setEditingBooking(null); }}
                     onConfirm={handleManualBooking}
                     slot={{ ...popup.slot, date: selectedDate, price: turfData?.pricePerHour || 0 }}
                     groundName={selectedGround?.name || ''}
+                    editData={isEditMode && editingBooking ? {
+                        customerName: editingBooking.customerName,
+                        customerPhone: editingBooking.customerPhone,
+                        sportType: editingBooking.sport,
+                        teamName: editingBooking.teamName || '',
+                        amount: String(editingBooking.amount),
+                        paymentMethod: editingBooking.paymentMethod || 'Cash',
+                        notes: editingBooking.notes || '',
+                    } : undefined}
                 />
             )}
         </div>

@@ -120,27 +120,37 @@ export function DashboardProvider({
                 const batch = writeBatch(db);
                 const bookingRef = doc(collection(db, 'bookings'));
 
+                // Parse startHour and duration for user-side compatibility
+                // User-side fetchBookings checks data.startHour + data.duration
+                const startHour = parseInt(slot.startTime.split(':')[0], 10);
+                const endHour = parseInt(slot.endTime.split(':')[0], 10);
+                const duration = endHour > startHour ? endHour - startHour : 1;
+
                 const bookingData = {
                     turfId: ownerData.turfId,
+                    turfName: turfData?.name || '',
                     bookingId: bookingRef.id,
-                    slotId: slot.id, // This is likely the time-slot unique ID
+                    slotId: slot.id,
                     groundId,
                     groundName,
-                    date: slot.date, // Explicitly using date passed in extended SlotType
+                    date: slot.date,
                     startTime: slot.startTime,
                     endTime: slot.endTime,
+                    // Fields required by user-side slot detection
+                    startHour,
+                    duration,
                     sport: formData.sportType,
                     teamName: formData.teamName || null,
                     customerName: formData.customerName,
                     customerPhone: formData.customerPhone,
+                    userName: formData.customerName,
                     amount: Number(formData.amount),
                     paymentMethod: formData.paymentMethod,
                     paymentStatus: "paid",
-                    status: "confirmed", // bookingStatus in prompt, but defined as status in BookingType
+                    status: "confirmed",
                     bookedBy: "owner",
                     notes: formData.notes || null,
                     createdAt: serverTimestamp(),
-                    // Flattening fields that might be expected at top level
                     userId: 'owner_manual_booking'
                 };
 

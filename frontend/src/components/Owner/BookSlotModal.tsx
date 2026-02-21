@@ -18,9 +18,10 @@ interface BookSlotModalProps {
     onConfirm: (data: BookingFormData) => Promise<void>;
     slot: SlotType & { date: string, price: number };
     groundName: string;
+    editData?: BookingFormData;
 }
 
-export function BookSlotModal({ isOpen, onClose, onConfirm, slot, groundName }: BookSlotModalProps) {
+export function BookSlotModal({ isOpen, onClose, onConfirm, slot, groundName, editData }: BookSlotModalProps) {
     const [formData, setFormData] = useState<BookingFormData>({
         customerName: '',
         customerPhone: '',
@@ -35,18 +36,22 @@ export function BookSlotModal({ isOpen, onClose, onConfirm, slot, groundName }: 
 
     useEffect(() => {
         if (isOpen) {
-            setFormData({
-                customerName: '',
-                customerPhone: '',
-                sportType: '',
-                teamName: '',
-                amount: slot.price.toString(),
-                paymentMethod: 'Cash',
-                notes: ''
-            });
+            if (editData) {
+                setFormData({ ...editData });
+            } else {
+                setFormData({
+                    customerName: '',
+                    customerPhone: '',
+                    sportType: '',
+                    teamName: '',
+                    amount: slot.price.toString(),
+                    paymentMethod: 'Cash',
+                    notes: ''
+                });
+            }
             setErrors({});
         }
-    }, [isOpen, slot.price]);
+    }, [isOpen, slot.price, editData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -127,7 +132,7 @@ export function BookSlotModal({ isOpen, onClose, onConfirm, slot, groundName }: 
                     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                 }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '4px' }}>
-                        Book Slot — {formatTime(slot.startTime)} to {formatTime(slot.endTime)}
+                        {editData ? '✏️ Edit Booking' : 'Book Slot'} — {formatTime(slot.startTime)} to {formatTime(slot.endTime)}
                     </h2>
                     <p style={{ color: '#6B7280', marginBottom: '20px' }}>{groundName} · {formattedDate}</p>
 
@@ -256,7 +261,7 @@ export function BookSlotModal({ isOpen, onClose, onConfirm, slot, groundName }: 
                                     opacity: loading ? 0.7 : 1
                                 }}
                             >
-                                {loading ? 'Booking...' : '✓ Confirm Book'}
+                                {loading ? (editData ? 'Updating...' : 'Booking...') : (editData ? '✓ Update Booking' : '✓ Confirm Book')}
                             </button>
                         </div>
                     </div>

@@ -681,45 +681,56 @@ function BookingCard({ turf }) {
         if (turf.sports?.length > 0) setSelectedSport(turf.sports[0]);
     }, [turf.sports]);
 
-    // Fetch booked slots from Firestore (one-time fetch)
+    // Real-time listener for booked slots — updates instantly when owner or user books
     useEffect(() => {
         if (!date || !turf.id) {
             setBookedSlots([]);
             return;
         }
+        setLoadingSlots(true);
+        // Real-time listener for booked slots
+        const bookingsRef = collection(db, 'bookings');
+        const bq = query(
+            bookingsRef,
+            where('turfId', '==', turf.id),
+            where('date', '==', date),
+            where('status', '==', 'confirmed')
+        );
 
-        const fetchBookings = async () => {
-            setLoadingSlots(true);
-            try {
-                const bookingsRef = collection(db, 'bookings');
-                const bq = query(
-                    bookingsRef,
-                    where('turfId', '==', turf.id),
-                    where('date', '==', date),
-                    where('status', '==', 'confirmed')
-                );
-                const bookingsSnap = await getDocs(bq);
-                const booked = [];
-                bookingsSnap.forEach((doc) => {
-                    const data = doc.data();
-                    if (data.groundId && data.groundId !== selectedGround.id) return;
-                    if (data.startHour !== undefined && data.duration) {
-                        for (let h = 0; h < data.duration; h++) {
-                            booked.push(data.startHour + h);
+        const unsubscribe = onSnapshot(bq, (snapshot) => {
+            const booked = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.groundId && data.groundId !== selectedGround.id) return;
+
+                // Handle both schemas:
+                // User bookings have: startHour (number) + duration (number)
+                // Owner bookings may have: startHour + duration, OR startTime (string "HH:MM")
+                if (data.startHour !== undefined && data.duration) {
+                    for (let h = 0; h < data.duration; h++) {
+                        booked.push(data.startHour + h);
+                    }
+                } else if (data.startTime) {
+                    // Fallback: parse hour from "HH:MM" string format
+                    const hour = parseInt(data.startTime.split(':')[0], 10);
+                    if (!isNaN(hour)) {
+                        const dur = data.duration || 1;
+                        for (let h = 0; h < dur; h++) {
+                            booked.push(hour + h);
                         }
                     }
-                });
-                setBookedSlots(booked);
-            } catch (err) {
-                console.warn('Could not fetch bookings:', err);
-                setBookedSlots([]);
-            } finally {
-                setLoadingSlots(false);
-            }
-        };
+                }
+            });
+            setBookedSlots(booked);
+            setLoadingSlots(false);
+        }, (err) => {
+            console.warn('Could not listen to bookings:', err);
+            setBookedSlots([]);
+            setLoadingSlots(false);
+        });
 
-        fetchBookings();
-    }, [date, turf.id, selectedGround?.id, paymentStatus]);
+        return () => unsubscribe();
+    }, [date, turf.id, selectedGround?.id]);
 
     // Real-time listener for blocked slots — updates instantly when owner blocks/unblocks
     useEffect(() => {
