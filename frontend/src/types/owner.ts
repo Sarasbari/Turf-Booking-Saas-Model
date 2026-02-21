@@ -92,6 +92,32 @@ export interface TurfData {
     ownerId: string;
     isUnderMaintenance?: boolean;
     createdAt: Timestamp;
+
+    // --- Extended fields for MyTurf editor ---
+    state?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
+    hasWeekendHours?: boolean;
+    weekendOpenTime?: string;
+    weekendCloseTime?: string;
+    basePrice?: number;
+    weekendPrice?: number;
+    hasPeakPricing?: boolean;
+    peakStartTime?: string;
+    peakEndTime?: string;
+    peakPrice?: number;
+    turfStatus?: 'available' | 'closed' | 'maintenance';
+    hasDiscount?: boolean;
+    discountType?: 'percentage' | 'fixed';
+    discountValue?: number;
+    discountDescription?: string;
+    promoCode?: string;
+    discountValidUntil?: string;
+    discountBadgeText?: string;
+    tags?: string[];
+    publishedAt?: Timestamp;
+    updatedAt?: Timestamp;
 }
 
 export interface ReviewData {
