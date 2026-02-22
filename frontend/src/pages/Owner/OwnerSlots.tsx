@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { doc, getDoc, collection, query, where, getDocs, onSnapshot, setDoc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
 import { OwnerData, TurfData, BookingType, SlotType, BlockedSlot, GroundConfig } from '../../types/owner';
@@ -306,22 +306,43 @@ export function OwnerSlots() {
 
     const openPopup = (e: React.MouseEvent, slot: SlotType) => {
         const rect = e.currentTarget.getBoundingClientRect();
-        // Calculate smart position to avoid overflow
-        let x = rect.left + rect.width / 2;
-        let y = rect.bottom + 10;
-
-        // Simple bounds check (refined logic can be added)
-        if (x + 280 > window.innerWidth) x = window.innerWidth - 300;
-
         const { status, booking } = getSlotStatus(slot);
         setPopup({
             isOpen: true,
             slot,
             status,
             booking,
-            position: { x, y }
+            // Store the slot card rect center as initial hint — will be adjusted by ref
+            position: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
         });
     };
+
+    // Callback ref to position the popup after it renders (measures actual size)
+    const popupRef = useCallback((node: HTMLDivElement | null) => {
+        if (!node) return;
+        const popupRect = node.getBoundingClientRect();
+        const pw = popupRect.width;
+        const ph = popupRect.height;
+        const pad = 12;
+
+        // Center horizontally on the stored position, clamp to viewport
+        let x = popup.position.x - pw / 2;
+        if (x + pw > window.innerWidth - pad) x = window.innerWidth - pw - pad;
+        if (x < pad) x = pad;
+
+        // Vertically: try below the click point, flip above if no room
+        let y = popup.position.y + 20; // below the center of the card
+        if (y + ph > window.innerHeight - pad) {
+            // Not enough room below — show above
+            y = popup.position.y - ph - 20;
+        }
+        // Final clamp
+        if (y < pad) y = pad;
+        if (y + ph > window.innerHeight - pad) y = window.innerHeight - ph - pad;
+
+        node.style.left = `${x}px`;
+        node.style.top = `${y}px`;
+    }, [popup.position.x, popup.position.y]);
 
     // --- Render Helpers ---
 
@@ -490,7 +511,7 @@ export function OwnerSlots() {
             {popup.isOpen && popup.slot && (
                 <>
                     <div className={styles.popupOverlay} onClick={() => setPopup(prev => ({ ...prev, isOpen: false }))}></div>
-                    <div className={styles.popupContent} style={{ top: popup.position.y, left: popup.position.x }} onClick={(e) => e.stopPropagation()}>
+                    <div ref={popupRef} className={styles.popupContent} style={{ top: 0, left: 0 }} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.popupHeader}>
                             <div className={styles.popupTime}>
                                 {formatHour(popup.slot.startTime)} - {formatHour(popup.slot.endTime)}

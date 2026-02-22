@@ -279,6 +279,12 @@ export function OwnerOverview() {
         );
         if (blocked) return { status: 'blocked' };
 
+        // Check if slot time has already passed today
+        const now = new Date();
+        const [endH, endM] = slot.endTime.split(':').map(Number);
+        const slotEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM);
+        if (now > slotEnd) return { status: 'passed' };
+
         return { status: 'available' };
     };
 
@@ -580,14 +586,16 @@ export function OwnerOverview() {
                             <div className={styles.timeGroupLabel}>{group.label}</div>
                             <div className={styles.slotsRow}>
                                 {group.slots.map((slot, si) => {
-                                    const statusClass = slot.slotStatus === 'available' ? styles.slotAvailable
-                                        : slot.slotStatus === 'booked' ? styles.slotBooked
-                                            : slot.slotStatus === 'pending' ? styles.slotPending
-                                                : styles.slotBlocked;
-                                    const dotColor = slot.slotStatus === 'available' ? '#10B981'
-                                        : slot.slotStatus === 'booked' ? '#DC2626'
-                                            : slot.slotStatus === 'pending' ? '#F59E0B'
-                                                : '#9CA3AF';
+                                    const statusClass = slot.slotStatus === 'passed' ? styles.slotPassed
+                                        : slot.slotStatus === 'available' ? styles.slotAvailable
+                                            : slot.slotStatus === 'booked' ? styles.slotBooked
+                                                : slot.slotStatus === 'pending' ? styles.slotPending
+                                                    : styles.slotBlocked;
+                                    const dotColor = slot.slotStatus === 'passed' ? '#9CA3AF'
+                                        : slot.slotStatus === 'available' ? '#10B981'
+                                            : slot.slotStatus === 'booked' ? '#DC2626'
+                                                : slot.slotStatus === 'pending' ? '#F59E0B'
+                                                    : '#9CA3AF';
 
                                     return (
                                         <div key={si} className={`${styles.slotCard} ${statusClass}`}>
