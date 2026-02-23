@@ -88,6 +88,33 @@
     }
 }
 
+/* Content Wrapper — matches carousel/header/filters boundary */
+.contentWrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px 32px;
+}
+
+@media (max-width: 767px) {
+    .contentWrapper {
+        padding: 0 16px 24px;
+    }
+}
+
+/* Search Results Header */
+.searchResultsHeader {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 24px 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.searchResultsHeader span {
+    color: #ea580c;
+}
+
 /* No Results Message */
 .noResults {
     text-align: center;
@@ -97,5 +124,29 @@
 .noResults p {
     font-size: 16px;
     color: #999999;
+    margin: 0;
+}
+
+.noSearchResults {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 24px;
+    text-align: center;
+}
+
+.noSearchResults .noSearchIcon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.noSearchResults .noSearchText {
+    font-size: 18px;
+    color: #666;
+    margin: 0 0 4px;
+}
+
+.noSearchResults .noSearchHint {
+    font-size: 14px;
+    color: #999;
     margin: 0;
 }

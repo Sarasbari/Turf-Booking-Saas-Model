@@ -95,8 +95,8 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
     };
 
     const handleBookClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onBook(turf);
+        e.stopPropagation(); // prevent double trigger since card also has onClick
+        navigate(`/turf/${turf.id}`);
     };
 
     const handleCardClick = () => {
