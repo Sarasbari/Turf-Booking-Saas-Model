@@ -5,6 +5,7 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { auth, db } from '../../firebase/config';
 import { OwnerData, TurfData } from '../../types/owner';
 import { DashboardProvider } from '../../context/DashboardContext';
+import DashboardHeader from '../../components/Owner/DashboardHeader';
 import styles from '../../styles/Owner/OwnerLayout.module.css';
 
 export function OwnerLayout() {
@@ -82,7 +83,7 @@ export function OwnerLayout() {
             <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
                 {/* Logo */}
                 <div className={styles.sidebarLogo}>
-                    🏟️ TurfBook Owner
+                    🏟️ Owner Dashboard
                 </div>
 
                 {/* Owner Info */}
@@ -194,32 +195,12 @@ export function OwnerLayout() {
             {/* Main Content */}
             <div className={styles.mainContent}>
                 {/* Topbar */}
-                <header className={styles.topbar}>
-                    <div className={styles.topbarLeft}>
-                        <button
-                            className={styles.hamburger}
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                        >
-                            ☰
-                        </button>
-                        <div className={styles.topbarTitle}>TurfBook Owner</div>
-                    </div>
-                    <div className={styles.topbarRight}>
-                        <button className={styles.notificationBtn}>
-                            🔔
-                            {(pendingBookingsCount > 0 || unrepliedReviewsCount > 0) && (
-                                <span className={styles.notificationDot}></span>
-                            )}
-                        </button>
-                        {ownerData && (
-                            <img
-                                src={ownerData.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(ownerData.name)}
-                                alt={ownerData.name}
-                                className={styles.topbarAvatar}
-                            />
-                        )}
-                    </div>
-                </header>
+                <DashboardHeader
+                    onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                    onSignOut={handleSignOut}
+                    ownerData={ownerData}
+                    turfData={turfData}
+                />
 
                 {/* Page Content */}
                 <main className={styles.content}>

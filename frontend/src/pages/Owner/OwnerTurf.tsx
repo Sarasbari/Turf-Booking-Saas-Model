@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { auth, db, storage } from '../../firebase/config';
 import { OwnerData, TurfData } from '../../types/owner';
@@ -79,39 +80,116 @@ export function OwnerTurf() {
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const galleryInputRef = useRef<HTMLInputElement>(null);
+    const formDataRef = useRef(formData);
 
-    // ── Load data ──
-    useEffect(() => { loadData(); }, []);
+    // Keep formDataRef in sync so autoSave always saves the latest state
+    useEffect(() => { formDataRef.current = formData; }, [formData]);
 
-    const loadData = async () => {
-        const user = auth.currentUser;
-        if (!user) return;
-        try {
-            setLoading(true);
-            const ownerDoc = await getDoc(doc(db, 'owners', user.uid));
-            if (!ownerDoc.exists()) return;
-            const owner = ownerDoc.data() as OwnerData;
-            setOwnerData(owner);
-            setTurfId(owner.turfId);
+    // ── Normalize Firestore data to match the editor form field names ──
+    // Firestore may store data with different keys than what the form uses:
+    //   about → description,  isDiscountActive → hasDiscount,
+    //   discountPercent → discountValue,  geoPoint → latitude/longitude,
+    //   status → turfStatus,  Washrooms → Washroom, etc.
+    const normalizeFirestoreToForm = (raw: any): Partial<TurfData> => {
+        const data: any = { ...raw };
 
-            // Try draft first, fall back to published
-            const draftDoc = await getDoc(doc(db, 'turf', owner.turfId, 'drafts', 'current'));
-            const turfDoc = await getDoc(doc(db, 'turf', owner.turfId));
+        // about → description
+        if (raw.about && !raw.description) data.description = raw.about;
 
-            if (turfDoc.exists()) {
-                const pub = { id: turfDoc.id, ...turfDoc.data() } as TurfData;
-                setPublishedData(pub);
-                if (draftDoc.exists()) {
-                    setFormData({ ...defaultForm(), ...pub, ...draftDoc.data() });
-                    setSyncStatus('unpublished');
-                } else {
-                    setFormData({ ...defaultForm(), ...pub });
-                    setSyncStatus('published');
-                }
+        // isDiscountActive → hasDiscount
+        if (raw.isDiscountActive !== undefined && raw.hasDiscount === undefined)
+            data.hasDiscount = !!raw.isDiscountActive;
+
+        // discountPercent → discountValue + discountType
+        if (raw.discountPercent && !raw.discountValue) {
+            data.discountValue = raw.discountPercent;
+            data.discountType = 'percentage';
+        }
+
+        // discountDescription (sometimes stored without prefix)
+        if (raw.discountDescription && !data.discountDescription)
+            data.discountDescription = raw.discountDescription;
+
+        // nested discount: { active, percent, description }
+        if (raw.discount && typeof raw.discount === 'object') {
+            if (data.hasDiscount === undefined) data.hasDiscount = raw.discount.active ?? false;
+            if (!data.discountValue && raw.discount.percent) {
+                data.discountValue = raw.discount.percent;
+                data.discountType = 'percentage';
             }
-        } catch (e) { console.error('Error loading turf data:', e); }
-        finally { setLoading(false); }
+            if (!data.discountDescription && raw.discount.description) {
+                data.discountDescription = raw.discount.description;
+            }
+        }
+
+        // status → turfStatus  ('active'/'available' → 'available')
+        if (raw.status && !raw.turfStatus) {
+            const s = raw.status;
+            data.turfStatus = s === 'active' || s === 'available' ? 'available'
+                : s === 'inactive' || s === 'closed' ? 'closed' : 'maintenance';
+        }
+
+        // geoPoint → latitude / longitude
+        if (raw.geoPoint && (!raw.latitude || !raw.longitude)) {
+            data.latitude = raw.geoPoint.latitude ?? raw.geoPoint._lat ?? 0;
+            data.longitude = raw.geoPoint.longitude ?? raw.geoPoint._long ?? 0;
+        }
+
+        // basePrice fallback to pricePerHour
+        if (!raw.basePrice && raw.pricePerHour) data.basePrice = raw.pricePerHour;
+
+        // Normalize amenities names (Washrooms → Washroom, First Aid Kit stays)
+        if (Array.isArray(data.amenities)) {
+            const amenityMap: Record<string, string> = {
+                'Washrooms': 'Washroom',
+                'First Aid': 'First Aid Kit',
+            };
+            data.amenities = data.amenities.map((a: string) => amenityMap[a] || a);
+        }
+
+        return data as Partial<TurfData>;
     };
+
+    // ── Load data ── wait for Firebase Auth to be ready first
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+            try {
+                setLoading(true);
+                const ownerDoc = await getDoc(doc(db, 'owners', user.uid));
+                if (!ownerDoc.exists()) { setLoading(false); return; }
+                const owner = ownerDoc.data() as OwnerData;
+                setOwnerData(owner);
+                setTurfId(owner.turfId);
+
+                // Try draft first, fall back to published
+                const draftDoc = await getDoc(doc(db, 'turf', owner.turfId, 'drafts', 'current'));
+                const turfDoc = await getDoc(doc(db, 'turf', owner.turfId));
+
+                if (turfDoc.exists()) {
+                    const raw = turfDoc.data();
+                    const normalized = normalizeFirestoreToForm(raw);
+                    const pub = { id: turfDoc.id, ...normalized } as TurfData;
+
+                    setPublishedData(pub);
+                    if (draftDoc.exists()) {
+                        const draftNormalized = normalizeFirestoreToForm(draftDoc.data());
+                        setFormData({ ...defaultForm(), ...pub, ...draftNormalized });
+                        setSyncStatus('unpublished');
+                    } else {
+                        setFormData({ ...defaultForm(), ...pub });
+                        setSyncStatus('published');
+                    }
+                }
+            } catch (e) { console.error('Error loading turf data:', e); }
+            finally { setLoading(false); }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     // ── Field setter with dirty tracking + auto-save ──
     const setField = useCallback((key: string, value: any, tab?: TabId) => {
@@ -127,7 +205,7 @@ export function OwnerTurf() {
         if (!turfId) return;
         try {
             setSyncStatus('saving');
-            const { id, createdAt, publishedAt, ...rest } = formData as any;
+            const { id, createdAt, publishedAt, ...rest } = formDataRef.current as any;
             await setDoc(doc(db, 'turf', turfId, 'drafts', 'current'),
                 { ...rest, updatedAt: serverTimestamp() }, { merge: true });
             setSyncStatus('saved');
@@ -142,11 +220,32 @@ export function OwnerTurf() {
         if (Object.keys(errs).length > 0) { setErrors(errs); return; }
         try {
             setSyncStatus('saving');
-            const { id, ...rest } = formData as any;
-            await setDoc(doc(db, 'turf', turfId),
-                { ...rest, publishedAt: serverTimestamp(), updatedAt: serverTimestamp() },
-                { merge: true });
-            setPublishedData({ ...formData });
+            const { id, ...rest } = formDataRef.current as any;
+
+            // Build the publish payload: write both editor fields AND legacy fields
+            // so the public TurfDetailPage (which reads legacy names) stays in sync
+            const payload: any = {
+                ...rest,
+                // description ↔ about (TurfDetailPage reads 'about')
+                about: rest.description || rest.about || '',
+                description: rest.description || rest.about || '',
+                // turfStatus → status (TurfDetailPage reads 'status')
+                status: rest.turfStatus === 'available' ? 'active'
+                    : rest.turfStatus === 'closed' ? 'inactive' : rest.turfStatus || 'active',
+                // hasDiscount → isDiscountActive
+                isDiscountActive: !!rest.hasDiscount,
+                // discountValue → discountPercent
+                discountPercent: rest.discountValue || 0,
+                // Ensure pricePerHour is set
+                pricePerHour: rest.pricePerHour || rest.basePrice || 0,
+                basePrice: rest.basePrice || rest.pricePerHour || 0,
+                // Timestamps
+                publishedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+
+            await setDoc(doc(db, 'turf', turfId), payload, { merge: true });
+            setPublishedData({ ...formDataRef.current });
             setDirtyTabs(new Set());
             setSyncStatus('published');
         } catch (e) { console.error('Publish error:', e); alert('Publish failed'); }
@@ -179,19 +278,60 @@ export function OwnerTurf() {
 
     // ── Image Upload ──
     const uploadImage = async (file: File) => {
-        if (!turfId) return;
+        if (!turfId) { alert('Turf ID not found. Please reload.'); return; }
         if (file.size > 5 * 1024 * 1024) { alert('Image too large. Max 5MB.'); return; }
         try {
             setUploading(true); setUploadProgress(0);
-            const fileName = `${Date.now()}_${file.name}`;
+            const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
             const storageRef = ref(storage, `turfs/${turfId}/images/${fileName}`);
             const task = uploadBytesResumable(storageRef, file);
-            task.on('state_changed', s => setUploadProgress(Math.round((s.bytesTransferred / s.totalBytes) * 100)));
-            await task;
+
+            // Wrap in a proper promise so we can await completion/error
+            await new Promise<void>((resolve, reject) => {
+                task.on(
+                    'state_changed',
+                    (snapshot) => {
+                        setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100));
+                    },
+                    (error) => {
+                        console.error('Upload state error:', error);
+                        reject(error);
+                    },
+                    () => resolve()
+                );
+            });
+
             const url = await getDownloadURL(storageRef);
-            setField('images', [...(formData.images || []), url], 'gallery');
-        } catch (e) { console.error('Upload error:', e); alert('Upload failed'); }
-        finally { setUploading(false); setUploadProgress(0); }
+
+            // Use functional update to avoid stale closure on formData.images
+            setFormData(prev => {
+                const currentImages = prev.images || [];
+                const updated = [...currentImages, url];
+                // Trigger dirty tracking + auto-save
+                setDirtyTabs(d => new Set(d).add('gallery'));
+                setSyncStatus('unpublished');
+                if (saveTimer.current) clearTimeout(saveTimer.current);
+                saveTimer.current = setTimeout(() => autoSave(), 1500);
+                return { ...prev, images: updated };
+            });
+        } catch (e: any) {
+            console.error('Upload error:', e);
+            const msg = e?.code === 'storage/unauthorized'
+                ? 'Upload failed: Storage permissions not set. Please check Firebase Storage rules.'
+                : e?.code === 'storage/canceled'
+                    ? 'Upload cancelled.'
+                    : `Upload failed: ${e?.message || 'Unknown error'}`;
+            alert(msg);
+        } finally {
+            setUploading(false); setUploadProgress(0);
+        }
+    };
+
+    // Upload multiple files sequentially to avoid overwriting each other
+    const uploadMultipleImages = async (files: FileList) => {
+        for (const file of Array.from(files)) {
+            await uploadImage(file);
+        }
     };
 
     const removeImage = async (index: number) => {
@@ -199,7 +339,11 @@ export function OwnerTurf() {
         const imgs = [...(formData.images || [])];
         const url = imgs[index];
         imgs.splice(index, 1);
-        setField('images', imgs, 'gallery');
+        setFormData(prev => ({ ...prev, images: imgs }));
+        setDirtyTabs(d => new Set(d).add('gallery'));
+        setSyncStatus('unpublished');
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => autoSave(), 1500);
         try { await deleteObject(ref(storage, url)); } catch { /* already gone */ }
     };
 
@@ -419,7 +563,7 @@ export function OwnerTurf() {
                     <div className={styles.dropZoneHint}>JPG, PNG, WEBP · Max 5MB</div>
                 </div>
             )}
-            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} />
+            <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={e => { if (e.target.files?.[0]) { uploadImage(e.target.files[0]); e.target.value = ''; } }} />
             {uploading && (
                 <div className={styles.uploadProgress}>
                     <div style={{ fontSize: 13, color: '#6B7280' }}>Uploading... {uploadProgress}%</div>
@@ -776,7 +920,7 @@ export function OwnerTurf() {
                 <div className={styles.dropZoneHint}>JPG, PNG, WEBP · Max 5MB · Up to 8 images</div>
             </div>
             <input ref={galleryInputRef} type="file" accept="image/*" multiple hidden
-                onChange={e => { if (e.target.files) Array.from(e.target.files).forEach(f => uploadImage(f)); }} />
+                onChange={e => { if (e.target.files) { uploadMultipleImages(e.target.files); e.target.value = ''; } }} />
             {uploading && (
                 <div className={styles.uploadProgress}>
                     <div style={{ fontSize: 13, color: '#6B7280' }}>Uploading... {uploadProgress}%</div>
