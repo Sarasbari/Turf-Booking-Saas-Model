@@ -51,7 +51,7 @@ export function Header({ onSearchChange }: HeaderProps) {
             <div className={styles.container}>
                 {/* Logo */}
                 <div className={styles.logo} onClick={() => navigate('/')}>
-                    TurfBook
+                    BookMyTurf
                 </div>
 
                 {/* Search Bar (Desktop) */}

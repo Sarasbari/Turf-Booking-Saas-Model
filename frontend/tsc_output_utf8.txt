@@ -1,3 +1,0 @@
-﻿src/components/PersonalInfo/PersonalInfo.tsx(77,17): error TS2353: Object literal may only specify known properties, and 'firstName' does not exist in type 'ProfileFormData'.
-src/utils/firestoreUtils.ts(126,13): error TS2322: Type '"" | "5-a-side" | "7-a-side" | "11-a-side"' is not assignable to type '"5-a-side" | "7-a-side" | "11-a-side" | undefined'.
-  Type '""' is not assignable to type '"5-a-side" | "7-a-side" | "11-a-side" | undefined'.

@@ -487,7 +487,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                                 <p className={styles.helpText}>
                                     Need a claim code?{' '}
                                     <a
-                                        href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20a%20claim%20code%20to%20register%20as%20a%20turf%20owner%20on%20TurfBook."
+                                        href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20a%20claim%20code%20to%20register%20as%20a%20turf%20owner%20on%20BookMyTurf."
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className={styles.whatsappLink}
@@ -508,7 +508,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                                     You will receive access within 24 hours.
                                 </p>
                                 <a
-                                    href="https://wa.me/919876543210?text=Hi%2C%20I%20registered%20as%20a%20turf%20owner%20on%20TurfBook.%20Please%20approve%20my%20account."
+                                    href="https://wa.me/919876543210?text=Hi%2C%20I%20registered%20as%20a%20turf%20owner%20on%20BookMyTurf.%20Please%20approve%20my%20account."
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className={styles.whatsappButton}

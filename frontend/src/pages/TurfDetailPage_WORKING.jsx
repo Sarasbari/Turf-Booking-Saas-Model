@@ -32,7 +32,7 @@ const TurfDetailPage = () => {
                     const data = snapshot.data();
                     setTurf({ id: snapshot.id, ...data });
                     setLoading(false);
-                    document.title = `${data.name || 'Turf'} - TurfBook`;
+                    document.title = `${data.name || 'Turf'} - BookMyTurf`;
                 } else {
                     setError('Turf not found');
                     setLoading(false);

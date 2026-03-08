@@ -355,15 +355,15 @@ export default function DashboardHeader({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xl leading-none">🏟️</span>
-                        <span className="font-bold text-lg text-[#111827] hidden sm:inline">TurfBook Owner</span>
+                        <span className="font-bold text-lg text-[#111827] hidden sm:inline">BookMyTurf Owner</span>
                     </div>
 
                     {/* Center: Search (desktop) */}
                     <div ref={searchRef} className="relative flex-1 max-w-md mx-auto hidden md:block">
                         <div
                             className={`flex items-center bg-white rounded-full border px-4 py-2 transition-all duration-200 ${searchFocused
-                                    ? 'border-[#F97316] ring-2 ring-[#F97316]/20'
-                                    : 'border-[#E5E7EB]'
+                                ? 'border-[#F97316] ring-2 ring-[#F97316]/20'
+                                : 'border-[#E5E7EB]'
                                 }`}
                         >
                             <Search size={16} className="text-[#9CA3AF] shrink-0 mr-2" />
