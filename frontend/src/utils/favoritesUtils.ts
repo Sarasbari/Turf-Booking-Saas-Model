@@ -6,7 +6,7 @@ import {
     arrayRemove,
     serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../firebase/config';
 import { getUserProfile } from './firestoreUtils';
 // ✅ REMOVED: import { mockTurfs, type Turf } from '../data/mockTurfs';
 

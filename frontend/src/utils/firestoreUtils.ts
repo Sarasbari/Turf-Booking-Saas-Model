@@ -11,7 +11,7 @@ import {
     Timestamp,
     serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../firebase/config';
 import { UserProfile, Booking, ProfileFormData } from '../types/profile';
 
 /**

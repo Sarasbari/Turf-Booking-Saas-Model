@@ -1,37 +1,70 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read access to turfs
+
+    // ── Helper: Check if user is an approved owner of a specific turf ──
+    function isOwnerOfTurf(turfId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/owners/$(request.auth.uid))
+        && get(/databases/$(database)/documents/owners/$(request.auth.uid)).data.turfId == turfId
+        && get(/databases/$(database)/documents/owners/$(request.auth.uid)).data.isApproved == true;
+    }
+
+    // ── Turfs: public read, only owner of that turf can update ──
     match /turf/{turfId} {
       allow read: if true;
-      allow write: if request.auth != null;
-      
-      // Allow public read access to reviews
+      allow update: if isOwnerOfTurf(turfId);
+      allow create, delete: if false;
+
+      // Reviews: public read, authenticated users can create their own
       match /reviews/{reviewId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if request.auth != null
+          && resource.data.userId == request.auth.uid;
       }
     }
-    
-    // Bookings require authentication
+
+    // ── Bookings: users read/write own, owners read their turf's bookings ──
     match /bookings/{bookingId} {
-      allow read, write: if request.auth != null;
+      allow create: if request.auth != null;
+      allow read: if request.auth != null
+        && (resource.data.userEmail == request.auth.token.email
+            || isOwnerOfTurf(resource.data.turfId));
+      allow update: if request.auth != null
+        && (resource.data.userEmail == request.auth.token.email
+            || isOwnerOfTurf(resource.data.turfId));
+      allow delete: if false;
     }
-    
-    // User profiles require authentication and ownership
+
+    // ── User profiles: own data only ──
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Owner profiles require authentication and ownership
+    // ── Owner profiles: own data only, cannot self-approve ──
     match /owners/{ownerId} {
-      allow read, write: if request.auth != null && request.auth.uid == ownerId;
+      allow read: if request.auth != null && request.auth.uid == ownerId;
+      allow create: if request.auth != null && request.auth.uid == ownerId;
+      allow update: if request.auth != null && request.auth.uid == ownerId
+        && !('isApproved' in request.resource.data
+             && request.resource.data.isApproved != resource.data.isApproved);
+      allow delete: if false;
     }
-    
-    // Blocked slots
+
+    // ── Blocked slots: public read, only turf owner can write ──
     match /blockedSlots/{slotId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow create: if request.auth != null
+        && isOwnerOfTurf(request.resource.data.turfId);
+      allow update, delete: if request.auth != null
+        && isOwnerOfTurf(resource.data.turfId);
+    }
+
+    // ── Payments: server-only (deny all client access) ──
+    match /payments/{paymentId} {
+      allow read, write: if false;
     }
   }
 }

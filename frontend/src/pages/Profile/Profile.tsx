@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../lib/firebase';
+import { auth } from '../../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getUserProfile, createUserProfile } from '../../utils/firestoreUtils';
 import { UserProfile } from '../../types/profile';

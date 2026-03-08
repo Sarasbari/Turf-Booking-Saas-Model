@@ -6,7 +6,7 @@
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
@@ -40,9 +40,6 @@ const validateConfig = (): void => {
             '❌ Firebase Configuration Error: Missing or invalid environment variables:',
             missingKeys
         );
-        console.error(
-            '💡 Please update your .env file with actual Firebase configuration values.'
-        );
     }
 };
 
@@ -54,17 +51,18 @@ function initFirebase() {
     let firebaseApp: FirebaseApp;
     if (getApps().length === 0) {
         firebaseApp = initializeApp(firebaseConfig);
-        console.log('✅ Firebase initialized successfully');
     } else {
         firebaseApp = getApp();
-        console.log('✅ Using existing Firebase app');
     }
 
     const firebaseAuth = getAuth(firebaseApp);
     const firebaseDb = getFirestore(firebaseApp);
     const firebaseStorage = getStorage(firebaseApp);
 
-    console.log('📦 Project ID:', firebaseConfig.projectId);
+    // Set auth persistence to LOCAL (persists even when browser is closed)
+    setPersistence(firebaseAuth, browserLocalPersistence).catch((error) => {
+        console.error('Error setting auth persistence:', error);
+    });
 
     return { app: firebaseApp, auth: firebaseAuth, db: firebaseDb, storage: firebaseStorage };
 }

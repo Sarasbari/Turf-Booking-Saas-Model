@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, onSnapshot, query, orderBy, limit, getDocs, where, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { auth } from '../lib/firebase';
+import { auth } from '../firebase/config';
 import { createBooking } from '../firebase/bookings';
 import { Header } from '../components/Header/Header';
 import './TurfDetailPage.css';

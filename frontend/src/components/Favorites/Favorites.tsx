@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../lib/firebase';
+import { auth } from '../../firebase/config';
 import { getFavoriteTurfs } from '../../utils/favoritesUtils';
 import { TurfCard } from '../TurfCard/TurfCard';
 import { ToastContainer } from '../ToastContainer/ToastContainer';
