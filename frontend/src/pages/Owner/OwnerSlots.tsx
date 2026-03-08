@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { doc, getDoc, collection, query, where, getDocs, onSnapshot, setDoc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+import { auth, db } from '../../services/firebase';
 import { OwnerData, TurfData, BookingType, SlotType, BlockedSlot, GroundConfig } from '../../types/owner';
 import { generateTimeSlots, getGroundsForTurf } from '../../utils/slotUtils';
 import styles from '../../styles/Owner/OwnerSlots.module.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../../context/DashboardContext';
-import { BookSlotModal } from '../../components/Owner/BookSlotModal';
+import { BookSlotModal } from '../../components/features/Owner/BookSlotModal';
 
 // --- Sub-Components ---
 

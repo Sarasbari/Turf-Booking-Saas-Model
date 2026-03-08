@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db } from '../services/firebase';
 
 // Mock data fallback
 const MOCK_TURF = {

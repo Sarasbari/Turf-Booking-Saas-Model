@@ -1,0 +1,96 @@
+/* TurfCard Skeleton Loader */
+
+.skeleton {
+    width: 100%;
+    background: #FFFFFF;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Shimmer animation */
+.shimmer {
+    background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 40%, #e5e7eb 80%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Image area — matches TurfCard 2:3 aspect ratio */
+.imageArea {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+}
+
+/* Info section */
+.infoArea {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.titleLine {
+    height: 16px;
+    width: 75%;
+    border-radius: 4px;
+}
+
+.locationLine {
+    height: 12px;
+    width: 60%;
+    border-radius: 4px;
+}
+
+.tagsRow {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.tagPill {
+    height: 24px;
+    width: 64px;
+    border-radius: 12px;
+}
+
+.dividerLine {
+    height: 1px;
+    width: 100%;
+    background: #e5e7eb;
+    margin: 12px 0;
+}
+
+.footerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.priceLine {
+    height: 20px;
+    width: 80px;
+    border-radius: 4px;
+}
+
+.buttonLine {
+    height: 32px;
+    width: 72px;
+    border-radius: 6px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .infoArea {
+        padding: 12px;
+    }
+}

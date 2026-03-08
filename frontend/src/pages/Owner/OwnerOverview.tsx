@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { doc, getDoc, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+import { auth, db } from '../../services/firebase';
 import { OwnerData, TurfData, BookingType, BlockedSlot, ActivityData, SlotType } from '../../types/owner';
 import { generateTimeSlots, getGroundsForTurf, formatTime } from '../../utils/slotUtils';
 import { useNavigate } from 'react-router-dom';

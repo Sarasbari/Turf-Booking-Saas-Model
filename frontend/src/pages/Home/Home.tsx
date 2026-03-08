@@ -1,58 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Header } from '../../components/Header/Header';
-import { SubNavigation } from '../../components/SubNavigation/SubNavigation';
-import { HeroCarousel } from '../../components/HeroCarousel/HeroCarousel';
-import { FilterChip } from '../../components/FilterChip/FilterChip';
-import { SectionHeader } from '../../components/SectionHeader/SectionHeader';
-import { TurfCard } from '../../components/TurfCard/TurfCard';
-import { Footer } from '../../components/Footer/Footer';
-import { LocationPrompt } from '../../components/LocationPrompt/LocationPrompt';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { Header } from '../../components/layout/Header/Header';
+import { SubNavigation } from '../../components/layout/SubNavigation/SubNavigation';
+import { HeroCarousel } from '../../components/features/HeroCarousel/HeroCarousel';
+import { FilterChip } from '../../components/ui/FilterChip/FilterChip';
+import { SectionHeader } from '../../components/ui/SectionHeader/SectionHeader';
+import { TurfCard } from '../../components/features/TurfCard/TurfCard';
+import { TurfCardSkeleton } from '../../components/features/TurfCard/TurfCardSkeleton';
+import { Footer } from '../../components/layout/Footer/Footer';
+import { LocationPrompt } from '../../components/features/LocationPrompt/LocationPrompt';
+import { useTurfs } from '../../hooks/useTurfs';
+import { Turf } from '../../types';
 import styles from './Home.module.css';
 
-// ✅ Unified Turf type that works with both Firebase data and TurfCard component
-interface FirebaseTurf {
-    id: string;
-    name: string;
-    location: string;
-    city: string;
-    images: string[];
-    pricePerHour: number;
-    rating: number;
-    size: string;
-    amenities: string[];
-    isPromoted: boolean;
-    availableToday: boolean;
-    sport: string;
-    lat?: number;
-    lng?: number;
-}
 
-// ✅ FIXED: Normalize YOUR actual Firebase fields → TurfCard shape
-const normalizeForCard = (id: string, data: any): FirebaseTurf => ({
-    id,
-    name: data.name || 'Unnamed Turf',
-    location: data.location?.address
-        ? `${data.location.address}, ${data.location.city || ''}`
-        : (data.address
-            ? `${data.address}, ${data.city || ''}`
-            : (typeof data.location === 'string' ? data.location : '')),
-    city: data.location?.city || data.city || '',
-    images: data.images && data.images.length > 0
-        ? data.images
-        : (data.coverImage ? [data.coverImage] : ['https://via.placeholder.com/800x1200?text=No+Image']),
-    pricePerHour: data.pricing?.basePrice || data.pricePerHour || 0,
-    rating: data.rating || 0,
-    size: data.turfSize || data.groundSize || data.size || '5-a-side',
-    amenities: data.amenities || [],
-    isPromoted: data.isFeatured || data.isPromoted || false,
-    availableToday: true,  // ✅ No 'status' field in your data, so default to true
-    sport: data.sport || data.sports?.[0] || 'Football',
-    // Extract geoPoint for distance calculations
-    lat: data.geoPoint?.latitude ?? data.geoPoint?._lat ?? data.latitude ?? undefined,
-    lng: data.geoPoint?.longitude ?? data.geoPoint?._long ?? data.longitude ?? undefined,
-});
 
 const filterOptions = [
     'All Sizes',
@@ -88,14 +48,13 @@ const LOCATION_DISMISSED_KEY = 'turfbook_location_dismissed';
 
 export function Home() {
     const [activeFilters, setActiveFilters] = useState<string[]>(['All Sizes']);
-    const [selectedTurf, setSelectedTurf] = useState<FirebaseTurf | null>(null);
+    const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
     const [activeSport, setActiveSport] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
-    // Firebase state
-    const [allTurfs, setAllTurfs] = useState<FirebaseTurf[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Fetch data using hook
+    const { turfs: allTurfs, loading } = useTurfs();
 
     // Location state
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -103,30 +62,6 @@ export function Home() {
 
     // Debounce timer ref
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    // ✅ Fetch turfs from Firebase on mount
-    useEffect(() => {
-        const fetchTurfs = async () => {
-            try {
-                setLoading(true);
-                const turfsRef = collection(db, 'turf');
-                const snapshot = await getDocs(turfsRef);
-                console.log(`✅ Fetched ${snapshot.size} turfs from Firebase`);
-
-                const turfs: FirebaseTurf[] = [];
-                snapshot.forEach((doc) => {
-                    turfs.push(normalizeForCard(doc.id, doc.data()));
-                });
-
-                setAllTurfs(turfs);
-            } catch (error) {
-                console.error('Error fetching turfs:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTurfs();
-    }, []);
 
     // ✅ Check for saved location or show prompt
     useEffect(() => {
@@ -256,6 +191,29 @@ export function Home() {
             <SubNavigation onSportChange={handleSportChange} />
             <HeroCarousel />
 
+            {/* Trust Signals Bar */}
+            <div className={styles.trustBar}>
+                <div className={styles.trustItem}>
+                    <span className={styles.trustIcon}>🏟️</span>
+                    <span>500+ Turfs</span>
+                </div>
+                <div className={styles.trustDivider} />
+                <div className={styles.trustItem}>
+                    <span className={styles.trustIcon}>📅</span>
+                    <span>10k+ Bookings</span>
+                </div>
+                <div className={styles.trustDivider} />
+                <div className={styles.trustItem}>
+                    <span className={styles.trustIcon}>⚡</span>
+                    <span>Instant Confirmation</span>
+                </div>
+                <div className={styles.trustDivider} />
+                <div className={styles.trustItem}>
+                    <span className={styles.trustIcon}>🔒</span>
+                    <span>Secure Payments</span>
+                </div>
+            </div>
+
             <div className={styles.filtersContainer}>
                 <div className={styles.filtersBar}>
                     {filterOptions.map((filter) => (
@@ -277,16 +235,18 @@ export function Home() {
                 />
             )}
 
-            {/* ✅ Show loading state */}
+            {/* Loading / Empty / Content states */}
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#666' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚽</div>
-                    <div style={{ fontSize: '18px' }}>Loading turfs from database...</div>
+                <div className={styles.contentWrapper}>
+                    <div className={styles.grid}>
+                        <TurfCardSkeleton count={5} />
+                    </div>
                 </div>
             ) : allTurfs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#666' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏟️</div>
-                    <div style={{ fontSize: '18px' }}>No turfs found. Seed your database first.</div>
+                <div className={styles.emptyState}>
+                    <div className={styles.emptyIcon}>🏟️</div>
+                    <h3 className={styles.emptyTitle}>No turfs found</h3>
+                    <p className={styles.emptyText}>Seed your database to get started with BookMyTurf.</p>
                 </div>
             ) : isSearchActive ? (
                 /* ✅ Search Results Mode */

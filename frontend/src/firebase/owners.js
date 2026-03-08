@@ -15,7 +15,7 @@ import {
   where,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from './config';
+import { db } from '../services/firebase';
 import { getBookingsByOwner } from './bookings';
 
 const OWNERS_COLLECTION = 'owners';

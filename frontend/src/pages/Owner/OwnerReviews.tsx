@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     collection, doc, getDoc, onSnapshot, updateDoc, serverTimestamp, Timestamp
 } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+import { auth, db } from '../../services/firebase';
 import { OwnerData, ReviewData } from '../../types/owner';
 import {
     Star, Search, MessageCircle, ChevronDown, ChevronUp,

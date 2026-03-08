@@ -17,7 +17,7 @@ import {
   orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
-import { db } from './config';
+import { db } from '../services/firebase';
 import { getCurrentUserProfile } from './auth';
 
 const TURFS_COLLECTION = 'turf';

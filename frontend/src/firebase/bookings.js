@@ -17,7 +17,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from './config';
+import { db } from '../services/firebase';
 import { getCurrentUser } from './auth';
 
 const BOOKINGS_COLLECTION = 'bookings';

@@ -11,7 +11,7 @@ import {
     Timestamp,
     serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db } from '../services/firebase';
 import { UserProfile, Booking, ProfileFormData } from '../types/profile';
 
 /**
@@ -111,19 +111,22 @@ export async function updateUserProfile(
         };
 
         // Only add optional fields if they have values
-        if (formData.phone) updateData.phone = formData.phone;
-        if (formData.preferredLocation) updateData.preferredLocation = formData.preferredLocation;
-        if (formData.favoriteSport) updateData.favoriteSport = formData.favoriteSport;
-        if (formData.preferredTurfSize) updateData.preferredTurfSize = formData.preferredTurfSize;
+        if (formData.phone !== undefined) updateData.phone = formData.phone;
+        if (formData.firstName !== undefined) updateData.firstName = formData.firstName;
+        if (formData.lastName !== undefined) updateData.lastName = formData.lastName;
+        if (formData.birthday !== undefined) updateData.birthday = formData.birthday;
+        if (formData.gender !== undefined) updateData.gender = formData.gender;
+        if (formData.preferredLocation !== undefined) updateData.preferredLocation = formData.preferredLocation;
+        if (formData.favoriteSport !== undefined) updateData.favoriteSport = formData.favoriteSport;
+        if (formData.preferredTurfSize !== undefined) updateData.preferredTurfSize = formData.preferredTurfSize;
 
-        // Calculate and update profile completion
         const profileCompletion = calculateProfileCompletion({
             name: formData.name,
             email: formData.email,
-            phone: formData.phone,
-            preferredLocation: formData.preferredLocation,
-            favoriteSport: formData.favoriteSport,
-            preferredTurfSize: formData.preferredTurfSize,
+            phone: formData.phone || '',
+            preferredLocation: formData.preferredLocation || '',
+            favoriteSport: formData.favoriteSport || '',
+            preferredTurfSize: formData.preferredTurfSize || undefined,
         });
         updateData.profileCompletion = profileCompletion;
 

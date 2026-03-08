@@ -8,7 +8,7 @@
 import { seedSampleTurfs } from '../firebase/turfs';
 import { createOwnerProfile } from '../firebase/owners';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db } from '../services/firebase';
 
 /**
  * Seed sample owner profiles

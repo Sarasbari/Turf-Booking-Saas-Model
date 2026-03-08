@@ -46,9 +46,13 @@ export interface ProfileFormData {
     name: string;
     email: string;
     phone: string;
-    preferredLocation: string;
-    favoriteSport: string;
-    preferredTurfSize: '5-a-side' | '7-a-side' | '11-a-side' | '';
+    firstName?: string;
+    lastName?: string;
+    birthday?: string;
+    gender?: 'Woman' | 'Man' | '';
+    preferredLocation?: string;
+    favoriteSport?: string;
+    preferredTurfSize?: '5-a-side' | '7-a-side' | '11-a-side' | '';
 }
 
 // Settings Interface

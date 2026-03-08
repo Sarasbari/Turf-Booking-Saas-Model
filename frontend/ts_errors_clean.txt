@@ -1,0 +1,1 @@
+src/components/features/PersonalInfo/PersonalInfo.tsx(77,17): error TS2353: Object literal may only specify known properties, and 'firstName' does not exist in type 'ProfileFormData'.

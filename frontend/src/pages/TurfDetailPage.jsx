@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, onSnapshot, query, orderBy, limit, getDocs, where, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase/config';
-import { auth } from '../firebase/config';
+import { db } from '../services/firebase';
+import { auth } from '../services/firebase';
 import { createBooking } from '../firebase/bookings';
-import { Header } from '../components/Header/Header';
+import { Header } from '../components/layout/Header/Header';
 import './TurfDetailPage.css';
 
 // ── Icons (inline SVGs) ────────────────────────────────────────────────────

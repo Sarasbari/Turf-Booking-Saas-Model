@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+import { auth, db } from '../../services/firebase';
 import { OwnerData, TurfData } from '../../types/owner';
 import { DashboardProvider } from '../../context/DashboardContext';
-import DashboardHeader from '../../components/Owner/DashboardHeader';
+import DashboardHeader from '../../components/features/Owner/DashboardHeader';
 import styles from '../../styles/Owner/OwnerLayout.module.css';
 
 export function OwnerLayout() {

@@ -1,39 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { FilterState, SortOption } from '../../types/turf';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase/config';
-import { TurfCard } from '../../components/TurfCard/TurfCard';
-import { BookingModal } from '../../components/BookingModal/BookingModal';
-import { Header } from '../../components/Header/Header';
-import { SignInRequiredModal } from '../../components/SignInRequiredModal/SignInRequiredModal';
+import { TurfCard } from '../../components/features/TurfCard/TurfCard';
+import { TurfCardSkeleton } from '../../components/features/TurfCard/TurfCardSkeleton';
+import { BookingModal } from '../../components/features/BookingModal/BookingModal';
+import { Header } from '../../components/layout/Header/Header';
+import { SignInRequiredModal } from '../../components/features/SignInRequiredModal/SignInRequiredModal';
 import { isLoggedIn } from '../../utils/auth';
+import { useTurfs } from '../../hooks/useTurfs';
+import { Turf } from '../../types';
 import styles from './TurfListings.module.css';
 
-// ✅ Normalize Firebase document → TurfCard shape (same as Home.tsx)
-const normalizeForCard = (id: string, data: any) => ({
-    id,
-    name: data.name || 'Unnamed Turf',
-    location: data.location?.address
-        ? `${data.location.address}, ${data.location.city || ''}`
-        : (data.address
-            ? `${data.address}, ${data.city || ''}`
-            : (typeof data.location === 'string' ? data.location : '')),
-    city: data.location?.city || data.city || '',
-    images: data.images && data.images.length > 0
-        ? data.images
-        : (data.coverImage ? [data.coverImage] : ['https://via.placeholder.com/800x1200?text=No+Image']),
-    pricePerHour: data.pricing?.basePrice || data.pricePerHour || 0,
-    rating: data.rating || 0,
-    size: data.turfSize || data.groundSize || data.size || '5-a-side',
-    amenities: data.amenities || [],
-    isPromoted: data.isFeatured || data.isPromoted || false,
-    availableToday: true,
-    sport: data.sport || data.sports?.[0] || 'Football',
-});
-
 // Filter constants
-const cities = ['All Cities', 'Virar', 'Nallasopara', 'Vasai', 'Naigaon', 'Bhayandar', 'Mira Road', 'Dahisar', 'Borivali','Kandivali','Malad'];
-const turfTypes = ['all', 'cricket', 'football', 'badminton','tennis','volleyball'];
+const cities = ['All Cities', 'Virar', 'Nallasopara', 'Vasai', 'Naigaon', 'Bhayandar', 'Mira Road', 'Dahisar', 'Borivali', 'Kandivali', 'Malad'];
+const turfTypes = ['all', 'cricket', 'football', 'badminton', 'tennis', 'volleyball'];
 
 export function TurfListings() {
     const [filters, setFilters] = useState<FilterState>({
@@ -43,36 +22,15 @@ export function TurfListings() {
         turfType: 'all'
     });
     const [sortBy, setSortBy] = useState<SortOption>('rating');
-    const [selectedTurf, setSelectedTurf] = useState<any>(null);
+    const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
-    // Firebase state
-    const [allTurfs, setAllTurfs] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Fetch data using hook
+    const { turfs: allTurfs, loading } = useTurfs();
 
-    // ✅ FIXED: Fetch ALL turfs without status/createdAt filters
-    useEffect(() => {
-        const fetchTurfs = async () => {
-            try {
-                setLoading(true);
-                const turfsRef = collection(db, 'turf');
-                const snapshot = await getDocs(turfsRef);
-                console.log(`✅ Listings: Fetched ${snapshot.size} turfs`);
-
-                const turfs: any[] = [];
-                snapshot.forEach((doc) => {
-                    turfs.push(normalizeForCard(doc.id, doc.data()));
-                });
-                setAllTurfs(turfs);
-            } catch (error) {
-                console.error('Error fetching turfs:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTurfs();
-    }, []);
+    // Mobile filter drawer
+    const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
     const handleFilterChange = (key: keyof FilterState, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -135,7 +93,100 @@ export function TurfListings() {
                 <div className={styles.container}>
                     <div className={styles.layoutGrid}>
 
-                        {/* ✅ Left Panel — Filter Sidebar */}
+                        {/* Mobile Filter Button — visible ≤768px only */}
+                        <button
+                            className={styles.mobileFilterButton}
+                            onClick={() => setIsMobileFilterOpen(true)}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                            </svg>
+                            Filters
+                            {hasActiveFilters && <span className={styles.filterBadge}>{[filters.location !== 'All Cities', filters.priceRange !== 'all', filters.turfType !== 'all', filters.date !== ''].filter(Boolean).length}</span>}
+                        </button>
+
+                        {/* Mobile Filter Drawer — slide up bottom sheet */}
+                        {isMobileFilterOpen && (
+                            <div className={styles.drawerOverlay} onClick={() => setIsMobileFilterOpen(false)}>
+                                <div className={styles.mobileFilterDrawer} onClick={(e) => e.stopPropagation()}>
+                                    <div className={styles.drawerHandle} />
+                                    <div className={styles.drawerHeader}>
+                                        <h3 className={styles.drawerTitle}>Filters</h3>
+                                        <button className={styles.drawerClose} onClick={() => setIsMobileFilterOpen(false)}>✕</button>
+                                    </div>
+
+                                    {/* City Filter */}
+                                    <div className={styles.filterItem}>
+                                        <label className={styles.filterLabel}>City</label>
+                                        <select
+                                            className={styles.filterSelect}
+                                            value={filters.location}
+                                            onChange={(e) => handleFilterChange('location', e.target.value)}
+                                        >
+                                            {cities.map(city => (
+                                                <option key={city} value={city}>{city}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Date Filter */}
+                                    <div className={styles.filterItem}>
+                                        <label className={styles.filterLabel}>Date</label>
+                                        <input
+                                            type="date"
+                                            className={styles.filterInput}
+                                            value={filters.date}
+                                            min={today}
+                                            onChange={(e) => handleFilterChange('date', e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Price Filter */}
+                                    <div className={styles.filterItem}>
+                                        <label className={styles.filterLabel}>Price Range</label>
+                                        <select
+                                            className={styles.filterSelect}
+                                            value={filters.priceRange}
+                                            onChange={(e) => handleFilterChange('priceRange', e.target.value)}
+                                        >
+                                            <option value="all">All Prices</option>
+                                            <option value="under-500">Under ₹500</option>
+                                            <option value="500-1000">₹500 - ₹1000</option>
+                                            <option value="over-1000">₹1000+</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Turf Type Filter */}
+                                    <div className={styles.filterItem}>
+                                        <label className={styles.filterLabel}>Turf Type</label>
+                                        <select
+                                            className={styles.filterSelect}
+                                            value={filters.turfType}
+                                            onChange={(e) => handleFilterChange('turfType', e.target.value)}
+                                        >
+                                            {turfTypes.map(type => (
+                                                <option key={type} value={type}>
+                                                    {type === 'all' ? 'All Types' : type}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className={styles.drawerActions}>
+                                        {hasActiveFilters && (
+                                            <button className={styles.clearButton} onClick={() => { clearFilters(); setIsMobileFilterOpen(false); }}>
+                                                Clear All
+                                            </button>
+                                        )}
+                                        <button className={styles.applyButton} onClick={() => setIsMobileFilterOpen(false)}>
+                                            Show {filteredAndSortedTurfs.length} Results
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Left Panel — Filter Sidebar (desktop only) */}
                         <div className={styles.filterPanel}>
                             <div className={styles.filterPanelHeader}>
                                 <h3 className={styles.filterPanelTitle}>
@@ -281,9 +332,8 @@ export function TurfListings() {
 
                             {/* Content */}
                             {loading ? (
-                                <div style={{ textAlign: 'center', padding: '80px 20px', color: '#666' }}>
-                                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚽</div>
-                                    <div style={{ fontSize: '18px' }}>Loading turfs from database...</div>
+                                <div className={styles.grid}>
+                                    <TurfCardSkeleton count={6} />
                                 </div>
                             ) : filteredAndSortedTurfs.length === 0 ? (
                                 <div className={styles.noResults}>

@@ -16,7 +16,7 @@ import {
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { auth, db } from './config';
+import { auth, db } from '../services/firebase';
 
 /**
  * Sign in with Google OAuth

@@ -9,7 +9,7 @@ import {
     serverTimestamp,
     Timestamp
 } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db } from '../services/firebase';
 import { BookingType, OwnerData, TurfData, SlotType } from '../types/owner';
 
 interface BookingFormData {

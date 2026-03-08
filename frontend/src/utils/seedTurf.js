@@ -1,5 +1,5 @@
 import { doc, setDoc, addDoc, collection, serverTimestamp, GeoPoint } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db } from '../services/firebase';
 
 export async function seedTurf1() {
   try {

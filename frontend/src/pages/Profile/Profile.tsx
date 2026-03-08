@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../firebase/config';
+import { auth } from '../../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getUserProfile, createUserProfile } from '../../utils/firestoreUtils';
 import { UserProfile } from '../../types/profile';
-import { ProfileSidebar } from '../../components/ProfileSidebar/ProfileSidebar';
-import { MyBookings } from '../../components/MyBookings/MyBookings';
-import { PersonalInfo } from '../../components/PersonalInfo/PersonalInfo';
-import { Favorites } from '../../components/Favorites/Favorites';
-import { Settings } from '../../components/Settings/Settings';
+import { ProfileSidebar } from '../../components/features/ProfileSidebar/ProfileSidebar';
+import { MyBookings } from '../../components/features/MyBookings/MyBookings';
+import { PersonalInfo } from '../../components/features/PersonalInfo/PersonalInfo';
+import { Favorites } from '../../components/features/Favorites/Favorites';
+import { Settings } from '../../components/features/Settings/Settings';
 import './Profile.css';
 
 export function Profile() {

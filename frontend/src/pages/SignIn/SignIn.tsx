@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+import { auth, db } from '../../services/firebase';
 import { initiateGoogleLogin } from '../../utils/auth';
 import styles from './SignIn.module.css';
 
