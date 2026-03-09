@@ -82,15 +82,15 @@ const Analytics: React.FC = () => {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
                     <p className="text-sm font-medium text-gray-500">Total Revenue ({period})</p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900">₹{stats.totalRev.toLocaleString('en-IN')}</p>
+                    <p className="mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">₹{stats.totalRev.toLocaleString('en-IN')}</p>
                 </div>
                 <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
                     <p className="text-sm font-medium text-gray-500">Total Bookings ({period})</p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900">{stats.totalBooks}</p>
+                    <p className="mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats.totalBooks}</p>
                 </div>
                 <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
                     <p className="text-sm font-medium text-gray-500">Average Daily Revenue</p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900">₹{Number(stats.avgRev).toLocaleString('en-IN')}</p>
+                    <p className="mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">₹{Number(stats.avgRev).toLocaleString('en-IN')}</p>
                 </div>
             </div>
 

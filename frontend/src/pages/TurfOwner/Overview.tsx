@@ -56,7 +56,7 @@ const Overview: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-500">Total Earnings</p>
-                            <p className="mt-2 text-3xl font-bold text-gray-900">
+                            <p className="mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                                 ₹{stats.totalEarnings.toLocaleString('en-IN')}
                             </p>
                         </div>
@@ -76,7 +76,7 @@ const Overview: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-500">Bookings Today</p>
-                            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.todayBookings}</p>
+                            <p className="mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats.todayBookings}</p>
                         </div>
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                             <Calendar className="h-6 w-6" />
@@ -92,7 +92,7 @@ const Overview: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-500">Total Bookings</p>
-                            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.totalBookings}</p>
+                            <p className="mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats.totalBookings}</p>
                         </div>
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
                             <Activity className="h-6 w-6" />
@@ -108,7 +108,7 @@ const Overview: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm font-medium text-gray-500">Today's Occupancy</p>
-                            <p className="mt-2 text-3xl font-bold text-gray-900">{stats.occupancyRate}%</p>
+                            <p className="mt-2 text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stats.occupancyRate}%</p>
                         </div>
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-orange-600">
                             <TrendingUp className="h-6 w-6" />

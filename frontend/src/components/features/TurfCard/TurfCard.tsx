@@ -107,7 +107,7 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
     return (
         <>
             <motion.div
-                className={styles.card}
+                className={`${styles.card} w-full`}
                 onClick={handleCardClick}
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -129,12 +129,12 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
                 }}
             >
                 {/* Image Section */}
-                <div className={styles.imageSection}>
+                <div className={`${styles.imageSection} h-36 sm:h-44 md:h-48`}>
                     {!imageLoaded && <div className={styles.imagePlaceholder} />}
                     <img
                         src={turf.images[0]}
                         alt={turf.name}
-                        className={styles.image}
+                        className={`${styles.image} w-full h-auto object-cover min-h-full`}
                         loading="lazy"
                         onLoad={() => setImageLoaded(true)}
                     />
@@ -150,7 +150,7 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
 
                     {/* Favorite Heart */}
                     <motion.button
-                        className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteActive : ''} ${animating ? styles.animating : ''}`}
+                        className={`${styles.favoriteButton} ${isFavorite ? styles.favoriteActive : ''} ${animating ? styles.animating : ''} min-h-[44px] min-w-[44px] flex items-center justify-center`}
                         onClick={handleFavoriteClick}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -169,9 +169,9 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
                 </div>
 
                 {/* Info Section */}
-                <div className={styles.infoSection}>
+                <div className={`${styles.infoSection} p-3 sm:p-4 md:p-6`}>
                     {/* Turf Name */}
-                    <h3 className={styles.turfName}>{turf.name}</h3>
+                    <h3 className={`${styles.turfName} text-base md:text-xl`}>{turf.name}</h3>
 
                     {/* Location */}
                     <div className={styles.location}>
@@ -184,24 +184,39 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
 
                     {/* Amenities Tags */}
                     <div className={styles.amenities}>
-                        {turf.amenities.slice(0, 3).map((amenity) => (
+                        {turf.amenities.slice(0, 2).map((amenity) => (
                             <span key={amenity} className={styles.amenityTag}>
                                 {amenity}
                             </span>
                         ))}
+                        {turf.amenities.length > 2 && (
+                            <span className={`${styles.amenityTag} sm:hidden`}>
+                                +{turf.amenities.length - 2} more
+                            </span>
+                        )}
+                        {turf.amenities[2] && (
+                            <span className={`${styles.amenityTag} hidden sm:inline-block`}>
+                                {turf.amenities[2]}
+                            </span>
+                        )}
+                        {turf.amenities.length > 3 && (
+                            <span className={`${styles.amenityTag} hidden sm:inline-block`}>
+                                +{turf.amenities.length - 3} more
+                            </span>
+                        )}
                     </div>
 
                     {/* Divider */}
                     <div className={styles.divider} />
 
                     {/* Price & CTA */}
-                    <div className={styles.footer}>
+                    <div className={`${styles.footer} flex-wrap gap-2`}>
                         <div className={styles.price}>
                             ₹{turf.pricePerHour}
                             <span className={styles.priceUnit}>/hr</span>
                         </div>
                         <motion.button
-                            className={styles.bookButton}
+                            className={`${styles.bookButton} w-full sm:w-auto min-h-[44px] flex items-center justify-center`}
                             onClick={handleBookClick}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}

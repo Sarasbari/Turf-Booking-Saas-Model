@@ -8,10 +8,10 @@ function SingleSkeleton() {
     return (
         <div className={styles.skeleton}>
             {/* Image area */}
-            <div className={`${styles.imageArea} ${styles.shimmer}`} />
+            <div className={`${styles.imageArea} ${styles.shimmer} h-36 sm:h-44 md:h-48`} />
 
             {/* Info area */}
-            <div className={styles.infoArea}>
+            <div className={`${styles.infoArea} p-3 sm:p-4 md:p-6`}>
                 <div className={`${styles.titleLine} ${styles.shimmer}`} />
                 <div className={`${styles.locationLine} ${styles.shimmer}`} />
 

@@ -176,13 +176,15 @@
 }
 
 .timeSlotGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
 .timeSlot {
     padding: 12px;
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 80px;
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 8px;

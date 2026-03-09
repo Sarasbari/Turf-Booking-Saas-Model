@@ -145,7 +145,7 @@ const ManageTurf: React.FC = () => {
                     {/* Amenities */}
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-2">Amenities</h2>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                             {availableAmenities.map(amenity => (
                                 <label key={amenity} className="flex items-center space-x-2">
                                     <input

@@ -14,13 +14,13 @@ export function HeroSearch() {
   return (
     <div className={styles.wrap}>
       <form
-        className={styles.form}
+        className={`${styles.form} flex flex-col sm:flex-row gap-4 sm:gap-5 w-full`}
         onSubmit={(e) => {
           e.preventDefault();
           navigate('/listings');
         }}
       >
-        <div className={styles.inputWrap}>
+        <div className={`${styles.inputWrap} flex-1`}>
           <label htmlFor={locationId} className="sr-only">
             Location
           </label>
@@ -35,7 +35,7 @@ export function HeroSearch() {
             aria-label="Search by location"
           />
         </div>
-        <div className={styles.inputWrap}>
+        <div className={`${styles.inputWrap} flex-1`}>
           <label htmlFor={dateId} className="sr-only">
             Date
           </label>
@@ -49,7 +49,7 @@ export function HeroSearch() {
             aria-label="Select date"
           />
         </div>
-        <button type="submit" className={styles.cta}>
+        <button type="submit" className={`${styles.cta} w-full sm:w-auto min-h-[44px]`}>
           BookMyTurf
         </button>
       </form>

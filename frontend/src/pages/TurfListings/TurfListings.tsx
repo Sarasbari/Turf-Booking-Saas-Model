@@ -66,9 +66,6 @@ export function TurfListings() {
                 }
             });
         }
-        if (filters.turfType !== 'all') {
-            // Size feature removed from Turf interface, ignoring size filter natively
-        }
 
         switch (sortBy) {
             case 'price-low': result.sort((a, b) => a.pricePerHour - b.pricePerHour); break;
@@ -85,6 +82,13 @@ export function TurfListings() {
         filters.turfType !== 'all' ||
         filters.date !== '';
 
+    const activeFilterCount = [
+        filters.location !== 'All Cities',
+        filters.priceRange !== 'all',
+        filters.turfType !== 'all',
+        filters.date !== ''
+    ].filter(Boolean).length;
+
     return (
         <div className={styles.page}>
             <Header />
@@ -93,30 +97,32 @@ export function TurfListings() {
                 <div className={styles.container}>
                     <div className={styles.layoutGrid}>
 
-                        {/* Mobile Filter Button — visible ≤768px only */}
+                        {/* Mobile Filter Button — visible <lg only */}
                         <button
-                            className={styles.mobileFilterButton}
+                            className="lg:hidden flex items-center justify-center gap-2 w-full px-4 py-3 bg-white border border-gray-200 rounded-xl mb-4 text-sm font-semibold text-gray-900 transition-colors hover:border-orange-600 hover:text-orange-600"
                             onClick={() => setIsMobileFilterOpen(true)}
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                             </svg>
                             Filters
-                            {hasActiveFilters && <span className={styles.filterBadge}>{[filters.location !== 'All Cities', filters.priceRange !== 'all', filters.turfType !== 'all', filters.date !== ''].filter(Boolean).length}</span>}
+                            {activeFilterCount > 0 && (
+                                <span className={styles.filterBadge}>{activeFilterCount}</span>
+                            )}
                         </button>
 
                         {/* Mobile Filter Drawer — slide up bottom sheet */}
                         {isMobileFilterOpen && (
-                            <div className={styles.drawerOverlay} onClick={() => setIsMobileFilterOpen(false)}>
-                                <div className={styles.mobileFilterDrawer} onClick={(e) => e.stopPropagation()}>
-                                    <div className={styles.drawerHandle} />
-                                    <div className={styles.drawerHeader}>
-                                        <h3 className={styles.drawerTitle}>Filters</h3>
-                                        <button className={styles.drawerClose} onClick={() => setIsMobileFilterOpen(false)}>✕</button>
+                            <div className="fixed inset-0 bg-black/50 z-[2000] animate-[fadeInOverlay_0.2s_ease]" onClick={() => setIsMobileFilterOpen(false)}>
+                                <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl p-4 pb-8 max-h-[85vh] overflow-y-auto z-[2001] animate-[slideUp_0.3s_cubic-bezier(0.4,0,0.2,1)] flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+                                    <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-1" />
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-bold text-gray-900 m-0">Filters</h3>
+                                        <button className="bg-transparent border-none text-xl text-gray-500 cursor-pointer p-1" onClick={() => setIsMobileFilterOpen(false)}>✕</button>
                                     </div>
 
                                     {/* City Filter */}
-                                    <div className={styles.filterItem}>
+                                    <div className="flex flex-col gap-2">
                                         <label className={styles.filterLabel}>City</label>
                                         <select
                                             className={styles.filterSelect}
@@ -130,7 +136,7 @@ export function TurfListings() {
                                     </div>
 
                                     {/* Date Filter */}
-                                    <div className={styles.filterItem}>
+                                    <div className="flex flex-col gap-2">
                                         <label className={styles.filterLabel}>Date</label>
                                         <input
                                             type="date"
@@ -142,7 +148,7 @@ export function TurfListings() {
                                     </div>
 
                                     {/* Price Filter */}
-                                    <div className={styles.filterItem}>
+                                    <div className="flex flex-col gap-2">
                                         <label className={styles.filterLabel}>Price Range</label>
                                         <select
                                             className={styles.filterSelect}
@@ -157,7 +163,7 @@ export function TurfListings() {
                                     </div>
 
                                     {/* Turf Type Filter */}
-                                    <div className={styles.filterItem}>
+                                    <div className="flex flex-col gap-2">
                                         <label className={styles.filterLabel}>Turf Type</label>
                                         <select
                                             className={styles.filterSelect}
@@ -172,9 +178,9 @@ export function TurfListings() {
                                         </select>
                                     </div>
 
-                                    <div className={styles.drawerActions}>
+                                    <div className="flex gap-3 pt-2 mt-2 border-t border-gray-200">
                                         {hasActiveFilters && (
-                                            <button className={styles.clearButton} onClick={() => { clearFilters(); setIsMobileFilterOpen(false); }}>
+                                            <button className={styles.clearButton + " flex-1 !w-auto !text-center"} onClick={() => { clearFilters(); setIsMobileFilterOpen(false); }}>
                                                 Clear All
                                             </button>
                                         )}
@@ -187,7 +193,7 @@ export function TurfListings() {
                         )}
 
                         {/* Left Panel — Filter Sidebar (desktop only) */}
-                        <div className={styles.filterPanel}>
+                        <div className={`${styles.filterPanel} hidden lg:block`}>
                             <div className={styles.filterPanelHeader}>
                                 <h3 className={styles.filterPanelTitle}>
                                     <svg className={styles.filterPanelIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -284,20 +290,20 @@ export function TurfListings() {
                                 {/* Active Filters Summary */}
                                 <div className={styles.activeFilters}>
                                     <div className={styles.activeFiltersTitle}>Active Filters</div>
-                                    <div className={styles.activeFiltersList}>
+                                    <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide lg:flex-col lg:overflow-visible">
                                         {hasActiveFilters ? (
                                             <>
                                                 {filters.location !== 'All Cities' && (
-                                                    <span className={styles.activeFilterTag}>📍 {filters.location}</span>
+                                                    <span className={`${styles.activeFilterTag} flex-shrink-0`}>📍 {filters.location}</span>
                                                 )}
                                                 {filters.priceRange !== 'all' && (
-                                                    <span className={styles.activeFilterTag}>💰 {filters.priceRange}</span>
+                                                    <span className={`${styles.activeFilterTag} flex-shrink-0`}>💰 {filters.priceRange}</span>
                                                 )}
                                                 {filters.turfType !== 'all' && (
-                                                    <span className={styles.activeFilterTag}>⚽ {filters.turfType}</span>
+                                                    <span className={`${styles.activeFilterTag} flex-shrink-0`}>⚽ {filters.turfType}</span>
                                                 )}
                                                 {filters.date && (
-                                                    <span className={styles.activeFilterTag}>📅 {filters.date}</span>
+                                                    <span className={`${styles.activeFilterTag} flex-shrink-0`}>📅 {filters.date}</span>
                                                 )}
                                             </>
                                         ) : (

@@ -869,7 +869,8 @@
 
 @media (max-width: 768px) {
   .td-right-col {
-    display: none;
+    display: block;
+    /* Removed display: none so the booking pane is visible on mobile inline */
   }
 }
 
@@ -1798,8 +1799,8 @@
 
 /* Slots grid */
 .td-booking__slots {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   max-height: 280px;
   overflow-y: auto;
@@ -1817,6 +1818,8 @@
 
 .td-booking__slot {
   height: 44px;
+  flex: 1 1 calc(33.333% - 8px);
+  min-width: 80px;
   border-radius: var(--td-radius-sm);
   border: 1.5px solid var(--td-border);
   background: #fff;

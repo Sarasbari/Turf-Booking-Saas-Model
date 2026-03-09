@@ -28,12 +28,10 @@
 /* Image area — matches TurfCard 2:3 aspect ratio */
 .imageArea {
     width: 100%;
-    aspect-ratio: 2 / 3;
 }
 
 /* Info section */
 .infoArea {
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
