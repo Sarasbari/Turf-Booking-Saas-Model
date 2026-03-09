@@ -32,6 +32,7 @@ export interface Booking {
     paymentMethod?: string;
     paymentId?: string;
     razorpayOrderId?: string;
+    emailSent?: boolean;
     createdAt: Timestamp;
 }
 

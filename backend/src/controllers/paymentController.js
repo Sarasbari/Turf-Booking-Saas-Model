@@ -9,6 +9,7 @@ import { createRazorpayOrder, verifyPaymentSignature } from '../services/payment
 import { adminDb } from '../config/firebaseAdmin.js';
 import { config } from '../config/index.js';
 import { FieldValue } from 'firebase-admin/firestore';
+import { sendBookingConfirmation } from '../services/emailService.js';
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/create-order
@@ -107,9 +108,11 @@ export async function handleVerifyPayment(req, res) {
       });
     }
 
-    // ── Signature valid → create confirmed booking in Firestore ───────
+    // ── Signature valid → Handle DB logic ensuring idempotency ───────
     const bookingId = bookingData.receipt || `TRF-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
+    const bookingRef = adminDb.collection('bookings').doc(bookingId);
 
+    // Write booking as confirmed right away
     const booking = {
       id: bookingId,
       bookingId,
@@ -119,6 +122,7 @@ export async function handleVerifyPayment(req, res) {
       timeSlots: bookingData.slots,
       totalPrice: bookingData.totalPrice || 0,
       status: 'confirmed',
+      emailSent: false,
       paymentStatus: 'paid',
       paymentDetails: {
         razorpayOrderId: razorpay_order_id,
@@ -130,10 +134,72 @@ export async function handleVerifyPayment(req, res) {
       completedAt: null,
     };
 
-    await adminDb.collection('bookings').doc(bookingId).set(booking);
-
+    await bookingRef.set(booking);
     console.log(`✅ Booking confirmed: ${bookingId} | Payment: ${razorpay_payment_id}`);
 
+    // ── Email Trigger Flow ──
+    const sendEmailFlow = async () => {
+        try {
+            // 1. Fetch all dependencies directly from Firestore
+            const bookingSnap = await bookingRef.get();
+            const turfSnap = await adminDb.collection('turf').doc(bookingData.turfId).get();
+            const userSnap = await adminDb.collection('users').doc(user.uid).get();
+
+            if (!bookingSnap.exists || !turfSnap.exists || !userSnap.exists) {
+                console.error(`[Email Service] Missing referential documents for booking ${bookingId}`);
+                return;
+            }
+
+            const bDoc = bookingSnap.data();
+            const tDoc = turfSnap.data();
+            const uDoc = userSnap.data();
+
+            // 2. Check duplicate guard to prevent resending
+            if (bDoc.emailSent === true) {
+                console.log(`ℹ️ Booking ${bookingId} already processed (skipping duplicate email)`);
+                return;
+            }
+
+            // Date formatter utility
+            const formatDate = (dateString) => {
+                try {
+                    return new Date(dateString).toLocaleDateString('en-US', {
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+                } catch(e) {
+                    return dateString;
+                }
+            };
+
+            // 3. Call email service (Non-blocking from main verify thread)
+            await sendBookingConfirmation({
+                toEmail: uDoc.email || user.email,
+                userName: uDoc.name || user.name || 'User',
+                bookingId: bookingId,
+                turfName: tDoc.name || 'Unknown Turf',
+                turfAddress: tDoc.address || 'Address provided via booking',
+                ownerContact: tDoc.phone || tDoc.ownerId || 'Not Available',
+                bookedDate: formatDate(bDoc.date),
+                timeSlots: bDoc.timeSlots,
+                totalAmount: bDoc.totalPrice,
+                paymentId: razorpay_payment_id,
+            });
+
+            // Update local state confirming shipment
+            await bookingRef.update({ emailSent: true });
+
+        } catch (error) {
+            console.error(`[Email Service] Critical failure preparing email for ${bookingId}:`, error);
+        }
+    };
+
+    // Trigger asynchronously relative to main route thread
+    sendEmailFlow();
+
+    // 4. Return success response to frontend immediately without waiting for email
     return res.status(200).json({
       success: true,
       bookingId,

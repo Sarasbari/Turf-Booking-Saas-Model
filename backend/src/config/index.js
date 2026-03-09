@@ -33,6 +33,11 @@ export const config = {
     firebase: {
         projectId: process.env.FIREBASE_PROJECT_ID,
     },
+
+    resend: {
+        apiKey: process.env.RESEND_API_KEY,
+        fromEmail: process.env.EMAIL_FROM || 'BookMyTurf <onboarding@resend.dev>',
+    }
 };
 
 // Validate required environment variables
@@ -45,6 +50,7 @@ const requiredEnvVars = [
     'RAZORPAY_KEY_ID',
     'RAZORPAY_KEY_SECRET',
     'FIREBASE_PROJECT_ID',
+    'RESEND_API_KEY',
 ];
 
 for (const envVar of requiredEnvVars) {
