@@ -24,6 +24,15 @@ export const config = {
     frontend: {
         url: process.env.FRONTEND_URL || 'http://localhost:5173',
     },
+
+    razorpay: {
+        keyId: process.env.RAZORPAY_KEY_ID,
+        keySecret: process.env.RAZORPAY_KEY_SECRET,
+    },
+
+    firebase: {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+    },
 };
 
 // Validate required environment variables
@@ -33,6 +42,9 @@ const requiredEnvVars = [
     'GOOGLE_REDIRECT_URI',
     'JWT_SECRET',
     'SESSION_SECRET',
+    'RAZORPAY_KEY_ID',
+    'RAZORPAY_KEY_SECRET',
+    'FIREBASE_PROJECT_ID',
 ];
 
 for (const envVar of requiredEnvVars) {
