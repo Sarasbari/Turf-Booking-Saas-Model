@@ -40,7 +40,7 @@ const Overview: React.FC = () => {
 
     // Get today's bookings
     const todayStr = new Date().toISOString().split('T')[0];
-    const todaysBookings = bookings.filter(b => b.date === todayStr).sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const todaysBookings = bookings.filter(b => b.date === todayStr).sort((a, b) => (a.timeSlots?.[0] || '').localeCompare(b.timeSlots?.[0] || ''));
 
     return (
         <div className="space-y-6 p-6 md:p-8">
@@ -134,21 +134,21 @@ const Overview: React.FC = () => {
                                     <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 transition-colors hover:bg-gray-50">
                                         <div className="flex items-start gap-4">
                                             <div className="flex h-12 w-20 flex-col items-center justify-center rounded bg-gray-100 font-mono text-sm font-bold text-gray-700">
-                                                {booking.startTime}
+                                                {booking.timeSlots?.[0] || 'N/A'}
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-gray-900">{booking.customerName}</p>
+                                                <p className="font-semibold text-gray-900">{booking.customerName || booking.userId}</p>
                                                 <p className="text-sm text-gray-500">{turfName} • {booking.sport}</p>
                                             </div>
                                         </div>
                                         <div className="mt-4 sm:mt-0 flex items-center gap-4">
                                             <div className="text-right">
-                                                <p className="font-medium text-gray-900">₹{booking.amount}</p>
+                                                <p className="font-medium text-gray-900">₹{booking.totalPrice}</p>
                                                 <p className="text-xs text-gray-500">{booking.paymentMethod || 'Online'}</p>
                                             </div>
                                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                    booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
+                                                booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                                             </span>

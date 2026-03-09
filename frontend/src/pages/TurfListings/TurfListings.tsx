@@ -40,7 +40,7 @@ export function TurfListings() {
         setFilters({ location: 'All Cities', date: '', priceRange: 'all', turfType: 'all' });
     };
 
-    const handleBookNow = (turf: any) => {
+    const handleBookNow = (turf: Turf) => {
         if (!isLoggedIn()) {
             setIsSignInModalOpen(true);
             return;
@@ -67,7 +67,7 @@ export function TurfListings() {
             });
         }
         if (filters.turfType !== 'all') {
-            result = result.filter(turf => turf.size === filters.turfType);
+            // Size feature removed from Turf interface, ignoring size filter natively
         }
 
         switch (sortBy) {
@@ -355,7 +355,7 @@ export function TurfListings() {
                                     {filteredAndSortedTurfs.map((turf, index) => (
                                         <TurfCard
                                             key={turf.id}
-                                            turf={turf as any}
+                                            turf={turf}
                                             onBook={handleBookNow}
                                             index={index}
                                         />

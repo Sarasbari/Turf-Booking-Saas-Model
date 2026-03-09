@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useOwnerDashboard } from '../../hooks/useOwnerDashboard';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import { TurfData } from '../../types/owner';
+import { Turf } from '../../types';
 
 const ManageTurf: React.FC = () => {
     const { turfs, loading, error } = useOwnerDashboard();
-    const [selectedTurf, setSelectedTurf] = useState<TurfData | null>(null);
-    const [formData, setFormData] = useState<Partial<TurfData>>({});
+    const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
+    const [formData, setFormData] = useState<Partial<Turf>>({});
     const [saving, setSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -28,7 +28,7 @@ const ManageTurf: React.FC = () => {
         const { name, value, type } = e.target as HTMLInputElement;
         const finalValue = type === 'number' ? Number(value) : value;
 
-        setFormData(prev => ({
+        setFormData((prev: Partial<Turf>) => ({
             ...prev,
             [name]: finalValue
         }));
@@ -36,12 +36,12 @@ const ManageTurf: React.FC = () => {
 
     const handleAmenitiesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { value, checked } = e.target;
-        setFormData(prev => {
+        setFormData((prev: Partial<Turf>) => {
             const currentAmenities = prev.amenities || [];
             if (checked) {
                 return { ...prev, amenities: [...currentAmenities, value] };
             } else {
-                return { ...prev, amenities: currentAmenities.filter(a => a !== value) };
+                return { ...prev, amenities: currentAmenities.filter((a: string) => a !== value) };
             }
         });
     };
@@ -58,16 +58,13 @@ const ManageTurf: React.FC = () => {
             await updateDoc(turfRef, {
                 name: formData.name,
                 city: formData.city,
-                area: formData.area,
                 address: formData.address,
-                description: formData.description,
                 pricePerHour: formData.pricePerHour,
-                openTime: formData.openTime,
-                closeTime: formData.closeTime,
                 amenities: formData.amenities,
             });
             setSaveMessage({ type: 'success', text: 'Turf details updated successfully!' });
-        } catch (err: any) {
+        } catch (error) {
+            const err = error as Error;
             setSaveMessage({ type: 'error', text: err.message || 'Failed to update turf' });
         } finally {
             setSaving(false);
@@ -127,19 +124,9 @@ const ManageTurf: React.FC = () => {
                                 <input required type="text" name="city" value={formData.city || ''} onChange={handleChange} className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-orange-500 focus:ring-orange-500" />
                             </div>
 
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Area</label>
-                                <input required type="text" name="area" value={formData.area || ''} onChange={handleChange} className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-orange-500 focus:ring-orange-500" />
-                            </div>
-
                             <div className="sm:col-span-2">
                                 <label className="mb-1 block text-sm font-medium text-gray-700">Full Address</label>
                                 <textarea required name="address" rows={2} value={formData.address || ''} onChange={handleChange} className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-orange-500 focus:ring-orange-500" />
-                            </div>
-
-                            <div className="sm:col-span-2">
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
-                                <textarea required name="description" rows={4} value={formData.description || ''} onChange={handleChange} className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-orange-500 focus:ring-orange-500" />
                             </div>
                         </div>
                     </div>
@@ -151,14 +138,6 @@ const ManageTurf: React.FC = () => {
                             <div>
                                 <label className="mb-1 block text-sm font-medium text-gray-700">Price per Hour (₹)</label>
                                 <input required type="number" name="pricePerHour" min="0" value={formData.pricePerHour || ''} onChange={handleChange} className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-orange-500 focus:ring-orange-500" />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Open Time</label>
-                                <input required type="time" name="openTime" value={formData.openTime || ''} onChange={handleChange} className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-orange-500 focus:ring-orange-500" />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-sm font-medium text-gray-700">Close Time</label>
-                                <input required type="time" name="closeTime" value={formData.closeTime || ''} onChange={handleChange} className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-orange-500 focus:ring-orange-500" />
                             </div>
                         </div>
                     </div>

@@ -8,7 +8,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs, onSnapshot, DocumentData, QuerySnapshot } from 'firebase/firestore';
 import { db, auth } from '../services/firebase';
-import { TurfData, BookingType } from '../types/owner';
+import { Turf, Booking } from '../types';
 
 interface OwnerStats {
     totalEarnings: number;
@@ -18,8 +18,8 @@ interface OwnerStats {
 }
 
 export function useOwnerDashboard() {
-    const [turfs, setTurfs] = useState<TurfData[]>([]);
-    const [bookings, setBookings] = useState<BookingType[]>([]);
+    const [turfs, setTurfs] = useState<Turf[]>([]);
+    const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export function useOwnerDashboard() {
                 const fetchedTurfs = turfsSnapshot.docs.map(doc => ({
                     ...doc.data(),
                     id: doc.id
-                })) as TurfData[];
+                })) as Turf[];
 
                 setTurfs(fetchedTurfs);
 
@@ -76,7 +76,7 @@ export function useOwnerDashboard() {
                         const fetchedBookings = snapshot.docs.map(doc => ({
                             ...doc.data(),
                             id: doc.id
-                        })) as BookingType[];
+                        })) as Booking[];
 
                         // Sort by createdAt descending
                         fetchedBookings.sort((a, b) => {
@@ -94,8 +94,9 @@ export function useOwnerDashboard() {
                         setLoading(false);
                     }
                 );
-            } catch (err: any) {
-                console.error('❌ Error fetching owner dashboard data:', err);
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                const err = error as Error;
                 setError(err.message || 'Failed to load dashboard data');
                 setLoading(false);
             }
@@ -119,7 +120,7 @@ export function useOwnerDashboard() {
 
         bookings.forEach(b => {
             if (b.status === 'confirmed' || b.status === 'pending') { // include both or just confirmed
-                totalEarnings += Number(b.amount || 0);
+                totalEarnings += Number(b.totalPrice || 0);
             }
             if (b.date === todayStr) {
                 todayBookings++;

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../services/firebase';
-import { initiateGoogleLogin } from '../../utils/auth';
+import { useAuth } from '../../context/AuthContext';
 import styles from './SignIn.module.css';
 
 // ── Types ────────────────────────────────────────────────────
@@ -76,6 +76,8 @@ function GoogleSignInButton({
 
 export function SignInModal({ isOpen, onClose }: SignInModalProps) {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { signInWithGoogle } = useAuth();
 
     // ── Shared state ─────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<TabType>('user');
@@ -140,11 +142,13 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
         setIsLoading(true);
         setError(null);
         try {
-            await initiateGoogleLogin();
+            await signInWithGoogle();
             onClose();
-            window.location.reload();
-        } catch (err: any) {
-            console.error('Error during sign in:', err);
+            const from = location.state?.from?.pathname || '/listings';
+            navigate(from, { replace: true });
+        } catch (error) {
+            console.error('Error during sign in:', error);
+            const err = error as Error;
             setError(err.message || 'Failed to sign in. Please try again.');
             setIsLoading(false);
         }
@@ -181,8 +185,9 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                 setGoogleUser(user);
                 setTimeout(() => setOwnerView('register'), 1500);
             }
-        } catch (err: any) {
-            console.error('Owner sign in error:', err);
+        } catch (error) {
+            console.error('Owner sign in error:', error);
+            const err = error as Error;
             setError(err.message || 'Failed to sign in. Please try again.');
         } finally {
             setIsLoading(false);
@@ -200,8 +205,9 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
             setGoogleUser(result.user);
-        } catch (err: any) {
-            console.error('Google sign in error:', err);
+        } catch (error) {
+            console.error('Google sign in error:', error);
+            const err = error as Error;
             setError(err.message || 'Failed to sign in with Google.');
         } finally {
             setIsLoading(false);
@@ -294,8 +300,9 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
 
             // Show pending view
             setOwnerView('pending');
-        } catch (err: any) {
-            console.error('Registration error:', err);
+        } catch (error) {
+            console.error('Registration error:', error);
+            const err = error as Error;
             setError(err.message || 'Registration failed. Please try again.');
         } finally {
             setIsLoading(false);

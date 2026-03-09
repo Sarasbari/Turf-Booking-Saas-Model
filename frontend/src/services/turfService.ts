@@ -1,4 +1,4 @@
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { Turf } from '../types';
 
@@ -6,24 +6,23 @@ export const turfService = {
     normalizeForCard: (id: string, data: any): Turf => ({
         id,
         name: data.name || 'Unnamed Turf',
-        location: data.location?.address
-            ? `${data.location.address}, ${data.location.city || ''}`
-            : (data.address
-                ? `${data.address}, ${data.city || ''}`
-                : (typeof data.location === 'string' ? data.location : '')),
         city: data.location?.city || data.city || '',
-        images: data.images && data.images.length > 0
+        address: data.location?.address
+            ? `${data.location.address}`
+            : (data.address
+                ? `${data.address}`
+                : (typeof data.location === 'string' ? data.location : '')),
+        images: Array.isArray(data.images) && data.images.length > 0
             ? data.images
             : (data.coverImage ? [data.coverImage] : ['https://via.placeholder.com/800x1200?text=No+Image']),
-        pricePerHour: data.pricing?.basePrice || data.pricePerHour || 0,
-        rating: data.rating || 0,
-        size: data.turfSize || data.groundSize || data.size || '5-a-side',
-        amenities: data.amenities || [],
-        isPromoted: data.isFeatured || data.isPromoted || false,
-        availableToday: true,
-        sport: data.sport || data.sports?.[0] || 'Football',
-        lat: data.geoPoint?.latitude ?? data.geoPoint?._lat ?? data.latitude ?? undefined,
-        lng: data.geoPoint?.longitude ?? data.geoPoint?._long ?? data.longitude ?? undefined,
+        pricePerHour: Number(data.pricing?.basePrice || data.pricePerHour || 0),
+        rating: Number(data.rating || 0),
+        totalReviews: Number(data.totalReviews || 0),
+        amenities: Array.isArray(data.amenities) ? data.amenities : [],
+        sport: (['Cricket', 'Football', 'Volleyball', 'Basketball', 'Tennis'].includes(data.sport) ? data.sport : 'Football') as Turf['sport'],
+        ownerId: data.ownerId || '',
+        isActive: typeof data.isActive === 'boolean' ? data.isActive : true,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now(),
     }),
 
     getAllTurfs: async (): Promise<Turf[]> => {

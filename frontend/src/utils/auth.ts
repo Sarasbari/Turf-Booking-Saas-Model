@@ -110,10 +110,11 @@ export async function initiateGoogleLogin(): Promise<void> {
         setToken(token);
 
         console.log('User signed in successfully:', userData);
-    } catch (error: any) {
-        console.error('Error during Google sign-in:', error);
+    } catch (err: unknown) {
+        console.error('Error during Google sign-in:', err);
 
         // Provide more specific error messages
+        const error = err as { code?: string; message?: string };
         if (error.code === 'auth/popup-closed-by-user') {
             throw new Error('Sign-in cancelled. Please try again.');
         } else if (error.code === 'auth/popup-blocked') {

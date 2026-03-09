@@ -1,54 +1,40 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { handleAuthCallback } from '../../utils/auth';
+import { useAuth } from '../../context/AuthContext';
 import styles from './AuthCallback.module.css';
 
 export function AuthCallback() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { user, loading } = useAuth();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
 
     useEffect(() => {
-        const processCallback = async () => {
-            try {
-                const token = searchParams.get('token');
-                const error = searchParams.get('error');
+        const error = searchParams.get('error');
 
-                if (error) {
-                    setStatus('error');
-                    setErrorMessage(
-                        error === 'no_code'
-                            ? 'No authorization code received from Google'
-                            : 'Authentication failed. Please try again.'
-                    );
-                    return;
-                }
+        if (error) {
+            setStatus('error');
+            setErrorMessage(
+                error === 'no_code'
+                    ? 'No authorization code received from Google'
+                    : 'Authentication failed. Please try again.'
+            );
+            return;
+        }
 
-                if (!token) {
-                    setStatus('error');
-                    setErrorMessage('No authentication token received');
-                    return;
-                }
-
-                // Handle the authentication callback
-                await handleAuthCallback(token);
-
+        if (!loading) {
+            if (user) {
                 setStatus('success');
-
-                // Redirect to listings page after a short delay
                 setTimeout(() => {
-                    navigate('/listings');
+                    navigate('/listings', { replace: true });
                 }, 1500);
-            } catch (err) {
-                console.error('Error processing auth callback:', err);
+            } else {
                 setStatus('error');
-                setErrorMessage('Failed to complete authentication. Please try again.');
+                setErrorMessage('No authentication token received');
             }
-        };
-
-        processCallback();
-    }, [searchParams, navigate]);
+        }
+    }, [searchParams, navigate, user, loading]);
 
     return (
         <div className={styles.page}>

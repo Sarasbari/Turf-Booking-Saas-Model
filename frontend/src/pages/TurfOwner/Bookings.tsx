@@ -11,8 +11,9 @@ const Bookings: React.FC = () => {
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
             // Free text search (customer name, ID)
+            const custName = b.customerName || b.userId || '';
             const matchesSearch = searchTerm === ''
-                || b.customerName.toLowerCase().includes(searchTerm.toLowerCase())
+                || custName.toLowerCase().includes(searchTerm.toLowerCase())
                 || b.id.toLowerCase().includes(searchTerm.toLowerCase());
 
             // Status filter
@@ -99,23 +100,23 @@ const Bookings: React.FC = () => {
                                     <tr key={b.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-900">{b.date}</div>
-                                            <div className="text-gray-500">{b.startTime} - {b.endTime}</div>
+                                            <div className="text-gray-500">{b.timeSlots?.[0]} - {b.timeSlots?.[b.timeSlots.length - 1]}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="font-medium text-gray-900">{b.customerName}</div>
-                                            <div className="text-gray-500">{b.customerPhone}</div>
+                                            <div className="font-medium text-gray-900">{b.customerName || b.userId}</div>
+                                            <div className="text-gray-500">{b.customerPhone || 'N/A'}</div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-700">
                                             <div>{turf?.name || 'Unknown Turf'}</div>
                                             <div className="text-xs text-gray-400 capitalize">{b.sport}</div>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-gray-900">
-                                            ₹{b.amount}
+                                            ₹{b.totalPrice}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${b.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                    b.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                        'bg-yellow-100 text-yellow-800'
+                                                b.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                    'bg-yellow-100 text-yellow-800'
                                                 }`}>
                                                 {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
                                             </span>
@@ -139,12 +140,12 @@ const Bookings: React.FC = () => {
                         <div key={b.id} className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
                             <div className="mb-3 flex items-start justify-between">
                                 <div>
-                                    <div className="font-semibold text-gray-900">{b.customerName}</div>
-                                    <div className="text-sm text-gray-500">{b.customerPhone}</div>
+                                    <div className="font-semibold text-gray-900">{b.customerName || b.userId}</div>
+                                    <div className="text-sm text-gray-500">{b.customerPhone || 'N/A'}</div>
                                 </div>
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${b.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                        b.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                            'bg-yellow-100 text-yellow-800'
+                                    b.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                        'bg-yellow-100 text-yellow-800'
                                     }`}>
                                     {b.status}
                                 </span>
@@ -153,8 +154,8 @@ const Bookings: React.FC = () => {
                                 <span className="font-medium">{turf?.name}</span> • {b.sport}
                             </div>
                             <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 text-sm">
-                                <div className="font-medium text-indigo-600">{b.date} • {b.startTime}</div>
-                                <div className="font-bold text-gray-900">₹{b.amount}</div>
+                                <div className="font-medium text-indigo-600">{b.date} • {b.timeSlots?.[0]}</div>
+                                <div className="font-bold text-gray-900">₹{b.totalPrice}</div>
                             </div>
                         </div>
                     );

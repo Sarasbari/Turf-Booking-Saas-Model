@@ -92,7 +92,7 @@ export function BookingModal({ turf, isOpen, onClose }: BookingModalProps) {
                         <div className={styles.header}>
                             <div>
                                 <h2 className={styles.title}>{turf.name}</h2>
-                                <p className={styles.subtitle}>{turf.location}, {turf.city}</p>
+                                <p className={styles.subtitle}>{turf.address}, {turf.city}</p>
                             </div>
                             <button className={styles.closeButton} onClick={onClose} aria-label="Close">
                                 ✕

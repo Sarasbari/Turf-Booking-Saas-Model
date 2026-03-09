@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { ScrollToTop } from "./components/layout/ScrollToTop";
+import { AuthProvider } from "./context/AuthContext";
 import { Home } from "./pages/Home/Home";
 import { TurfListings } from "./pages/TurfListings/TurfListings";
 import { SignIn } from "./pages/SignIn/SignIn";
@@ -23,7 +24,7 @@ import { OwnerSettings } from "./pages/Owner/OwnerSettings";
 
 export function App() {
     return (
-        <>
+        <AuthProvider>
             <BrowserRouter>
                 <ScrollToTop />
                 <Routes>
@@ -50,6 +51,6 @@ export function App() {
                 </Routes>
             </BrowserRouter>
             <SpeedInsights />
-        </>
+        </AuthProvider>
     );
 }

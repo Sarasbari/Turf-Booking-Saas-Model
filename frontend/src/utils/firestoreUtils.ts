@@ -105,10 +105,9 @@ export async function updateUserProfile(
     try {
         const userDocRef = doc(db, 'users', userId);
 
-        const updateData: any = {
-            name: formData.name,
-            updatedAt: serverTimestamp(),
-        };
+        const updateData: Record<string, unknown> = {};
+        updateData.name = formData.name;
+        updateData.updatedAt = serverTimestamp();
 
         // Only add optional fields if they have values
         if (formData.phone !== undefined) updateData.phone = formData.phone;

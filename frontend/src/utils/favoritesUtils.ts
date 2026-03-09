@@ -8,7 +8,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { getUserProfile } from './firestoreUtils';
-// ✅ REMOVED: import { mockTurfs, type Turf } from '../data/mockTurfs';
+import { Turf } from '../types';
+import { turfService } from '../services/turfService';
 
 // addToFavorites — unchanged ✅
 export async function addToFavorites(userId: string, turfId: string): Promise<void> {
@@ -61,36 +62,19 @@ export async function isTurfFavorited(userId: string, turfId: string): Promise<b
 }
 
 // ✅ FIXED: Fetch favorite turfs from Firebase instead of mockTurfs
-export async function getFavoriteTurfs(userId: string): Promise<any[]> {
+export async function getFavoriteTurfs(userId: string): Promise<Turf[]> {
     try {
         const favoriteIds = await getUserFavorites(userId);
         if (favoriteIds.length === 0) return [];
 
         // Fetch each turf from Firebase
-        const turfs: any[] = [];
+        const turfs: Turf[] = [];
         for (const turfId of favoriteIds) {
             try {
                 const turfRef = doc(db, 'turf', turfId);
                 const turfSnap = await getDoc(turfRef);
                 if (turfSnap.exists()) {
-                    const data = turfSnap.data();
-                    // Normalize to match TurfCard expected shape
-                    turfs.push({
-                        id: turfSnap.id,
-                        name: data.name || 'Unnamed Turf',
-                        location: data.location?.address
-                            ? `${data.location.address}, ${data.location.city || ''}`
-                            : '',
-                        city: data.location?.city || '',
-                        images: data.images || [data.coverImage || 'https://via.placeholder.com/800x1200?text=No+Image'],
-                        pricePerHour: data.pricing?.basePrice || 0,
-                        rating: data.rating || 0,
-                        size: data.turfSize || '5-a-side',
-                        amenities: data.amenities || [],
-                        isPromoted: data.isFeatured || false,
-                        availableToday: data.status === 'active',
-                        sport: data.sport || 'Football',
-                    });
+                    turfs.push(turfService.normalizeForCard(turfSnap.id, turfSnap.data() as Record<string, unknown>));
                 }
             } catch (err) {
                 console.error(`Error fetching turf ${turfId}:`, err);

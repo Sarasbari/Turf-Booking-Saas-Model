@@ -24,7 +24,7 @@ const Analytics: React.FC = () => {
 
             const dayBookings = bookings.filter(b => b.date === dateStr && (b.status === 'confirmed' || b.status === 'pending'));
 
-            const revenue = dayBookings.reduce((sum, b) => sum + Number(b.amount || 0), 0);
+            const revenue = dayBookings.reduce((sum, b) => sum + Number(b.totalPrice || 0), 0);
             const count = dayBookings.length;
 
             // Short readable date (e.g., "Mar 09")
@@ -107,7 +107,8 @@ const Analytics: React.FC = () => {
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dx={-10} tickFormatter={(val) => `₹${val}`} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    formatter={(value: any) => [`₹${value || 0}`, 'Revenue']}
+                                    formatter={(value) => [`₹${value || 0}`, 'Revenue']}
+                                    labelStyle={{ color: '#000' }}
                                 />
                                 <Line type="monotone" dataKey="revenue" stroke="#EA580C" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
                             </LineChart>
