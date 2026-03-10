@@ -175,52 +175,37 @@ export function MyBookings({ userId }: MyBookingsProps) {
                 ) : (
                     <div className="bookings-list">
                         {currentBookings.map((booking) => (
-                            <div key={booking.id} className="booking-card">
-                                <div className="booking-left">
-                                    <h3 className="turf-name">{booking.turfName}</h3>
-                                    <p className="turf-location">
-                                        <span className="location-icon">📍</span>
-                                        {booking.turfLocation}
-                                    </p>
-                                    <p className="booking-datetime">
-                                        {formatDate(booking.date)} • {booking.time}
-                                    </p>
-                                    <p className="booking-details">
-                                        {booking.duration} hour{booking.duration > 1 ? 's' : ''} • ₹{booking.price}
-                                    </p>
+                            <div key={booking.id} className={`booking-card ${activeTab === 'upcoming' ? 'active-booking-card' : ''}`}>
+                                <div className="booking-card-inner">
+                                    <div className="booking-image">
+                                        <img src="https://images.unsplash.com/photo-1529900965900-58ab5b5f25bf" alt={booking.turfName} />
+                                    </div>
+                                    <div className="booking-main-details">
+                                        <div className="booking-card-header">
+                                            <h3 className="turf-name">{booking.turfName}</h3>
+                                            <span className="sport-badge">FOOTBALL</span>
+                                        </div>
+                                        <p className="turf-location">
+                                            <span className="location-svg">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>
+                                            </span>
+                                            {booking.turfLocation}
+                                        </p>
+                                        <div className="booking-datetime-pill">
+                                            {formatDate(booking.date).split(',')[1] || formatDate(booking.date)}, {booking.time.split(' - ')[0]}
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="booking-right">
-                                    <span className={`status-badge status-${booking.status}`}>
-                                        {booking.status === 'upcoming' ? 'Confirmed' : 'Completed'}
-                                    </span>
-                                    {activeTab === 'upcoming' && getCountdown(booking.date, booking.time) && (
-                                        <p className="countdown">{getCountdown(booking.date, booking.time)}</p>
-                                    )}
-                                    <div className="booking-actions">
-                                        {activeTab === 'upcoming' ? (
-                                            <>
-                                                <button className="action-button primary">Get Directions</button>
-                                                <button
-                                                    className="action-button danger-text"
-                                                    onClick={() => handleCancelClick(booking)}
-                                                >
-                                                    Cancel Booking
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    className="action-button primary"
-                                                    onClick={() => (window.location.href = '/listings')}
-                                                >
-                                                    Book Again
-                                                </button>
-                                                <button className="action-button secondary disabled" disabled>
-                                                    Leave Review
-                                                    <span className="coming-soon-badge">Coming Soon</span>
-                                                </button>
-                                            </>
-                                        )}
+                                    <div className="booking-status-row">
+                                        <span className={`status-badge status-${activeTab === 'upcoming' ? 'confirmed' : 'completed'}`}>
+                                            {activeTab === 'upcoming' ? 'Confirmed' : 'Completed'}
+                                        </span>
+                                    </div>
+                                    <div className="booking-actions-menu">
+                                        <button className="menu-dots-btn" onClick={() => handleCancelClick(booking)}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
