@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, onSnapshot, query, orderBy, limit, getDocs, where, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { auth } from '../services/firebase';
-import { createBooking } from '../firebase/bookings';
+import { createOrder, openRazorpayCheckout } from '../services/paymentService';
 import { Header } from '../components/layout/Header/Header';
 import './TurfDetailPage.css';
 
@@ -699,19 +699,25 @@ function BookingCard({ turf }) {
 
         const unsubscribe = onSnapshot(bq, (snapshot) => {
             const booked = [];
-            snapshot.forEach((doc) => {
-                const data = doc.data();
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
                 if (data.groundId && data.groundId !== selectedGround.id) return;
 
-                // Handle both schemas:
-                // User bookings have: startHour (number) + duration (number)
-                // Owner bookings may have: startHour + duration, OR startTime (string "HH:MM")
-                if (data.startHour !== undefined && data.duration) {
+                // Schema 1: Backend bookings have timeSlots array ["06:00", "07:00"]
+                if (Array.isArray(data.timeSlots) && data.timeSlots.length > 0) {
+                    data.timeSlots.forEach((slot) => {
+                        const hour = parseInt(slot.split(':')[0], 10);
+                        if (!isNaN(hour)) booked.push(hour);
+                    });
+                }
+                // Schema 2: Client bookings have startHour (number) + duration (number)
+                else if (data.startHour !== undefined && data.duration) {
                     for (let h = 0; h < data.duration; h++) {
                         booked.push(data.startHour + h);
                     }
-                } else if (data.startTime) {
-                    // Fallback: parse hour from "HH:MM" string format
+                }
+                // Schema 3: Fallback — startTime as "HH:MM" string
+                else if (data.startTime) {
                     const hour = parseInt(data.startTime.split(':')[0], 10);
                     if (!isNaN(hour)) {
                         const dur = data.duration || 1;
@@ -857,18 +863,10 @@ function BookingCard({ turf }) {
     const handlePayment = async () => {
         if (!date || !selectedSlot) return;
 
-        // Check if user is logged in
         const user = auth.currentUser;
         if (!user) {
             alert('Please sign in to book a turf.');
             navigate('/signin');
-            return;
-        }
-
-        const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
-
-        if (!RAZORPAY_KEY) {
-            alert('Payment is not configured. Please contact support.');
             return;
         }
 
@@ -881,85 +879,56 @@ function BookingCard({ turf }) {
             return `${dHr}:00 ${p}`;
         };
 
-        const options = {
-            key: RAZORPAY_KEY,
-            amount: totalAmount * 100, // Paise
-            currency: 'INR',
-            name: 'BookMyTurf',
-            description: `${turf.name} — ${selectedSport} | ${selectedSlot.label}`,
-            image: turf.images?.[0] || '',
-            handler: async function (response) {
-                // ✅ PAYMENT SUCCESS → SAVE BOOKING TO FIRESTORE
-                try {
-                    const bookingData = {
-                        turfId: turf.id,
-                        turfName: turf.name,
-                        turfLocation: `${turf.address}, ${turf.city}`,
-                        groundId: selectedGround.id,
-                        groundName: selectedGround.name,
-                        userName: user.displayName || 'User',
-                        userEmail: user.email || '',
-                        ownerId: turf.ownerId || '',
-                        date: date,
-                        startTime: format12(selectedSlot.startHour),
-                        endTime: format12(selectedSlot.startHour + duration),
-                        startHour: selectedSlot.startHour,
-                        duration: duration,
-                        sport: selectedSport,
-                        pricePerHour: discountedPrice,
-                        subtotal: subtotal,                     // ✅ Turf charges
-                        convenienceFee: convenienceFee,         // ✅ 2% fee
-                        totalAmount: totalAmount,               // ✅ Final amount
-                        paymentId: response.razorpay_payment_id,
-                        paymentStatus: 'paid',
-                        status: 'upcoming',
-                        time: `${format12(selectedSlot.startHour)} - ${format12(selectedSlot.startHour + duration)}`,
-                        price: totalAmount,                     // ✅ Matches MyBookings display
-                    };
+        // Build timeSlots array in "HH:00" format (what backend + useBookedSlots expect)
+        const timeSlots = Array.from({ length: duration }, (_, i) => {
+            const hr = selectedSlot.startHour + i;
+            return `${hr.toString().padStart(2, '0')}:00`;
+        });
 
-                    await createBooking(bookingData);
-                    console.log('✅ Booking saved to Firestore');
-
-                    setPaymentStatus('success');
-                } catch (err) {
-                    console.error('Booking save error:', err);
-                    setPaymentStatus('success'); // Payment went through, show success
-                    alert('Payment successful! But booking save failed. Contact support with payment ID: ' + response.razorpay_payment_id);
-                }
-                setIsProcessing(false);
-            },
-            prefill: {
-                name: user.displayName || '',
-                email: user.email || '',
-            },
-            notes: {
-                turf_id: turf.id,
-                turf_name: turf.name,
-                sport: selectedSport,
-                date: date,
-                time_slot: selectedSlot.label,
-                duration: `${duration} hours`,
-            },
-            theme: { color: '#ea580c' },
-            modal: {
-                ondismiss: function () {
-                    setIsProcessing(false);
-                },
-            },
-        };
+        // Razorpay API requires a minimum order amount of 1 INR (100 paise)
+        const orderTotalPrice = totalAmount > 0 ? totalAmount : 1;
 
         try {
-            const rzp = new window.Razorpay(options);
-            rzp.on('payment.failed', function (response) {
-                console.error('❌ Payment Failed:', response.error);
-                setPaymentStatus('failed');
-                setIsProcessing(false);
+            // 1. Create Razorpay order via backend
+            const orderData = await createOrder({
+                turfId: turf.id,
+                slots: timeSlots,
+                totalPrice: orderTotalPrice,
+                date: date,
             });
-            rzp.open();
+
+            // 2. Open Razorpay checkout → backend verifies → writes booking → sends email
+            openRazorpayCheckout({
+                orderData,
+                bookingMeta: {
+                    turfId: turf.id,
+                    slots: timeSlots,
+                    date: date,
+                    totalPrice: totalAmount,
+                },
+                userInfo: {
+                    name: user.displayName || '',
+                    email: user.email || '',
+                },
+                onSuccess: (bookingId) => {
+                    console.log('✅ Booking confirmed via backend:', bookingId);
+                    setPaymentStatus('success');
+                    setIsProcessing(false);
+                },
+                onFailure: (error) => {
+                    console.error('❌ Payment/verification failed:', error);
+                    if (error === 'Payment cancelled by user') {
+                        setIsProcessing(false);
+                        return;
+                    }
+                    setPaymentStatus('failed');
+                    setIsProcessing(false);
+                },
+            });
         } catch (err) {
-            console.error('Razorpay error:', err);
+            console.error('Payment initialization error:', err);
             setIsProcessing(false);
-            alert('Failed to initialize payment. Please try again.');
+            alert(`Failed to initialize payment: ${err.message || 'Please try again.'}`);
         }
     };
 

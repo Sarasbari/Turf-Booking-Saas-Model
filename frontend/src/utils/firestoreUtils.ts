@@ -145,10 +145,17 @@ export async function getUserBookings(
 ): Promise<Booking[]> {
     try {
         const bookingsRef = collection(db, 'bookings');
+
+        // 'upcoming' tab should show both 'upcoming' and 'confirmed' bookings
+        // (backend writes 'confirmed', legacy client writes 'upcoming')
+        const statusValues = status === 'upcoming'
+            ? ['upcoming', 'confirmed']
+            : ['completed'];
+
         const q = query(
             bookingsRef,
             where('userId', '==', userId),
-            where('status', '==', status),
+            where('status', 'in', statusValues),
             orderBy('date', status === 'upcoming' ? 'asc' : 'desc')
         );
 

@@ -31,3 +31,7 @@ prisma/migrations/
 
 # Testing
 coverage/
+
+# Firebase credentials
+service-account.json
+*-adminsdk-*.json

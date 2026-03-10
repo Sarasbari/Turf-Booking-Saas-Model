@@ -14,16 +14,21 @@ function initFirebaseAdmin() {
     return admin.app();
   }
 
-  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-
-  if (serviceAccountPath) {
+  // Load the downloaded service account key directly
+  try {
+    const serviceAccountPath = new URL('../../service-account.json', import.meta.url);
     const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: config.firebase.projectId,
+      databaseURL: "https://turf-database-default-rtdb.firebaseio.com"
     });
-  } else {
-    // Fall back to Application Default Credentials
+    console.log("✅ Firebase Admin Initialized with service-account.json");
+  } catch (error) {
+    console.error("❌ Failed to load service-account.json. Please ensure it's in the backend folder.");
+    console.error(error.message);
+    
+    // Fall back to Application Default Credentials if file is missing
     admin.initializeApp({
       projectId: config.firebase.projectId,
     });
