@@ -901,10 +901,19 @@ function BookingCard({ turf }) {
             openRazorpayCheckout({
                 orderData,
                 bookingMeta: {
+                    // Core booking fields
                     turfId: turf.id,
                     slots: timeSlots,
                     date: date,
                     totalPrice: totalAmount,
+                    // Turf details — backend stores these in Firestore doc + uses for email
+                    turfName: turf.name || '',
+                    turfAddress: [turf.address, turf.city].filter(Boolean).join(', '),
+                    turfImage: turf.images?.[0] || '',
+                    ownerContact: turf.ownerPhone || turf.ownerName || '',
+                    // User details — backend stores these in Firestore doc + uses for email
+                    userEmail: user.email || '',
+                    userName: user.displayName || '',
                 },
                 userInfo: {
                     name: user.displayName || '',

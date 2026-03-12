@@ -2,13 +2,13 @@
  * Payment Controller
  *
  * Handles Razorpay order creation and payment verification.
- * Bookings are ONLY written to Firestore after server-side signature verification.
+ * Bookings are ONLY written to Firestore after server-side signature verification,
+ * via the bookingService (Admin SDK — bypasses Firestore security rules).
  */
 
 import { createRazorpayOrder, verifyPaymentSignature } from '../services/paymentService.js';
-import { adminDb } from '../config/firebaseAdmin.js';
+import { createBooking, markEmailSent } from '../services/bookingService.js';
 import { config } from '../config/index.js';
-import { FieldValue } from 'firebase-admin/firestore';
 import { sendBookingConfirmation } from '../services/emailService.js';
 
 // ---------------------------------------------------------------------------
@@ -65,6 +65,12 @@ export async function handleCreateOrder(req, res) {
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/verify
+//
+// Expected request body:
+//   razorpay_order_id, razorpay_payment_id, razorpay_signature  — from Razorpay
+//   turfId, turfName, turfAddress, turfImage, ownerContact       — turf details
+//   bookedDate (YYYY-MM-DD), timeSlots (['06:00','07:00']), totalPrice
+//   userEmail, userName                                          — from frontend auth
 // ---------------------------------------------------------------------------
 
 export async function handleVerifyPayment(req, res) {
@@ -73,10 +79,22 @@ export async function handleVerifyPayment(req, res) {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-      bookingData,
+      // Turf details (passed by frontend at verify time)
+      turfId,
+      turfName,
+      turfAddress,
+      turfImage,
+      ownerContact,
+      // Booking details
+      bookedDate,
+      timeSlots,
+      totalPrice,
+      // User info (from frontend auth state)
+      userEmail,
+      userName,
     } = req.body;
 
-    const user = req.firebaseUser;
+    const user = req.firebaseUser; // Firebase-authenticated user (from middleware)
 
     // ── Input validation ──────────────────────────────────────────────
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -86,14 +104,14 @@ export async function handleVerifyPayment(req, res) {
       });
     }
 
-    if (!bookingData || !bookingData.turfId || !bookingData.slots || !bookingData.date) {
+    if (!turfId || !bookedDate || !Array.isArray(timeSlots) || timeSlots.length === 0) {
       return res.status(400).json({
         error: 'Missing booking data',
-        message: 'bookingData with turfId, slots, and date is required',
+        message: 'turfId, bookedDate, and timeSlots are required',
       });
     }
 
-    // ── Verify signature (HMAC-SHA256) ────────────────────────────────
+    // ── Verify Razorpay signature (HMAC-SHA256, timing-safe) ──────────
     const isValidSignature = verifyPaymentSignature(
       razorpay_order_id,
       razorpay_payment_id,
@@ -101,110 +119,76 @@ export async function handleVerifyPayment(req, res) {
     );
 
     if (!isValidSignature) {
-      console.warn(`⚠️ Invalid payment signature for order ${razorpay_order_id} by user ${user.uid}`);
+      console.warn(`⚠️  Invalid payment signature for order ${razorpay_order_id} by user ${user.uid}`);
       return res.status(400).json({
         error: 'Payment verification failed',
         message: 'Invalid payment signature',
       });
     }
 
-    // ── Signature valid → Handle DB logic ensuring idempotency ───────
-    const bookingId = bookingData.receipt || `TRF-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
-    const bookingRef = adminDb.collection('bookings').doc(bookingId);
+    console.log(`✅ Payment signature verified for order: ${razorpay_order_id}`);
 
-    // Write booking as confirmed right away
-    const booking = {
-      id: bookingId,
+    // ── Write booking to Firestore via bookingService (Admin SDK) ─────
+    // Admin SDK bypasses Firestore security rules — this is the ONLY place
+    // a booking document is ever created.
+    const bookingId = await createBooking({
+      userId:          user.uid,
+      userEmail:       userEmail || user.email || '',
+      userName:        userName  || user.name  || 'User',
+      turfId,
+      turfName:        turfName    || '',
+      turfAddress:     turfAddress || '',
+      turfImage:       turfImage   || '',
+      ownerContact:    ownerContact || '',
+      bookedDate,
+      timeSlots,
+      totalPrice:      typeof totalPrice === 'number' ? totalPrice : 0,
+      paymentId:       razorpay_payment_id,
+      razorpayOrderId: razorpay_order_id,
+    });
+
+    console.log(`✅ Booking stored: ${bookingId}`);
+
+    // ── Send confirmation email (non-blocking fire-and-forget) ────────
+    // We pass all details directly — no secondary Firestore reads needed.
+    const formatDate = (dateString) => {
+      try {
+        return new Date(dateString).toLocaleDateString('en-US', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+      } catch {
+        return dateString;
+      }
+    };
+
+    sendBookingConfirmation({
+      toEmail:      userEmail || user.email || '',
+      userName:     userName  || user.name  || 'User',
       bookingId,
-      turfId: bookingData.turfId,
-      userId: user.uid,
-      date: bookingData.date,
-      timeSlots: bookingData.slots,
-      totalPrice: bookingData.totalPrice || 0,
-      status: 'confirmed',
-      emailSent: false,
-      paymentStatus: 'paid',
-      paymentDetails: {
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id,
-        method: 'razorpay',
-      },
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      completedAt: null,
-    };
+      turfName:     turfName    || 'Your Turf',
+      turfAddress:  turfAddress || '',
+      ownerContact: ownerContact || '',
+      bookedDate:   formatDate(bookedDate),
+      timeSlots,
+      totalAmount:  typeof totalPrice === 'number' ? totalPrice : 0,
+      paymentId:    razorpay_payment_id,
+    })
+      .then(() => markEmailSent(bookingId))
+      .catch((err) => {
+        // Email failure does NOT affect booking confirmation
+        console.error(`❌ Email failed for booking ${bookingId}:`, err.message);
+      });
 
-    await bookingRef.set(booking);
-    console.log(`✅ Booking confirmed: ${bookingId} | Payment: ${razorpay_payment_id}`);
-
-    // ── Email Trigger Flow ──
-    const sendEmailFlow = async () => {
-        try {
-            // 1. Fetch all dependencies directly from Firestore
-            const bookingSnap = await bookingRef.get();
-            const turfSnap = await adminDb.collection('turf').doc(bookingData.turfId).get();
-            const userSnap = await adminDb.collection('users').doc(user.uid).get();
-
-            if (!bookingSnap.exists || !turfSnap.exists || !userSnap.exists) {
-                console.error(`[Email Service] Missing referential documents for booking ${bookingId}`);
-                return;
-            }
-
-            const bDoc = bookingSnap.data();
-            const tDoc = turfSnap.data();
-            const uDoc = userSnap.data();
-
-            // 2. Check duplicate guard to prevent resending
-            if (bDoc.emailSent === true) {
-                console.log(`ℹ️ Booking ${bookingId} already processed (skipping duplicate email)`);
-                return;
-            }
-
-            // Date formatter utility
-            const formatDate = (dateString) => {
-                try {
-                    return new Date(dateString).toLocaleDateString('en-US', {
-                        weekday: 'long', 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                    });
-                } catch(e) {
-                    return dateString;
-                }
-            };
-
-            // 3. Call email service (Non-blocking from main verify thread)
-            await sendBookingConfirmation({
-                toEmail: uDoc.email || user.email,
-                userName: uDoc.name || user.name || 'User',
-                bookingId: bookingId,
-                turfName: tDoc.name || 'Unknown Turf',
-                turfAddress: tDoc.address || 'Address provided via booking',
-                ownerContact: tDoc.phone || tDoc.ownerId || 'Not Available',
-                bookedDate: formatDate(bDoc.date),
-                timeSlots: bDoc.timeSlots,
-                totalAmount: bDoc.totalPrice,
-                paymentId: razorpay_payment_id,
-            });
-
-            // Update local state confirming shipment
-            await bookingRef.update({ emailSent: true });
-
-        } catch (error) {
-            console.error(`[Email Service] Critical failure preparing email for ${bookingId}:`, error);
-        }
-    };
-
-    // Trigger asynchronously relative to main route thread
-    sendEmailFlow();
-
-    // 4. Return success response to frontend immediately without waiting for email
+    // ── Return success to frontend immediately ────────────────────────
     return res.status(200).json({
       success: true,
       bookingId,
       message: 'Payment verified and booking confirmed',
     });
+
   } catch (error) {
     console.error('❌ Error verifying payment:', error);
     return res.status(500).json({

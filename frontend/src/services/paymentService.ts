@@ -35,17 +35,29 @@ interface CreateOrderResponse {
     };
 }
 
+/**
+ * All fields sent to /api/payment/verify.
+ * The backend uses these to write the booking document to Firestore
+ * and send the confirmation email — without any secondary DB reads.
+ */
 interface VerifyPaymentPayload {
+    // Razorpay fields
     razorpay_order_id: string;
     razorpay_payment_id: string;
     razorpay_signature: string;
-    bookingData: {
-        turfId: string;
-        slots: string[];
-        date: string;
-        totalPrice: number;
-        receipt: string;
-    };
+    // Turf details (denormalized — backend stores these in the booking doc)
+    turfId: string;
+    turfName: string;
+    turfAddress: string;
+    turfImage: string;
+    ownerContact: string;
+    // Booking details
+    bookedDate: string;       // 'YYYY-MM-DD'
+    timeSlots: string[];      // ['06:00', '07:00']
+    totalPrice: number;
+    // User info (from Firebase auth state)
+    userEmail: string;
+    userName: string;
 }
 
 interface VerifyPaymentResponse {
@@ -137,7 +149,7 @@ export async function createOrder(
 
 /**
  * Verify payment signature via backend.
- * On success the backend creates the confirmed booking in Firestore.
+ * On success the backend creates the confirmed booking in Firestore via Admin SDK.
  */
 export async function verifyPayment(
     payload: VerifyPaymentPayload
@@ -168,10 +180,19 @@ export async function verifyPayment(
 interface CheckoutOptions {
     orderData: CreateOrderResponse;
     bookingMeta: {
+        // Core booking fields
         turfId: string;
-        slots: string[];
-        date: string;
+        slots: string[];       // ['06:00', '07:00']
+        date: string;          // 'YYYY-MM-DD'
         totalPrice: number;
+        // Turf details for backend booking document + email
+        turfName: string;
+        turfAddress: string;
+        turfImage: string;
+        ownerContact: string;
+        // User details for backend booking document + email
+        userEmail: string;
+        userName: string;
     };
     userInfo?: { name?: string; email?: string; phone?: string };
     onSuccess: (bookingId: string) => void;
@@ -206,16 +227,23 @@ export function openRazorpayCheckout({
         handler: async (response: RazorpaySuccessResponse) => {
             try {
                 const result = await verifyPayment({
+                    // Razorpay fields
                     razorpay_order_id: response.razorpay_order_id,
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_signature: response.razorpay_signature,
-                    bookingData: {
-                        turfId: bookingMeta.turfId,
-                        slots: bookingMeta.slots,
-                        date: bookingMeta.date,
-                        totalPrice: bookingMeta.totalPrice,
-                        receipt: orderData.receipt,
-                    },
+                    // Turf details — backend uses these for Firestore + email
+                    turfId: bookingMeta.turfId,
+                    turfName: bookingMeta.turfName,
+                    turfAddress: bookingMeta.turfAddress,
+                    turfImage: bookingMeta.turfImage,
+                    ownerContact: bookingMeta.ownerContact,
+                    // Booking details
+                    bookedDate: bookingMeta.date,
+                    timeSlots: bookingMeta.slots,
+                    totalPrice: bookingMeta.totalPrice,
+                    // User info
+                    userEmail: bookingMeta.userEmail,
+                    userName: bookingMeta.userName,
                 });
 
                 onSuccess(result.bookingId);
@@ -228,7 +256,7 @@ export function openRazorpayCheckout({
             email: userInfo?.email || '',
             contact: userInfo?.phone || '',
         },
-        theme: { color: '#4F46E5' },
+        theme: { color: '#16a34a' },
         modal: {
             ondismiss: () => {
                 onFailure('Payment cancelled by user');
