@@ -21,13 +21,17 @@ function initFirebaseAdmin() {
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      databaseURL: "https://turf-database-default-rtdb.firebaseio.com"
+      // databaseURL is only needed for Realtime Database, not Firestore.
+      // Remove it, or make sure service-account.json has the SAME project_id
+      // as your frontend's VITE_FIREBASE_PROJECT_ID
     });
+    console.log('Admin SDK project:', admin.app().options.projectId || admin.app().options.credential?.projectId);
+    console.log('Frontend should match:', process.env.FIREBASE_PROJECT_ID);
     console.log("✅ Firebase Admin Initialized with service-account.json");
   } catch (error) {
     console.error("❌ Failed to load service-account.json. Please ensure it's in the backend folder.");
     console.error(error.message);
-    
+
     // Fall back to Application Default Credentials if file is missing
     admin.initializeApp({
       projectId: config.firebase.projectId,
@@ -38,6 +42,11 @@ function initFirebaseAdmin() {
 }
 
 initFirebaseAdmin();
+
+// DEBUG: Confirm which project the Admin SDK is connected to
+const app = admin.app();
+console.log('🔍 Admin SDK projectId:', app.options.projectId || JSON.parse(readFileSync(new URL('../../service-account.json', import.meta.url), 'utf8')).project_id);
+console.log('🔍 Expected (from env):', process.env.FIREBASE_PROJECT_ID);
 
 export const adminDb = admin.firestore();
 export const adminAuth = admin.auth();

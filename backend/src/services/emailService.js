@@ -123,14 +123,20 @@ export async function sendBookingConfirmation(data) {
         `;
 
         // 3. Send via Resend
-        const response = await resend.emails.send({
-            from: config.resend.fromEmail,
-            to: data.toEmail,
-            subject: `✅ Booking Confirmed — ${data.turfName} on ${data.bookedDate}`,
-            html: htmlTemplate,
-        });
+// 3. Send via Resend
+const response = await resend.emails.send({
+    from: config.resend.fromEmail,
+    to: data.toEmail,
+    subject: `✅ Booking Confirmed — ${data.turfName} on ${data.bookedDate}`,
+    html: htmlTemplate,
+});
 
-        console.log(`[Email Service] Email sent successfully for booking ${data.bookingId} (Resend ID: ${response.data?.id})`);
+// ✅ FIX: Check for Resend API errors (newer SDK returns { data, error })
+if (response.error) {
+    throw new Error(`Resend API error: ${response.error.message} (name: ${response.error.name})`);
+}
+
+console.log(`[Email Service] Email sent successfully for booking ${data.bookingId} (Resend ID: ${response.data?.id})`);
     } catch (error) {
         console.error(`[Email Service] Failed to send email for booking ${data.bookingId}:`, error);
     }
