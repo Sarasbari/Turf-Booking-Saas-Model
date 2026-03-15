@@ -81,6 +81,7 @@ export async function createBooking(params) {
     ownerContact,
     // Booking details
     bookedDate,          // 'YYYY-MM-DD'
+    date: bookedDate,    // backward-compat alias for legacy queries
     timeSlots,           // ['06:00', '07:00', '08:00']
     totalPrice,
     // Status

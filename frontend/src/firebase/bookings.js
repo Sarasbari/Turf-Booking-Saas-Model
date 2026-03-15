@@ -138,7 +138,7 @@ export const getBookingsByTurf = async (turfId) => {
     const q = query(
       bookingsRef,
       where('turfId', '==', turfId),
-      orderBy('date', 'desc')
+      orderBy('bookedDate', 'desc')
     );
 
     const querySnapshot = await getDocs(q);

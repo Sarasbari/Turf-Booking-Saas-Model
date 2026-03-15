@@ -20,7 +20,7 @@ import { db } from '../services/firebase';
 interface BookingDoc {
     turfId: string;
     userId: string;
-    date: string;
+    bookedDate: string;
     timeSlots: string[];
     status: string;
 }
@@ -54,7 +54,7 @@ export function useBookedSlots(
         const q = query(
             bookingsRef,
             where('turfId', '==', turfId),
-            where('date', '==', selectedDate),
+            where('bookedDate', '==', selectedDate),
             where('status', '==', 'confirmed')
         );
 

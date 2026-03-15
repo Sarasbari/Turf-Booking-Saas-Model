@@ -34,9 +34,10 @@ export const config = {
         projectId: process.env.FIREBASE_PROJECT_ID,
     },
 
-    resend: {
-        apiKey: process.env.RESEND_API_KEY,
-        fromEmail: process.env.EMAIL_FROM || 'BookMyTurf <onboarding@resend.dev>',
+    brevo: {
+        apiKey: process.env.BREVO_API_KEY,
+        senderEmail: process.env.BREVO_SENDER_EMAIL,
+        senderName: process.env.BREVO_SENDER_NAME || 'BookMyTurf',
     }
 };
 
@@ -50,7 +51,7 @@ const requiredEnvVars = [
     'RAZORPAY_KEY_ID',
     'RAZORPAY_KEY_SECRET',
     'FIREBASE_PROJECT_ID',
-    'RESEND_API_KEY',
+    'BREVO_API_KEY',
 ];
 
 for (const envVar of requiredEnvVars) {

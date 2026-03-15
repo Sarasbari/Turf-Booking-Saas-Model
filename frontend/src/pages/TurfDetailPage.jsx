@@ -693,7 +693,7 @@ function BookingCard({ turf }) {
         const bq = query(
             bookingsRef,
             where('turfId', '==', turf.id),
-            where('date', '==', date),
+            where('bookedDate', '==', date),
             where('status', '==', 'confirmed')
         );
 
