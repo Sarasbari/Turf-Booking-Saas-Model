@@ -105,7 +105,9 @@ export async function sendBookingConfirmation(data) {
     });
 
     console.log(`✅ Brevo email sent for booking ${data.bookingId}:`, response?.messageId || "");
+    return true;
   } catch (error) {
     console.error(`❌ Brevo email error for booking ${data.bookingId}:`, error?.message || error);
+    throw error;
   }
 }

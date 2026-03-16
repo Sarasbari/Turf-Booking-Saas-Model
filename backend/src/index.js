@@ -1,4 +1,8 @@
-import express from 'express';
+import dotenv from "dotenv";
+dotenv.config(); // must be first
+
+import express from "express";
+import "./services/emailService.js"; // any imports that use process.env should come after config
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';

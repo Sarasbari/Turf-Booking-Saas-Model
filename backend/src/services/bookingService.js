@@ -49,54 +49,78 @@ export async function createBooking(params) {
     razorpayOrderId,
   } = params;
 
-  // ── Idempotency guard ─────────────────────────────────────────────────────
-  // If a booking already exists for this Razorpay order, return its ID.
-  // This handles the case where /verify is called more than once (e.g., network retry).
-  const existing = await adminDb
-    .collection('bookings')
-    .where('razorpayOrderId', '==', razorpayOrderId)
-    .limit(1)
-    .get();
+  return await adminDb.runTransaction(async (transaction) => {
+    // ── Idempotency guard ─────────────────────────────────────────────────────
+    // Query existing booking for this order ID
+    const existingQuery = adminDb
+      .collection('bookings')
+      .where('razorpayOrderId', '==', razorpayOrderId)
+      .limit(1);
+    const existingSnapshot = await transaction.get(existingQuery);
 
-  if (!existing.empty) {
-    const existingId = existing.docs[0].id;
-    console.log(`ℹ️  Duplicate booking prevented for order: ${razorpayOrderId} → existing bookingId: ${existingId}`);
-    return existingId;
-  }
+    if (!existingSnapshot.empty) {
+      const existingId = existingSnapshot.docs[0].id;
+      console.log(`ℹ️  Duplicate booking prevented for order: ${razorpayOrderId} → existing bookingId: ${existingId}`);
+      return existingId;
+    }
 
-  // ── Create new booking document ───────────────────────────────────────────
-  const bookingRef = adminDb.collection('bookings').doc();
+    // ── Slot Availability Check ───────────────────────────────────────────────
+    // Query all confirmed bookings for this turf on this date
+    const dayBookingsQuery = adminDb
+      .collection('bookings')
+      .where('turfId', '==', turfId)
+      .where('bookedDate', '==', bookedDate)
+      .where('status', '==', 'confirmed');
+    const dayBookingsSnapshot = await transaction.get(dayBookingsQuery);
 
-  await bookingRef.set({
-    id: bookingRef.id,
-    // User info
-    userId,
-    userEmail,
-    userName,
-    // Turf info (denormalized for fast reads — avoids secondary Firestore fetches in email/display)
-    turfId,
-    turfName,
-    turfAddress,
-    turfImage,
-    ownerContact,
-    // Booking details
-    bookedDate,          // 'YYYY-MM-DD'
-    date: bookedDate,    // backward-compat alias for legacy queries
-    timeSlots,           // ['06:00', '07:00', '08:00']
-    totalPrice,
-    // Status
-    status: 'confirmed',
-    emailSent: false,
-    // Payment reference
-    paymentId,
-    razorpayOrderId,
-    // Timestamps
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
+    const bookedSlotsOnDate = new Set();
+    dayBookingsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (Array.isArray(data.timeSlots)) {
+        data.timeSlots.forEach(slot => bookedSlotsOnDate.add(slot));
+      }
+    });
+
+    // Check if any requested timeSlot overlaps with already booked slots
+    const conflictingSlots = timeSlots.filter(slot => bookedSlotsOnDate.has(slot));
+    if (conflictingSlots.length > 0) {
+      throw new Error(`The following slots are already booked: ${conflictingSlots.join(', ')}`);
+    }
+
+    // ── Create new booking document ───────────────────────────────────────────
+    const bookingRef = adminDb.collection('bookings').doc();
+
+    transaction.set(bookingRef, {
+      id: bookingRef.id,
+      // User info
+      userId,
+      userEmail,
+      userName,
+      // Turf info
+      turfId,
+      turfName,
+      turfAddress,
+      turfImage,
+      ownerContact,
+      // Booking details
+      bookedDate,          // 'YYYY-MM-DD'
+      date: bookedDate,    // backward-compat alias for legacy queries
+      timeSlots,           // ['06:00', '07:00', '08:00']
+      totalPrice,
+      // Status
+      status: 'confirmed',
+      emailSent: false,
+      // Payment reference
+      paymentId,
+      razorpayOrderId,
+      // Timestamps
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    console.log(`✅ Booking created in Firestore Transaction: ${bookingRef.id} for user: ${userId}`);
+    return bookingRef.id;
   });
-
-  console.log(`✅ Booking created in Firestore: ${bookingRef.id} for user: ${userId}`);
-  return bookingRef.id;
 }
 
 /**
