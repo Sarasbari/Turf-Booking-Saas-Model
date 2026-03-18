@@ -51,12 +51,16 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = config.port;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📝 Environment: ${config.nodeEnv}`);
-    console.log(`🌐 Frontend URL: ${config.frontend.url}`);
-    console.log(`🔐 Google OAuth configured`);
-});
+const PORT = process.env.PORT || config.port || 5000;
 
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+        console.log(`📝 Environment: ${config.nodeEnv}`);
+        console.log(`🌐 Frontend URL: ${config.frontend.url}`);
+        console.log(`🔐 Google OAuth configured`);
+    });
+}
+
+// Export for Vercel
 export default app;
