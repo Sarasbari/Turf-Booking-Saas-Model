@@ -1,8 +1,7 @@
-import dotenv from "dotenv";
-dotenv.config(); // must be first
+// import dotenv from "dotenv";
+// dotenv.config();
 
 import express from "express";
-import "./services/emailService.js"; // any imports that use process.env should come after config
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
@@ -11,11 +10,20 @@ import paymentRoutes from './routes/paymentRoutes.js';
 
 const app = express();
 
-// Middleware
+// ✅ CORS — allow both localhost and production
 app.use(cors({
-    origin: config.frontend.url,
-    credentials: true, // Allow cookies to be sent
+  origin: [
+    'http://localhost:5173',
+    'https://bookmyturf-psi.vercel.app',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// ✅ Handle preflight requests for ALL routes
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -24,43 +32,48 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 
-// Health check endpoint
+// ✅ Root health check — fixes the 404 on homepage
+app.get('/', (req, res) => {
+  res.json({ 
+    status: '✅ BookMyTurf backend is live',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'ok',
-        message: 'Turf Booking API is running',
-        timestamp: new Date().toISOString(),
-    });
+  res.json({ 
+    status: 'ok',
+    message: 'Turf Booking API is running',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({ 
-        error: 'Not Found',
-        message: `Route ${req.method} ${req.url} not found` 
-    });
+  res.status(404).json({ 
+    error: 'Not Found',
+    message: `Route ${req.method} ${req.url} not found`,
+  });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(err.status || 500).json({
-        error: err.message || 'Internal Server Error',
-        ...(config.nodeEnv === 'development' && { stack: err.stack }),
-    });
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
 });
 
-// Start server
-const PORT = process.env.PORT || config.port || 5000;
-
+// ✅ Local dev only
 if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on http://localhost:${PORT}`);
-        console.log(`📝 Environment: ${config.nodeEnv}`);
-        console.log(`🌐 Frontend URL: ${config.frontend.url}`);
-        console.log(`🔐 Google OAuth configured`);
-    });
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📝 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
+  });
 }
 
-// Export for Vercel
+// ✅ Export for Vercel — ES module style
 export default app;
