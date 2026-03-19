@@ -1,7 +1,5 @@
 import express from 'express';
 import {
-    googleAuth,
-    googleCallback,
     getCurrentUser,
     logout,
     verifyTokenEndpoint,
@@ -9,20 +7,6 @@ import {
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
-
-/**
- * @route   GET /api/auth/google
- * @desc    Get Google OAuth URL
- * @access  Public
- */
-router.get('/google', googleAuth);
-
-/**
- * @route   GET /api/auth/google/callback
- * @desc    Handle Google OAuth callback
- * @access  Public
- */
-router.get('/google/callback', googleCallback);
 
 /**
  * @route   GET /api/auth/me

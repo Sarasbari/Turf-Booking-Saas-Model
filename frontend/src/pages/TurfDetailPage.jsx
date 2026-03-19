@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, collection, onSnapshot, query, orderBy, limit, getDocs, where, addDoc, Timestamp } from 'firebase/firestore';
+import { doc, collection, onSnapshot, query, orderBy, where, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { auth } from '../services/firebase';
 import { createOrder, openRazorpayCheckout } from '../services/paymentService';
@@ -60,6 +60,27 @@ const IconClipboard = () => (
 // ── Helpers ─────────────────────────────────────────────────────────────────
 const formatCurrency = (amount) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+
+const parseBookingDate = (booking) => {
+    const value = booking?.bookedDate || booking?.date || booking?.bookingDate || booking?.createdAt;
+
+    if (!value) return null;
+
+    if (typeof value?.toDate === 'function') {
+        return value.toDate();
+    }
+
+    if (value instanceof Date) {
+        return value;
+    }
+
+    if (typeof value === 'string') {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    return null;
+};
 
 /**
  * Normalize Firestore data — handles BOTH schemas:
@@ -130,6 +151,7 @@ const getSportChipClass = (sport) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function HeroSection({ turf, activeImg, setActiveImg }) {
+    const hasReviews = Number(turf.totalReviews) > 0;
     const handleShare = () => {
         if (navigator.share) {
             navigator.share({ title: turf.name, text: `Check out ${turf.name} on TurfBookaro!`, url: window.location.href }).catch(() => { });
@@ -215,9 +237,9 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                     </div>
 
                     <div className="td-hero__rating-row">
-                        <div className="td-hero__rating-star"><span>⭐</span> {turf.rating}</div>
+                        <div className="td-hero__rating-star"><span>⭐</span> {hasReviews ? turf.rating : 'New'}</div>
                         <span className="td-hero__rating-dot">·</span>
-                        <span>{turf.totalReviews} ratings</span>
+                        <span>{hasReviews ? `${turf.totalReviews} ratings` : 'No ratings yet'}</span>
                         <span className="td-hero__rating-dot">·</span>
                         <span>{turf.totalBookings?.toLocaleString()} bookings</span>
                     </div>
@@ -440,6 +462,7 @@ function LocationSection({ turf }) {
 }
 
 function ReviewsSection({ turf, reviews, turfId }) {
+    const hasReviews = Number(turf.totalReviews) > 0;
     const [showForm, setShowForm] = useState(false);
     const [hoverStar, setHoverStar] = useState(0);
     const [selectedStar, setSelectedStar] = useState(0);
@@ -567,11 +590,11 @@ function ReviewsSection({ turf, reviews, turfId }) {
             {/* Summary */}
             <div className="td-reviews__summary">
                 <div className="td-reviews__score">
-                    <div className="td-reviews__score-num">{turf.rating}</div>
+                    <div className="td-reviews__score-num">{hasReviews ? turf.rating : 'New'}</div>
                     <div className="td-reviews__stars">
-                        {[...Array(5)].map((_, i) => <IconStar key={i} filled={i < Math.round(turf.rating)} />)}
+                        {[...Array(5)].map((_, i) => <IconStar key={i} filled={hasReviews && i < Math.round(turf.rating)} />)}
                     </div>
-                    <div className="td-reviews__count">{turf.totalReviews} ratings</div>
+                    <div className="td-reviews__count">{hasReviews ? `${turf.totalReviews} ratings` : 'No ratings yet'}</div>
                 </div>
                 <div className="td-reviews__bars">
                     {[
@@ -1276,20 +1299,76 @@ export default function TurfDetailPage() {
         return () => unsub();
     }, [turfId]);
 
-    // ── Fetch reviews sub-collection ─────────────────────────────
+    // ── Fetch reviews (latest list + live rating stats) ─────────────────
     useEffect(() => {
-        if (!turf || !turfId || !db) return;
+        if (!turfId || !db) return;
         const q = query(
             collection(db, 'turf', turfId, 'reviews'),
-            orderBy('timestamp', 'desc'),
-            limit(5)
+            orderBy('timestamp', 'desc')
         );
         const unsub = onSnapshot(q,
-            (snap) => setReviews(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+            (snap) => {
+                const allReviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const totalReviews = allReviews.length;
+
+                const ratingSum = allReviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0);
+                const avgRating = totalReviews > 0 ? Number((ratingSum / totalReviews).toFixed(1)) : 0;
+
+                setReviews(allReviews.slice(0, 5));
+                setTurf(prev => prev ? {
+                    ...prev,
+                    totalReviews,
+                    rating: avgRating,
+                } : prev);
+            },
             (err) => console.warn('Reviews fetch error (may not exist yet):', err)
         );
         return () => unsub();
-    }, [turf, turfId]);
+    }, [turfId]);
+
+    // ── Fetch booking stats from bookings collection ─────────────────
+    useEffect(() => {
+        if (!turfId || !db) return;
+
+        const bookingsRef = collection(db, 'bookings');
+        const bq = query(bookingsRef, where('turfId', '==', turfId));
+        const unsub = onSnapshot(
+            bq,
+            (snapshot) => {
+                const now = new Date();
+                const last30Cutoff = new Date();
+                last30Cutoff.setDate(now.getDate() - 30);
+
+                let totalBookings = 0;
+                let bookingsLast30Days = 0;
+
+                snapshot.forEach((docSnap) => {
+                    const booking = docSnap.data();
+                    const status = String(booking?.status || '').toLowerCase();
+
+                    if (status === 'cancelled' || status === 'canceled') {
+                        return;
+                    }
+
+                    totalBookings += 1;
+
+                    const bookingDate = parseBookingDate(booking);
+                    if (bookingDate && bookingDate >= last30Cutoff && bookingDate <= now) {
+                        bookingsLast30Days += 1;
+                    }
+                });
+
+                setTurf(prev => prev ? {
+                    ...prev,
+                    totalBookings,
+                    bookingsLast30Days,
+                } : prev);
+            },
+            (err) => console.warn('Booking stats fetch error:', err)
+        );
+
+        return () => unsub();
+    }, [turfId]);
 
     // ── Scroll detection for sticky bar ──────────────────────────
     useEffect(() => {

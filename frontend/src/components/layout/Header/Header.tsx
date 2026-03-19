@@ -9,6 +9,9 @@ interface HeaderProps {
     onSearchChange?: (query: string) => void;
 }
 
+const HEADER_SEARCH_STORAGE_KEY = 'bookmyturf_header_search_query';
+const HEADER_CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
+
 export function Header({ onSearchChange }: HeaderProps) {
     const navigate = useNavigate();
     const location = useLocation();
@@ -36,6 +39,28 @@ export function Header({ onSearchChange }: HeaderProps) {
 
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        const persistedSearch = localStorage.getItem(HEADER_SEARCH_STORAGE_KEY);
+        const persistedCity = localStorage.getItem(HEADER_CITY_STORAGE_KEY);
+
+        if (persistedSearch !== null) {
+            setSearchQuery(persistedSearch);
+            onSearchChange?.(persistedSearch);
+        }
+
+        if (persistedCity) {
+            setSelectedCity(persistedCity);
+        }
+    }, [onSearchChange]);
+
+    useEffect(() => {
+        localStorage.setItem(HEADER_SEARCH_STORAGE_KEY, searchQuery);
+    }, [searchQuery]);
+
+    useEffect(() => {
+        localStorage.setItem(HEADER_CITY_STORAGE_KEY, selectedCity);
+    }, [selectedCity]);
 
     // Close mobile menu on route change
     useEffect(() => {
