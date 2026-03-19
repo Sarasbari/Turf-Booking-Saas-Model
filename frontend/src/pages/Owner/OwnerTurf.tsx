@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { auth, db, storage } from '../../services/firebase';
@@ -22,7 +22,7 @@ const TABS = [
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
-type SyncStatus = 'idle' | 'saving' | 'saved' | 'published' | 'unpublished';
+type SyncStatus = 'idle' | 'saving' | 'saved' | 'published' | 'unpublished' | 'live';
 
 const SPORTS_LIST = [
     { emoji: '⚽', name: 'Football' }, { emoji: '🏏', name: 'Cricket' },
@@ -73,9 +73,12 @@ export function OwnerTurf() {
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
+    const [previewMode, setPreviewMode] = useState<'draft' | 'live'>('draft');
     const [showBottomSheet, setShowBottomSheet] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [previewImg, setPreviewImg] = useState(0);
+    const [liveSyncEnabled, setLiveSyncEnabled] = useState(true);
+    const [lastLiveSyncAt, setLastLiveSyncAt] = useState('');
 
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,6 +130,39 @@ export function OwnerTurf() {
             const s = raw.status;
             data.turfStatus = s === 'active' || s === 'available' ? 'available'
                 : s === 'inactive' || s === 'closed' ? 'closed' : 'maintenance';
+        }
+
+        // single sport field → sports array
+        if (!Array.isArray(raw.sports) && raw.sport) {
+            data.sports = [raw.sport];
+        }
+
+        // coverImage fallback
+        if ((!Array.isArray(raw.images) || raw.images.length === 0) && raw.coverImage) {
+            data.images = [raw.coverImage];
+        }
+
+        // nested location fallback
+        if (raw.location && typeof raw.location === 'object') {
+            if (!data.address && raw.location.address) data.address = raw.location.address;
+            if (!data.city && raw.location.city) data.city = raw.location.city;
+            if (!data.state && raw.location.state) data.state = raw.location.state;
+            if (!data.pincode && raw.location.pincode) data.pincode = String(raw.location.pincode);
+            if (!data.latitude && raw.location.coordinates?.lat) data.latitude = raw.location.coordinates.lat;
+            if (!data.longitude && raw.location.coordinates?.lng) data.longitude = raw.location.coordinates.lng;
+        }
+
+        // nested operating hours fallback
+        if (raw.operatingHours && typeof raw.operatingHours === 'object') {
+            if (!data.openTime && raw.operatingHours.opensAt) data.openTime = raw.operatingHours.opensAt;
+            if (!data.closeTime && raw.operatingHours.closesAt) data.closeTime = raw.operatingHours.closesAt;
+        }
+
+        // nested pricing fallback
+        if (raw.pricing && typeof raw.pricing === 'object') {
+            if (!data.pricePerHour && raw.pricing.basePrice) data.pricePerHour = raw.pricing.basePrice;
+            if (!data.basePrice && raw.pricing.basePrice) data.basePrice = raw.pricing.basePrice;
+            if (!data.weekendPrice && raw.pricing.weekendPrice) data.weekendPrice = raw.pricing.weekendPrice;
         }
 
         // geoPoint → latitude / longitude
@@ -183,6 +219,15 @@ export function OwnerTurf() {
                         setFormData({ ...defaultForm(), ...pub });
                         setSyncStatus('published');
                     }
+                } else if (draftDoc.exists()) {
+                    const draftNormalized = normalizeFirestoreToForm(draftDoc.data());
+                    setPublishedData({});
+                    setFormData({ ...defaultForm(), ...draftNormalized });
+                    setSyncStatus('unpublished');
+                } else {
+                    setPublishedData({});
+                    setFormData(defaultForm());
+                    setSyncStatus('idle');
                 }
             } catch (e) { console.error('Error loading turf data:', e); }
             finally { setLoading(false); }
@@ -190,6 +235,30 @@ export function OwnerTurf() {
 
         return () => unsubscribe();
     }, []);
+
+    // ── Keep published/live data in sync in real-time ──
+    useEffect(() => {
+        if (!turfId) return;
+
+        const liveDocRef = doc(db, 'turf', turfId);
+        const unsubscribeLive = onSnapshot(
+            liveDocRef,
+            (snapshot) => {
+                if (!snapshot.exists()) {
+                    setPublishedData({});
+                    return;
+                }
+
+                const normalized = normalizeFirestoreToForm(snapshot.data());
+                setPublishedData({ id: snapshot.id, ...normalized } as TurfData);
+            },
+            (error) => {
+                console.warn('Live turf sync error:', error);
+            }
+        );
+
+        return () => unsubscribeLive();
+    }, [turfId]);
 
     // ── Field setter with dirty tracking + auto-save ──
     const setField = useCallback((key: string, value: any, tab?: TabId) => {
@@ -201,6 +270,28 @@ export function OwnerTurf() {
         saveTimer.current = setTimeout(() => autoSave(), 1500);
     }, [turfId]);
 
+    const buildPublishPayload = useCallback((source: Partial<TurfData>, withPublishTimestamp: boolean) => {
+        const rest: any = { ...source };
+        const payload: any = {
+            ...rest,
+            about: rest.description || rest.about || '',
+            description: rest.description || rest.about || '',
+            status: rest.turfStatus === 'available' ? 'active'
+                : rest.turfStatus === 'closed' ? 'inactive' : rest.turfStatus || 'active',
+            isDiscountActive: !!rest.hasDiscount,
+            discountPercent: rest.discountValue || 0,
+            pricePerHour: rest.pricePerHour || rest.basePrice || 0,
+            basePrice: rest.basePrice || rest.pricePerHour || 0,
+            updatedAt: serverTimestamp(),
+        };
+
+        if (withPublishTimestamp) {
+            payload.publishedAt = serverTimestamp();
+        }
+
+        return payload;
+    }, []);
+
     const autoSave = async () => {
         if (!turfId) return;
         try {
@@ -208,6 +299,17 @@ export function OwnerTurf() {
             const { id, createdAt, publishedAt, ...rest } = formDataRef.current as any;
             await setDoc(doc(db, 'turf', turfId, 'drafts', 'current'),
                 { ...rest, updatedAt: serverTimestamp() }, { merge: true });
+
+            if (liveSyncEnabled) {
+                const livePayload = buildPublishPayload(rest, false);
+                await setDoc(doc(db, 'turf', turfId), livePayload, { merge: true });
+                setPublishedData({ ...defaultForm(), ...rest });
+                setLastLiveSyncAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                setDirtyTabs(new Set());
+                setSyncStatus('live');
+                return;
+            }
+
             setSyncStatus('saved');
             setTimeout(() => setSyncStatus(s => s === 'saved' ? 'unpublished' : s), 2000);
         } catch (e) { console.error('Auto-save error:', e); setSyncStatus('unpublished'); }
@@ -221,33 +323,13 @@ export function OwnerTurf() {
         try {
             setSyncStatus('saving');
             const { id, ...rest } = formDataRef.current as any;
-
-            // Build the publish payload: write both editor fields AND legacy fields
-            // so the public TurfDetailPage (which reads legacy names) stays in sync
-            const payload: any = {
-                ...rest,
-                // description ↔ about (TurfDetailPage reads 'about')
-                about: rest.description || rest.about || '',
-                description: rest.description || rest.about || '',
-                // turfStatus → status (TurfDetailPage reads 'status')
-                status: rest.turfStatus === 'available' ? 'active'
-                    : rest.turfStatus === 'closed' ? 'inactive' : rest.turfStatus || 'active',
-                // hasDiscount → isDiscountActive
-                isDiscountActive: !!rest.hasDiscount,
-                // discountValue → discountPercent
-                discountPercent: rest.discountValue || 0,
-                // Ensure pricePerHour is set
-                pricePerHour: rest.pricePerHour || rest.basePrice || 0,
-                basePrice: rest.basePrice || rest.pricePerHour || 0,
-                // Timestamps
-                publishedAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            };
+            const payload = buildPublishPayload(rest, true);
 
             await setDoc(doc(db, 'turf', turfId), payload, { merge: true });
             setPublishedData({ ...formDataRef.current });
             setDirtyTabs(new Set());
             setSyncStatus('published');
+            setLastLiveSyncAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         } catch (e) { console.error('Publish error:', e); alert('Publish failed'); }
     };
 
@@ -372,6 +454,7 @@ export function OwnerTurf() {
             saved: { text: '💾 Draft Saved', cls: styles.syncSaved },
             published: { text: '🟢 Published', cls: styles.syncPublished },
             unpublished: { text: '🟡 Unpublished changes', cls: styles.syncUnpublished },
+            live: { text: '🟢 Live synced', cls: styles.syncPublished },
         };
         const s = map[syncStatus];
         return <span className={`${styles.syncBadge} ${s.cls}`}>{s.text}</span>;
@@ -391,6 +474,21 @@ export function OwnerTurf() {
     const sports = formData.sports || [];
     const tags = formData.tags || [];
     const grounds = formData.grounds || [];
+
+    const completion = useMemo(() => {
+        const checks = [
+            !!formData.name?.trim(),
+            !!images.length,
+            !!formData.description?.trim(),
+            sports.length > 0,
+            amenities.length > 0,
+            !!formData.openTime && !!formData.closeTime,
+            !!formData.address?.trim() && !!formData.city?.trim(),
+            Number(formData.pricePerHour || 0) > 0,
+        ];
+        const done = checks.filter(Boolean).length;
+        return Math.round((done / checks.length) * 100);
+    }, [formData, images.length, sports.length, amenities.length]);
 
     const discountedPrice = useMemo(() => {
         if (!formData.hasDiscount || !formData.discountValue) return formData.pricePerHour || 0;
@@ -419,39 +517,51 @@ export function OwnerTurf() {
     // ═══════════════════════════════════════════════════════════════
     //  PREVIEW PANEL (renders inside right panel / bottom sheet)
     // ═══════════════════════════════════════════════════════════════
-    const renderPreview = () => (
+    const renderPreview = (previewData: Partial<TurfData>) => {
+        const previewImages = previewData.images || [];
+        const previewAmenities = previewData.amenities || [];
+        const previewSports = previewData.sports || [];
+        const previewTags = previewData.tags || [];
+        const previewDiscountedPrice = (() => {
+            if (!previewData.hasDiscount || !previewData.discountValue) return previewData.pricePerHour || 0;
+            const base = previewData.pricePerHour || 0;
+            if (previewData.discountType === 'percentage') return Math.round(base * (1 - (previewData.discountValue / 100)));
+            return Math.max(base - previewData.discountValue, 0);
+        })();
+
+        return (
         <div className={previewDevice === 'mobile' ? styles.previewMobileFrame : ''}>
             {/* Hero */}
             <div className={styles.pvHero}>
-                {images.length > 0 ? (
-                    <img src={images[previewImg] || images[0]} className={styles.pvHeroImg} alt="Hero" />
+                {previewImages.length > 0 ? (
+                    <img src={previewImages[previewImg] || previewImages[0]} className={styles.pvHeroImg} alt="Hero" />
                 ) : (
                     <div className={styles.pvHeroImg} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>🏟️</div>
                 )}
                 <div className={styles.pvHeroOverlay}>
-                    <div className={styles.pvHeroName}>{formData.name || 'Turf Name'}</div>
+                    <div className={styles.pvHeroName}>{previewData.name || 'Turf Name'}</div>
                     <div className={styles.pvHeroPrice}>
-                        {formData.hasDiscount && formData.discountValue ? (
-                            <><span className={styles.pvPriceStrike}>₹{formData.pricePerHour}</span> ₹{discountedPrice}/hr</>
-                        ) : <>₹{formData.pricePerHour || 0}/hr</>}
+                        {previewData.hasDiscount && previewData.discountValue ? (
+                            <><span className={styles.pvPriceStrike}>₹{previewData.pricePerHour}</span> ₹{previewDiscountedPrice}/hr</>
+                        ) : <>₹{previewData.pricePerHour || 0}/hr</>}
                     </div>
                 </div>
-                {formData.turfStatus && (
+                {previewData.turfStatus && (
                     <div className={styles.pvStatusBadge} style={{
-                        background: formData.turfStatus === 'available' ? '#16A34A' : formData.turfStatus === 'closed' ? '#DC2626' : '#D97706'
+                        background: previewData.turfStatus === 'available' ? '#16A34A' : previewData.turfStatus === 'closed' ? '#DC2626' : '#D97706'
                     }}>
-                        {formData.turfStatus === 'available' ? 'Open' : formData.turfStatus === 'closed' ? 'Closed' : 'Maintenance'}
+                        {previewData.turfStatus === 'available' ? 'Open' : previewData.turfStatus === 'closed' ? 'Closed' : 'Maintenance'}
                     </div>
                 )}
-                {formData.hasDiscount && formData.discountBadgeText && (
-                    <div className={styles.pvDiscountBadge}>{formData.discountBadgeText}</div>
+                {previewData.hasDiscount && previewData.discountBadgeText && (
+                    <div className={styles.pvDiscountBadge}>{previewData.discountBadgeText}</div>
                 )}
             </div>
 
             {/* Thumbs */}
-            {images.length > 1 && (
+            {previewImages.length > 1 && (
                 <div className={styles.pvThumbs}>
-                    {images.slice(0, 4).map((img, i) => (
+                    {previewImages.slice(0, 4).map((img, i) => (
                         <img key={i} src={img} alt="" className={`${styles.pvThumb} ${i === previewImg ? styles.pvThumbActive : ''}`}
                             onClick={() => setPreviewImg(i)} />
                     ))}
@@ -461,32 +571,32 @@ export function OwnerTurf() {
             {/* About */}
             <div className={styles.pvSection}>
                 <div className={styles.pvSectionTitle}>About This Turf</div>
-                <div className={styles.pvText}>{formData.description || 'No description yet.'}</div>
-                {tags.length > 0 && (
+                <div className={styles.pvText}>{previewData.description || 'No description yet.'}</div>
+                {previewTags.length > 0 && (
                     <div className={styles.pvPillRow} style={{ marginTop: 10 }}>
-                        {tags.map((t, i) => <span key={i} className={`${styles.pvPill} ${styles.pvPillAccent}`}>{t}</span>)}
+                        {previewTags.map((t, i) => <span key={i} className={`${styles.pvPill} ${styles.pvPillAccent}`}>{t}</span>)}
                     </div>
                 )}
             </div>
 
             {/* Sports */}
-            {sports.length > 0 && (
+            {previewSports.length > 0 && (
                 <div className={styles.pvSection}>
                     <div className={styles.pvSectionTitle}>Sports</div>
                     <div className={styles.pvPillRow}>
-                        {sports.map(s => <span key={s} className={styles.pvPill}>{SPORTS_LIST.find(x => x.name === s)?.emoji} {s}</span>)}
-                        <span className={styles.pvPill}>{formData.groundSize}</span>
-                        <span className={styles.pvPill}>🏟️ {formData.totalGrounds} Ground{(formData.totalGrounds || 1) > 1 ? 's' : ''}</span>
+                        {previewSports.map(s => <span key={s} className={styles.pvPill}>{SPORTS_LIST.find(x => x.name === s)?.emoji} {s}</span>)}
+                        <span className={styles.pvPill}>{previewData.groundSize}</span>
+                        <span className={styles.pvPill}>🏟️ {previewData.totalGrounds} Ground{(previewData.totalGrounds || 1) > 1 ? 's' : ''}</span>
                     </div>
                 </div>
             )}
 
             {/* Amenities */}
-            {amenities.length > 0 && (
+            {previewAmenities.length > 0 && (
                 <div className={styles.pvSection}>
                     <div className={styles.pvSectionTitle}>Amenities</div>
                     <div className={styles.pvAmenGrid}>
-                        {amenities.map(a => {
+                        {previewAmenities.map(a => {
                             const item = AMENITIES_LIST.find(x => x.key === a);
                             return <div key={a} className={styles.pvAmenItem}>{item?.icon || '✔️'} {a}</div>;
                         })}
@@ -498,24 +608,24 @@ export function OwnerTurf() {
             <div className={styles.pvSection}>
                 <div className={styles.pvSectionTitle}>Timings</div>
                 <div className={styles.pvText}>
-                    🕐 {fmt12(formData.openTime || '')} – {fmt12(formData.closeTime || '')}
+                    🕐 {fmt12(previewData.openTime || '')} – {fmt12(previewData.closeTime || '')}
                 </div>
                 <div className={styles.pvText}>
-                    {formData.weeklyOff ? `Weekly off: ${formData.weeklyOff}` : 'Open all 7 days'}
+                    {previewData.weeklyOff ? `Weekly off: ${previewData.weeklyOff}` : 'Open all 7 days'}
                 </div>
             </div>
 
             {/* Location */}
-            {formData.address && (
+            {previewData.address && (
                 <div className={styles.pvSection}>
                     <div className={styles.pvSectionTitle}>Location</div>
                     <div className={styles.pvText}>
-                        {formData.address}{formData.area ? `, ${formData.area}` : ''}{formData.city ? `, ${formData.city}` : ''}
-                        {formData.state ? `, ${formData.state}` : ''}{formData.pincode ? ` - ${formData.pincode}` : ''}
+                        {previewData.address}{previewData.area ? `, ${previewData.area}` : ''}{previewData.city ? `, ${previewData.city}` : ''}
+                        {previewData.state ? `, ${previewData.state}` : ''}{previewData.pincode ? ` - ${previewData.pincode}` : ''}
                     </div>
-                    {formData.latitude && formData.longitude && (
+                    {previewData.latitude && previewData.longitude && (
                         <iframe className={styles.pvMap} title="Map"
-                            src={`https://maps.google.com/maps?q=${formData.latitude},${formData.longitude}&output=embed`}
+                            src={`https://maps.google.com/maps?q=${previewData.latitude},${previewData.longitude}&output=embed`}
                             loading="lazy" />
                     )}
                 </div>
@@ -525,21 +635,22 @@ export function OwnerTurf() {
             <div className={styles.pvSection}>
                 <div className={styles.pvSectionTitle}>Pricing</div>
                 <div className={styles.pvPrice}>
-                    {formData.hasDiscount && formData.discountValue ? (
-                        <><span className={styles.pvPriceStrike}>₹{formData.pricePerHour}</span> ₹{discountedPrice}/hr</>
-                    ) : <>₹{formData.pricePerHour || 0}/hr</>}
+                    {previewData.hasDiscount && previewData.discountValue ? (
+                        <><span className={styles.pvPriceStrike}>₹{previewData.pricePerHour}</span> ₹{previewDiscountedPrice}/hr</>
+                    ) : <>₹{previewData.pricePerHour || 0}/hr</>}
                 </div>
-                {formData.hasPeakPricing && formData.peakPrice && (
+                {previewData.hasPeakPricing && previewData.peakPrice && (
                     <div className={styles.pvText} style={{ marginTop: 4 }}>
-                        Peak: ₹{formData.peakPrice}/hr ({fmt12(formData.peakStartTime || '')} – {fmt12(formData.peakEndTime || '')})
+                        Peak: ₹{previewData.peakPrice}/hr ({fmt12(previewData.peakStartTime || '')} – {fmt12(previewData.peakEndTime || '')})
                     </div>
                 )}
-                {formData.hasDiscount && formData.promoCode && (
-                    <div className={styles.pvPromo}>🏷️ Use code: {formData.promoCode}</div>
+                {previewData.hasDiscount && previewData.promoCode && (
+                    <div className={styles.pvPromo}>🏷️ Use code: {previewData.promoCode}</div>
                 )}
             </div>
         </div>
     );
+    };
 
     // ═══════════════════════════════════════════════════════════════
     //  TAB CONTENT RENDERERS
@@ -963,10 +1074,37 @@ export function OwnerTurf() {
                 </div>
                 <div className={styles.headerActions}>
                     {syncBadge()}
+                    <label className={styles.liveSyncToggle}>
+                        <input
+                            type="checkbox"
+                            checked={liveSyncEnabled}
+                            onChange={(e) => setLiveSyncEnabled(e.target.checked)}
+                        />
+                        <span>Live Sync For Users</span>
+                    </label>
                     <button className={styles.resetBtn} onClick={resetForm}>↩️ Reset</button>
                     <button className={styles.publishBtn} onClick={publish} disabled={syncStatus === 'saving'}>
                         {syncStatus === 'saving' ? '🔄 Publishing...' : '🚀 Publish Changes'}
                     </button>
+                </div>
+            </div>
+
+            <div className={styles.workspaceStrip}>
+                <div className={styles.workspaceCard}>
+                    <div className={styles.workspaceLabel}>Profile Completion</div>
+                    <div className={styles.workspaceValue}>{completion}%</div>
+                </div>
+                <div className={styles.workspaceCard}>
+                    <div className={styles.workspaceLabel}>Sports Configured</div>
+                    <div className={styles.workspaceValue}>{sports.length}</div>
+                </div>
+                <div className={styles.workspaceCard}>
+                    <div className={styles.workspaceLabel}>Gallery Images</div>
+                    <div className={styles.workspaceValue}>{images.length}</div>
+                </div>
+                <div className={styles.workspaceCard}>
+                    <div className={styles.workspaceLabel}>Last Sync</div>
+                    <div className={styles.workspaceValueSmall}>{lastLiveSyncAt || 'Not synced yet'}</div>
                 </div>
             </div>
 
@@ -994,15 +1132,23 @@ export function OwnerTurf() {
                 <div className={styles.previewPanel}>
                     <div className={styles.previewHeader}>
                         <div className={styles.previewTitle}>👁️ Live Preview</div>
-                        <div className={styles.deviceSwitcher}>
-                            <button className={`${styles.deviceBtn} ${previewDevice === 'mobile' ? styles.deviceBtnActive : ''}`}
-                                onClick={() => setPreviewDevice('mobile')}>📱 Mobile</button>
-                            <button className={`${styles.deviceBtn} ${previewDevice === 'desktop' ? styles.deviceBtnActive : ''}`}
-                                onClick={() => setPreviewDevice('desktop')}>💻 Desktop</button>
+                        <div className={styles.previewControls}>
+                            <div className={styles.deviceSwitcher}>
+                                <button className={`${styles.deviceBtn} ${previewMode === 'draft' ? styles.deviceBtnActive : ''}`}
+                                    onClick={() => setPreviewMode('draft')}>🛠️ Editing</button>
+                                <button className={`${styles.deviceBtn} ${previewMode === 'live' ? styles.deviceBtnActive : ''}`}
+                                    onClick={() => setPreviewMode('live')}>🌐 Live</button>
+                            </div>
+                            <div className={styles.deviceSwitcher}>
+                                <button className={`${styles.deviceBtn} ${previewDevice === 'mobile' ? styles.deviceBtnActive : ''}`}
+                                    onClick={() => setPreviewDevice('mobile')}>📱 Mobile</button>
+                                <button className={`${styles.deviceBtn} ${previewDevice === 'desktop' ? styles.deviceBtnActive : ''}`}
+                                    onClick={() => setPreviewDevice('desktop')}>💻 Desktop</button>
+                            </div>
                         </div>
                     </div>
                     <div className={styles.previewFrame}>
-                        {renderPreview()}
+                        {renderPreview(previewMode === 'live' ? { ...defaultForm(), ...publishedData } : formData)}
                     </div>
                 </div>
             </div>
@@ -1016,6 +1162,12 @@ export function OwnerTurf() {
                     <div className={styles.previewTitle}>👁️ Live Preview</div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <div className={styles.deviceSwitcher}>
+                            <button className={`${styles.deviceBtn} ${previewMode === 'draft' ? styles.deviceBtnActive : ''}`}
+                                onClick={() => setPreviewMode('draft')}>🛠️</button>
+                            <button className={`${styles.deviceBtn} ${previewMode === 'live' ? styles.deviceBtnActive : ''}`}
+                                onClick={() => setPreviewMode('live')}>🌐</button>
+                        </div>
+                        <div className={styles.deviceSwitcher}>
                             <button className={`${styles.deviceBtn} ${previewDevice === 'mobile' ? styles.deviceBtnActive : ''}`}
                                 onClick={() => setPreviewDevice('mobile')}>📱</button>
                             <button className={`${styles.deviceBtn} ${previewDevice === 'desktop' ? styles.deviceBtnActive : ''}`}
@@ -1024,7 +1176,7 @@ export function OwnerTurf() {
                         <button className={styles.bottomSheetClose} onClick={() => setShowBottomSheet(false)}>✕</button>
                     </div>
                 </div>
-                <div style={{ padding: 16 }}>{renderPreview()}</div>
+                <div style={{ padding: 16 }}>{renderPreview(previewMode === 'live' ? { ...defaultForm(), ...publishedData } : formData)}</div>
             </div>
         </div>
     );

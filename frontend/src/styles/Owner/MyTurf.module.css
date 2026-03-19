@@ -36,6 +36,61 @@
     flex-wrap: wrap;
 }
 
+.liveSyncToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid #E5E7EB;
+    background: #FFFFFF;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.liveSyncToggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: #EA580C;
+}
+
+.workspaceStrip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.workspaceCard {
+    background: linear-gradient(180deg, #FFFFFF 0%, #FBFBFD 100%);
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+.workspaceLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B7280;
+    margin-bottom: 6px;
+}
+
+.workspaceValue {
+    font-size: 22px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.1;
+}
+
+.workspaceValueSmall {
+    font-size: 14px;
+    font-weight: 700;
+    color: #374151;
+    line-height: 1.2;
+}
+
 /* Sync Status Badge */
 .syncBadge {
     display: inline-flex;
@@ -131,6 +186,7 @@
     border-radius: 16px;
     border: 1px solid #E5E7EB;
     background: #F9FAFB;
+    box-shadow: 0 2px 10px rgba(17, 24, 39, 0.05);
 }
 
 /* --- Tab Bar --- */
@@ -199,6 +255,7 @@
     border: 1px solid #E5E7EB;
     padding: 28px;
     min-height: 400px;
+    box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05), 0 8px 24px rgba(17, 24, 39, 0.03);
 }
 
 .tabTitle {
@@ -703,6 +760,13 @@
     color: #374151;
 }
 
+.previewControls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .deviceSwitcher {
     display: flex;
     gap: 0;
@@ -1007,6 +1071,10 @@
 
 /* --- Responsive --- */
 @media (max-width: 1024px) {
+    .workspaceStrip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .splitLayout {
         grid-template-columns: 1fr;
     }
@@ -1040,6 +1108,10 @@
 }
 
 @media (max-width: 600px) {
+    .workspaceStrip {
+        grid-template-columns: 1fr;
+    }
+
     .tabContent {
         padding: 20px;
     }
