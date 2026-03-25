@@ -10,6 +10,7 @@ import { createRazorpayOrder, verifyPaymentSignature } from '../services/payment
 import { createBooking, markEmailSent } from '../services/bookingService.js';
 import { config } from '../config/index.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
+import { adminDb } from '../config/firebaseAdmin.js';
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/create-order
@@ -193,6 +194,61 @@ export async function handleVerifyPayment(req, res) {
     console.error('❌ Error verifying payment:', error);
     return res.status(500).json({
       error: 'Payment verification failed',
+      message: config.nodeEnv === 'development' ? error.message : undefined,
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/payment/cancel
+// ---------------------------------------------------------------------------
+
+export async function handleCancelBooking(req, res) {
+  try {
+    const { bookingId } = req.body;
+    const user = req.firebaseUser;
+
+    if (!bookingId || typeof bookingId !== 'string') {
+      return res.status(400).json({ error: 'bookingId is required (string)' });
+    }
+
+    // Fetch the booking
+    const bookingRef = adminDb.collection('bookings').doc(bookingId);
+    const bookingDoc = await bookingRef.get();
+
+    if (!bookingDoc.exists) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    const bookingData = bookingDoc.data();
+
+    // Verify the authenticated user owns this booking
+    if (bookingData.userId !== user.uid) {
+      return res.status(403).json({ error: 'You do not own this booking' });
+    }
+
+    // Prevent cancelling already-cancelled or completed bookings
+    if (bookingData.status === 'cancelled') {
+      return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
+    if (bookingData.status === 'completed') {
+      return res.status(400).json({ error: 'Cannot cancel a completed booking' });
+    }
+
+    // Update status to cancelled via Admin SDK
+    await bookingRef.update({
+      status: 'cancelled',
+      cancelledAt: new Date(),
+      cancelledBy: 'user',
+    });
+
+    console.log(`✅ Booking ${bookingId} cancelled by user ${user.uid}`);
+    return res.status(200).json({ success: true, message: 'Booking cancelled successfully' });
+
+  } catch (error) {
+    console.error('❌ Error cancelling booking:', error);
+    return res.status(500).json({
+      error: 'Failed to cancel booking',
       message: config.nodeEnv === 'development' ? error.message : undefined,
     });
   }
