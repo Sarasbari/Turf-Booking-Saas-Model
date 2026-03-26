@@ -20,6 +20,20 @@ export interface UserProfile {
     preferredLocation?: string;
     favoriteSport?: string;
     preferredTurfSize?: '5-a-side' | '7-a-side' | '11-a-side';
+
+    // AI recommendation preference signals
+    primaryGoal?: 'fitness' | 'fun' | 'competitive' | 'practice' | 'social';
+    skillLevel?: 'beginner' | 'intermediate' | 'advanced';
+    groupType?: 'solo' | 'friends' | 'team';
+    preferredTimeWindows?: string[];
+    maxBudgetPerSession?: number;
+    maxTravelDistanceKm?: number;
+    surfacePreference?: 'natural-grass' | 'artificial-turf' | 'hard-court' | 'any';
+    lightingPreference?: 'daylight' | 'floodlights' | 'any';
+    venueTypePreference?: 'indoor' | 'outdoor' | 'any';
+    playFrequencyPerWeek?: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    preferredSessionDurationHours?: 1 | 2 | 3;
+
     createdAt: Timestamp;
     updatedAt: Timestamp;
     profileCompletion: number;
@@ -53,6 +67,19 @@ export interface ProfileFormData {
     preferredLocation?: string;
     favoriteSport?: string;
     preferredTurfSize?: '5-a-side' | '7-a-side' | '11-a-side' | '';
+
+    // AI recommendation preference signals
+    primaryGoal?: 'fitness' | 'fun' | 'competitive' | 'practice' | 'social' | '';
+    skillLevel?: 'beginner' | 'intermediate' | 'advanced' | '';
+    groupType?: 'solo' | 'friends' | 'team' | '';
+    preferredTimeWindows?: string[];
+    maxBudgetPerSession?: number;
+    maxTravelDistanceKm?: number;
+    surfacePreference?: 'natural-grass' | 'artificial-turf' | 'hard-court' | 'any' | '';
+    lightingPreference?: 'daylight' | 'floodlights' | 'any' | '';
+    venueTypePreference?: 'indoor' | 'outdoor' | 'any' | '';
+    playFrequencyPerWeek?: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    preferredSessionDurationHours?: 1 | 2 | 3;
 }
 
 // Settings Interface

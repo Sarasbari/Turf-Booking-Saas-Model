@@ -45,6 +45,8 @@ function haversineDistance(
 
 const LOCATION_STORAGE_KEY = 'turfbook_user_location';
 const LOCATION_DISMISSED_KEY = 'turfbook_location_dismissed';
+const HEADER_CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
+const CITY_CHANGED_EVENT = 'bookmyturf:cityChanged';
 
 export function Home() {
     const [activeFilters, setActiveFilters] = useState<string[]>(['All Sizes']);
@@ -59,12 +61,19 @@ export function Home() {
     // Location state
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+    const [selectedCity, setSelectedCity] = useState('');
 
     // Debounce timer ref
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // ✅ Check for saved location or show prompt
     useEffect(() => {
+        const savedCity = localStorage.getItem(HEADER_CITY_STORAGE_KEY)?.trim();
+        if (!savedCity) {
+            setShowLocationPrompt(false);
+            return;
+        }
+
         const saved = localStorage.getItem(LOCATION_STORAGE_KEY);
         const dismissed = localStorage.getItem(LOCATION_DISMISSED_KEY);
 
@@ -81,6 +90,35 @@ export function Home() {
         if (!dismissed) {
             setShowLocationPrompt(true);
         }
+    }, []);
+
+    useEffect(() => {
+        const persistedCity = localStorage.getItem(HEADER_CITY_STORAGE_KEY)?.trim() || '';
+        if (persistedCity) {
+            setSelectedCity(persistedCity);
+        }
+
+        const handleCityChanged = (event: Event) => {
+            const customEvent = event as CustomEvent<{ city?: string }>;
+            const city = customEvent.detail?.city?.trim();
+            if (city) {
+                setSelectedCity(city);
+            }
+        };
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === HEADER_CITY_STORAGE_KEY && event.newValue) {
+                setSelectedCity(event.newValue.trim());
+            }
+        };
+
+        window.addEventListener(CITY_CHANGED_EVENT, handleCityChanged as EventListener);
+        window.addEventListener('storage', handleStorage);
+
+        return () => {
+            window.removeEventListener(CITY_CHANGED_EVENT, handleCityChanged as EventListener);
+            window.removeEventListener('storage', handleStorage);
+        };
     }, []);
 
     // ✅ Debounce search input (300ms)
@@ -155,14 +193,36 @@ export function Home() {
         ? allTurfs
         : allTurfs.filter(t => t.sport.toLowerCase() === activeSport);
 
-    const recommendedTurfs = allTurfs
+    const matchesSelectedCity = (turf: Turf, city: string): boolean => {
+        const normalizedCity = city.trim().toLowerCase();
+        if (!normalizedCity) return true;
+
+        const turfCity = turf.city?.toLowerCase() || '';
+        const turfAddress = turf.address?.toLowerCase() || '';
+        return turfCity.includes(normalizedCity) || turfAddress.includes(normalizedCity);
+    };
+
+    const locationPreferredTurfs = selectedCity
+        ? filteredTurfs.filter((turf) => matchesSelectedCity(turf, selectedCity))
+        : filteredTurfs;
+
+    const recommendedByPreference = locationPreferredTurfs
         .filter(t => t.rating >= 4.7)
-        .filter(t => activeSport === 'all' || t.sport.toLowerCase() === activeSport)
         .slice(0, 10);
+
+    const recommendedFallback = filteredTurfs
+        .filter(t => t.rating >= 4.7)
+        .slice(0, 10);
+
+    const recommendedTurfs = recommendedByPreference.length > 0
+        ? recommendedByPreference
+        : recommendedFallback;
 
     // ✅ Near You — sorted by distance if location is available
     const nearbyTurfs = (() => {
-        let turfs = allTurfs.filter(t => activeSport === 'all' || t.sport.toLowerCase() === activeSport);
+        let turfs = locationPreferredTurfs.length > 0
+            ? locationPreferredTurfs
+            : filteredTurfs;
 
         if (userLocation) {
             // Sort turfs (mock logic since lat/lng removed from base type)
@@ -276,7 +336,9 @@ export function Home() {
                             <SectionHeader
                                 icon="🏆"
                                 title="Recommended Turfs"
-                                subtitle="Top rated venues loved by players"
+                                subtitle={selectedCity
+                                    ? `Top rated venues matching your location preference: ${selectedCity}`
+                                    : 'Top rated venues loved by players'}
                                 accentWord="Turfs"
                             />
                             <div className={styles.grid}>
@@ -298,7 +360,9 @@ export function Home() {
                             <SectionHeader
                                 icon="📍"
                                 title="Turfs Near You"
-                                subtitle={userLocation
+                                subtitle={selectedCity
+                                    ? `Showing turfs in and around ${selectedCity}`
+                                    : userLocation
                                     ? "Sorted by distance from your location"
                                     : "Book the best turf in your area, instantly"
                                 }

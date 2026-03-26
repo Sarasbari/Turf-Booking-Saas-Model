@@ -65,14 +65,23 @@ const isUpcoming = (booking: FirestoreBooking): boolean => {
 const formatTimeRange = (booking: FirestoreBooking): string => {
     if (booking.time) return booking.time; // legacy field
     if (!booking.timeSlots || booking.timeSlots.length === 0) return '';
-    const fmt = (t: string) => {
-        const [h] = t.split(':').map(Number);
-        const period = h >= 12 ? 'PM' : 'AM';
-        const hr = h % 12 || 12;
+    const fmt = (hour: number) => {
+        const normalizedHour = ((hour % 24) + 24) % 24;
+        const period = normalizedHour >= 12 ? 'PM' : 'AM';
+        const hr = normalizedHour % 12 || 12;
         return `${hr}:00 ${period}`;
     };
-    const first = fmt(booking.timeSlots[0]);
-    const last = fmt(parseInt(booking.timeSlots[booking.timeSlots.length - 1]) + 1 as unknown as string);
+
+    const parseHour = (slot: string): number => {
+        const [hourPart] = slot.split(':');
+        const parsed = Number.parseInt(hourPart, 10);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    };
+
+    const firstHour = parseHour(booking.timeSlots[0]);
+    const lastHour = parseHour(booking.timeSlots[booking.timeSlots.length - 1]) + 1;
+    const first = fmt(firstHour);
+    const last = fmt(lastHour);
     return `${first} – ${last}`;
 };
 

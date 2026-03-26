@@ -19,12 +19,23 @@ import { UserProfile, Booking, ProfileFormData } from '../types/profile';
  */
 export function calculateProfileCompletion(profile: Partial<UserProfile>): number {
     const weights = {
-        name: 20,
-        email: 20,
-        phone: 20,
-        preferredLocation: 20,
-        favoriteSport: 10,
-        preferredTurfSize: 10,
+        name: 8,
+        email: 8,
+        phone: 8,
+        preferredLocation: 7,
+        favoriteSport: 7,
+        preferredTurfSize: 7,
+        primaryGoal: 8,
+        skillLevel: 8,
+        groupType: 8,
+        preferredTimeWindows: 6,
+        maxBudgetPerSession: 6,
+        maxTravelDistanceKm: 6,
+        surfacePreference: 5,
+        lightingPreference: 4,
+        venueTypePreference: 4,
+        playFrequencyPerWeek: 4,
+        preferredSessionDurationHours: 4,
     };
 
     let completion = 0;
@@ -35,6 +46,17 @@ export function calculateProfileCompletion(profile: Partial<UserProfile>): numbe
     if (profile.preferredLocation) completion += weights.preferredLocation;
     if (profile.favoriteSport) completion += weights.favoriteSport;
     if (profile.preferredTurfSize) completion += weights.preferredTurfSize;
+    if (profile.primaryGoal) completion += weights.primaryGoal;
+    if (profile.skillLevel) completion += weights.skillLevel;
+    if (profile.groupType) completion += weights.groupType;
+    if (profile.preferredTimeWindows && profile.preferredTimeWindows.length > 0) completion += weights.preferredTimeWindows;
+    if (profile.maxBudgetPerSession && profile.maxBudgetPerSession > 0) completion += weights.maxBudgetPerSession;
+    if (profile.maxTravelDistanceKm && profile.maxTravelDistanceKm > 0) completion += weights.maxTravelDistanceKm;
+    if (profile.surfacePreference) completion += weights.surfacePreference;
+    if (profile.lightingPreference) completion += weights.lightingPreference;
+    if (profile.venueTypePreference) completion += weights.venueTypePreference;
+    if (profile.playFrequencyPerWeek) completion += weights.playFrequencyPerWeek;
+    if (profile.preferredSessionDurationHours) completion += weights.preferredSessionDurationHours;
 
     return completion;
 }
@@ -118,6 +140,17 @@ export async function updateUserProfile(
         if (formData.preferredLocation !== undefined) updateData.preferredLocation = formData.preferredLocation;
         if (formData.favoriteSport !== undefined) updateData.favoriteSport = formData.favoriteSport;
         if (formData.preferredTurfSize !== undefined) updateData.preferredTurfSize = formData.preferredTurfSize;
+        if (formData.primaryGoal !== undefined) updateData.primaryGoal = formData.primaryGoal;
+        if (formData.skillLevel !== undefined) updateData.skillLevel = formData.skillLevel;
+        if (formData.groupType !== undefined) updateData.groupType = formData.groupType;
+        if (formData.preferredTimeWindows !== undefined) updateData.preferredTimeWindows = formData.preferredTimeWindows;
+        if (formData.maxBudgetPerSession !== undefined) updateData.maxBudgetPerSession = formData.maxBudgetPerSession;
+        if (formData.maxTravelDistanceKm !== undefined) updateData.maxTravelDistanceKm = formData.maxTravelDistanceKm;
+        if (formData.surfacePreference !== undefined) updateData.surfacePreference = formData.surfacePreference;
+        if (formData.lightingPreference !== undefined) updateData.lightingPreference = formData.lightingPreference;
+        if (formData.venueTypePreference !== undefined) updateData.venueTypePreference = formData.venueTypePreference;
+        if (formData.playFrequencyPerWeek !== undefined) updateData.playFrequencyPerWeek = formData.playFrequencyPerWeek;
+        if (formData.preferredSessionDurationHours !== undefined) updateData.preferredSessionDurationHours = formData.preferredSessionDurationHours;
 
         const profileCompletion = calculateProfileCompletion({
             name: formData.name,
@@ -126,6 +159,15 @@ export async function updateUserProfile(
             preferredLocation: formData.preferredLocation || '',
             favoriteSport: formData.favoriteSport || '',
             preferredTurfSize: formData.preferredTurfSize || undefined,
+            primaryGoal: formData.primaryGoal || undefined,
+            skillLevel: formData.skillLevel || undefined,
+            groupType: formData.groupType || undefined,
+            preferredTimeWindows: formData.preferredTimeWindows || [],
+            maxBudgetPerSession: formData.maxBudgetPerSession,
+            maxTravelDistanceKm: formData.maxTravelDistanceKm,
+            surfacePreference: formData.surfacePreference || undefined,
+            lightingPreference: formData.lightingPreference || undefined,
+            venueTypePreference: formData.venueTypePreference || undefined,
         });
         updateData.profileCompletion = profileCompletion;
 

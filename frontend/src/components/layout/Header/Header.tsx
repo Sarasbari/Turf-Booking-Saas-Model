@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserData, UserData, onAuthStateChange } from '../../../utils/auth';
+import { getUserProfile } from '../../../utils/firestoreUtils';
 import { NavigationDrawer } from '../NavigationDrawer/NavigationDrawer';
 import { LocationModal } from '../../features/LocationModal/LocationModal';
 import { SignInModal } from '../../../pages/SignIn/SignIn';
@@ -11,6 +12,7 @@ interface HeaderProps {
 
 const HEADER_SEARCH_STORAGE_KEY = 'bookmyturf_header_search_query';
 const HEADER_CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
+const CITY_CHANGED_EVENT = 'bookmyturf:cityChanged';
 
 export function Header({ onSearchChange }: HeaderProps) {
     const navigate = useNavigate();
@@ -20,25 +22,49 @@ export function Header({ onSearchChange }: HeaderProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
     const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-    const [selectedCity, setSelectedCity] = useState('Mumbai');
+    const [selectedCity, setSelectedCity] = useState('');
 
     // Core Mobile Navbar States
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Listen for auth state changes
+    // Listen for auth state changes and seed city from user profile preference.
     useEffect(() => {
-        const unsubscribe = onAuthStateChange((firebaseUser) => {
+        const unsubscribe = onAuthStateChange(async (firebaseUser) => {
             if (firebaseUser) {
                 const userData = getUserData();
                 setUser(userData);
+
+                let preferredLocation = '';
+                if (userData?.id) {
+                    try {
+                        const profile = await getUserProfile(userData.id);
+                        preferredLocation = profile?.preferredLocation?.trim() || '';
+                    } catch {
+                        // Best effort only; keep existing fallback behavior.
+                    }
+                }
+
+                const persistedCity = localStorage.getItem(HEADER_CITY_STORAGE_KEY)?.trim() || '';
+                const resolvedCity = preferredLocation || persistedCity;
+
+                if (resolvedCity) {
+                    setSelectedCity(resolvedCity);
+                } else if (location.pathname === '/') {
+                    setIsLocationModalOpen(true);
+                }
             } else {
                 setUser(null);
+
+                const persistedCity = localStorage.getItem(HEADER_CITY_STORAGE_KEY)?.trim() || '';
+                if (!persistedCity && location.pathname === '/') {
+                    setIsLocationModalOpen(true);
+                }
             }
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [location.pathname]);
 
     useEffect(() => {
         const persistedSearch = localStorage.getItem(HEADER_SEARCH_STORAGE_KEY);
@@ -59,7 +85,13 @@ export function Header({ onSearchChange }: HeaderProps) {
     }, [searchQuery]);
 
     useEffect(() => {
-        localStorage.setItem(HEADER_CITY_STORAGE_KEY, selectedCity);
+        const normalizedCity = selectedCity.trim();
+        if (!normalizedCity) return;
+
+        localStorage.setItem(HEADER_CITY_STORAGE_KEY, normalizedCity);
+        window.dispatchEvent(new CustomEvent(CITY_CHANGED_EVENT, {
+            detail: { city: normalizedCity },
+        }));
     }, [selectedCity]);
 
     // Close mobile menu on route change
@@ -91,7 +123,7 @@ export function Header({ onSearchChange }: HeaderProps) {
     };
 
     const handleCitySelect = (city: string) => {
-        setSelectedCity(city);
+        setSelectedCity(city.trim());
     };
 
     return (
@@ -128,7 +160,7 @@ export function Header({ onSearchChange }: HeaderProps) {
                         className="h-10 px-3 bg-gray-50 border border-gray-200 rounded-md text-sm font-medium text-gray-800 cursor-pointer flex items-center gap-1.5 transition-colors hover:border-orange-600 hover:bg-white whitespace-nowrap min-h-[44px]"
                         onClick={() => setIsLocationModalOpen(true)}
                     >
-                        📍 {selectedCity}
+                        📍 {selectedCity || 'Select City'}
                         <svg className="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -198,7 +230,7 @@ export function Header({ onSearchChange }: HeaderProps) {
                             setIsLocationModalOpen(true);
                         }}
                     >
-                        <span>📍 {selectedCity}</span>
+                        <span>📍 {selectedCity || 'Select City'}</span>
                         <span className="text-gray-400 text-xs ml-auto">Change</span>
                     </button>
 
