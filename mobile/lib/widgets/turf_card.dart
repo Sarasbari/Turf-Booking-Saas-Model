@@ -43,13 +43,13 @@ class TurfCard extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: turf.images.first,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
+                          placeholder: (_, _) => Container(
                             color: AppTheme.surfaceLight,
                             child: const Center(
                               child: Icon(Icons.sports_soccer, size: 40, color: AppTheme.textMuted),
                             ),
                           ),
-                          errorWidget: (_, __, ___) => Container(
+                          errorWidget: (_, _, _) => Container(
                             color: AppTheme.surfaceLight,
                             child: const Center(
                               child: Icon(Icons.sports_soccer, size: 40, color: AppTheme.textMuted),

@@ -39,9 +39,9 @@ class BookingService {
       'razorpayOrderId': razorpayOrderId,
       'emailSent': false,
       'createdAt': FieldValue.serverTimestamp(),
-      if (groundId != null) 'groundId': groundId,
-      if (startHour != null) 'startHour': startHour,
-      if (duration != null) 'duration': duration,
+      'groundId': ?groundId,
+      'startHour': ?startHour,
+      'duration': ?duration,
     });
     return docRef.id;
   }
