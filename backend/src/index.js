@@ -2,6 +2,7 @@
 // dotenv.config();
 
 import express from "express";
+import compression from 'compression';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
@@ -24,9 +25,20 @@ app.use(cors({
 // ✅ Handle preflight requests for ALL routes
 app.options('*', cors());
 
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// ✅ Response time logging
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.url} → ${res.statusCode} (${duration}ms)`);
+  });
+  next();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -47,6 +59,9 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ✅ Ping route for uptime monitoring
+app.get('/ping', (req, res) => res.status(200).send('pong'));
 
 // 404 handler
 app.use((req, res) => {

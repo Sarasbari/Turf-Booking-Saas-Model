@@ -51,13 +51,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ── Blocked slots: public read, only turf owner can write ──
+    // ── Blocked slots: public read, user can lock/unlock own slots,
+    //    turf owner can also delete (clear stale locks) ──
     match /blockedSlots/{slotId} {
       allow read: if true;
-      allow create: if request.auth != null
-        && isOwnerOfTurf(request.resource.data.turfId);
-      allow update, delete: if request.auth != null
-        && isOwnerOfTurf(resource.data.turfId);
+      allow create, update: if request.auth != null
+        && request.resource.data.blockedBy == request.auth.uid;
+      allow delete: if request.auth != null
+        && (resource.data.blockedBy == request.auth.uid
+            || isOwnerOfTurf(resource.data.turfId));
     }
 
     // ── Payments: server-only (deny all client access) ──

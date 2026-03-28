@@ -34,6 +34,34 @@ npm run dev
 
 The app will be available at **http://localhost:5173**
 
+## 🐳 Quick Start (Docker)
+
+One-command setup with Firebase emulator for local development:
+
+```bash
+git clone https://github.com/Sarasbari/Turf-Booking-Saas-Model
+cd Turf-Booking-Saas-Model
+cp backend/.env.example backend/.env  # add your keys
+docker-compose up --build
+```
+
+| Service              | URL                    |
+|----------------------|------------------------|
+| Frontend             | http://localhost:5173   |
+| Backend API          | http://localhost:5000   |
+| Firebase Emulator UI | http://localhost:4000   |
+
+### Docker Scripts
+
+```bash
+npm run dev          # docker-compose up
+npm run dev:build    # docker-compose up --build
+npm run down         # docker-compose down
+npm run logs         # all service logs
+npm run logs:backend # backend logs only
+npm run emulator     # firebase emulator only
+```
+
 ## ✅ Current Status
 
 ### ✨ Working Features
