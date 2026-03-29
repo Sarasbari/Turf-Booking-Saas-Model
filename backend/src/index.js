@@ -8,6 +8,9 @@ import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
 import authRoutes from './routes/authRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import turfRoutes from './routes/turfRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import { testRedis } from './config/redis.js';
 
 const app = express();
 
@@ -43,6 +46,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/turfs', turfRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ✅ Root health check — fixes the 404 on homepage
 app.get('/', (req, res) => {
@@ -83,10 +88,12 @@ app.use((err, req, res, next) => {
 // ✅ Local dev only
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV}`);
     console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
+    // Test Redis connection on startup
+    await testRedis();
   });
 }
 

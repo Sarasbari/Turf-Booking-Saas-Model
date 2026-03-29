@@ -11,6 +11,7 @@ import { createBooking, markEmailSent } from '../services/bookingService.js';
 import { config } from '../config/index.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
 import { adminDb } from '../config/firebaseAdmin.js';
+import { invalidateCache } from '../middleware/cache.js';
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/create-order
@@ -150,6 +151,10 @@ export async function handleVerifyPayment(req, res) {
 
     console.log(`✅ Booking stored: ${bookingId}`);
 
+    // ── Invalidate slot cache for this turf+date ─────────────────────
+    invalidateCache(`cache:GET:/api/turfs/${turfId}/slots/${bookedDate}`).catch(() => {});
+    invalidateCache(`cache:GET:/api/turfs/${turfId}*`).catch(() => {});
+
     // ── Send confirmation email (non-blocking fire-and-forget) ────────
     // We pass all details directly — no secondary Firestore reads needed.
     const formatDate = (dateString) => {
@@ -243,6 +248,12 @@ export async function handleCancelBooking(req, res) {
     });
 
     console.log(`✅ Booking ${bookingId} cancelled by user ${user.uid}`);
+
+    // ── Invalidate slot cache for the cancelled booking's turf+date ──
+    if (bookingData.turfId && bookingData.bookedDate) {
+      invalidateCache(`cache:GET:/api/turfs/${bookingData.turfId}/slots/${bookingData.bookedDate}`).catch(() => {});
+    }
+
     return res.status(200).json({ success: true, message: 'Booking cancelled successfully' });
 
   } catch (error) {

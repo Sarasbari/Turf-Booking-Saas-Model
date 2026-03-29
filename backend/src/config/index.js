@@ -32,7 +32,13 @@ export const config = {
         apiKey: process.env.BREVO_API_KEY,
         senderEmail: process.env.BREVO_SENDER_EMAIL,
         senderName: process.env.BREVO_SENDER_NAME || 'BookMyTurf',
-    }
+    },
+
+    // Upstash Redis (optional — caching degrades gracefully without it)
+    redis: {
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    },
 };
 
 // Validate required environment variables
