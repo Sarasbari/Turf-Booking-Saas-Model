@@ -12,6 +12,7 @@ import { config } from '../config/index.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
 import { adminDb } from '../config/firebaseAdmin.js';
 import { invalidateCache } from '../middleware/cache.js';
+import { emailQueue } from '../queues/index.js';
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/create-order
@@ -155,8 +156,7 @@ export async function handleVerifyPayment(req, res) {
     invalidateCache(`cache:GET:/api/turfs/${turfId}/slots/${bookedDate}`).catch(() => {});
     invalidateCache(`cache:GET:/api/turfs/${turfId}*`).catch(() => {});
 
-    // ── Send confirmation email (non-blocking fire-and-forget) ────────
-    // We pass all details directly — no secondary Firestore reads needed.
+    // ── Queue confirmation email (or send directly if queue disabled) ──
     const formatDate = (dateString) => {
       try {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -170,7 +170,7 @@ export async function handleVerifyPayment(req, res) {
       }
     };
 
-    sendBookingConfirmation({
+    const emailData = {
       toEmail:      userEmail || user.email || '',
       userName:     userName  || user.name  || 'User',
       bookingId,
@@ -181,12 +181,43 @@ export async function handleVerifyPayment(req, res) {
       timeSlots,
       totalAmount:  typeof totalPrice === 'number' ? totalPrice : 0,
       paymentId:    razorpay_payment_id,
-    })
-      .then(() => markEmailSent(bookingId))
-      .catch((err) => {
-        // Email failure does NOT affect booking confirmation
-        console.error(`❌ Email failed for booking ${bookingId}:`, err.message);
-      });
+    };
+
+    if (emailQueue) {
+      // ── BullMQ: queued with retry logic ──────────────────────────────
+      await emailQueue.add('booking-confirmation', emailData);
+      console.log(`📧 Confirmation email queued for booking: ${bookingId}`);
+
+      // ── Schedule reminder 2 hours before first slot ──────────────────
+      try {
+        const bookingDateTime = new Date(`${bookedDate}T${timeSlots[0]}`);
+        const reminderTime = bookingDateTime.getTime() - (2 * 60 * 60 * 1000);
+        const delay = reminderTime - Date.now();
+
+        if (delay > 0) {
+          await emailQueue.add('booking-reminder', {
+            bookingId,
+            toEmail: userEmail || user.email || '',
+            userName: userName || user.name || 'User',
+            turfName: turfName || 'Your Turf',
+            turfAddress: turfAddress || '',
+            bookedDate: formatDate(bookedDate),
+            timeSlots,
+          }, { delay });
+          console.log(`⏰ Reminder scheduled in ${Math.round(delay / 60000)} minutes`);
+        }
+      } catch (reminderErr) {
+        // Reminder scheduling failure is non-fatal
+        console.error('⚠️  Failed to schedule reminder:', reminderErr.message);
+      }
+    } else {
+      // ── Fallback: direct send (no queue available) ───────────────────
+      sendBookingConfirmation(emailData)
+        .then(() => markEmailSent(bookingId))
+        .catch((err) => {
+          console.error(`❌ Email failed for booking ${bookingId}:`, err.message);
+        });
+    }
 
     // ── Return success to frontend immediately ────────────────────────
     return res.status(200).json({
@@ -252,6 +283,20 @@ export async function handleCancelBooking(req, res) {
     // ── Invalidate slot cache for the cancelled booking's turf+date ──
     if (bookingData.turfId && bookingData.bookedDate) {
       invalidateCache(`cache:GET:/api/turfs/${bookingData.turfId}/slots/${bookingData.bookedDate}`).catch(() => {});
+    }
+
+    // ── Queue cancellation email ──────────────────────────────────────
+    if (emailQueue) {
+      await emailQueue.add('booking-cancelled', {
+        bookingId,
+        toEmail: bookingData.userEmail || '',
+        userName: bookingData.userName || 'User',
+        turfName: bookingData.turfName || '',
+        bookedDate: bookingData.bookedDate || '',
+        timeSlots: bookingData.timeSlots || [],
+      }).catch((err) => {
+        console.error('⚠️  Failed to queue cancellation email:', err.message);
+      });
     }
 
     return res.status(200).json({ success: true, message: 'Booking cancelled successfully' });

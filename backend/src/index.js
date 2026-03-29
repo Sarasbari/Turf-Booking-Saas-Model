@@ -11,6 +11,10 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import turfRoutes from './routes/turfRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { testRedis } from './config/redis.js';
+import { emailQueue, notificationQueue } from './queues/index.js';
+import { createBullBoard } from '@bull-board/api';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
+import { ExpressAdapter } from '@bull-board/express';
 
 const app = express();
 
@@ -48,6 +52,31 @@ app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/turfs', turfRoutes);
 app.use('/api/admin', adminRoutes);
+
+// ✅ Bull Board — queue monitoring dashboard
+const bullBoardAdapter = new ExpressAdapter();
+bullBoardAdapter.setBasePath('/admin/queues');
+
+// Only register adapters for queues that exist (Redis may be disabled)
+const queueAdapters = [];
+if (emailQueue)        queueAdapters.push(new BullMQAdapter(emailQueue));
+if (notificationQueue) queueAdapters.push(new BullMQAdapter(notificationQueue));
+
+createBullBoard({ queues: queueAdapters, serverAdapter: bullBoardAdapter });
+
+// Protect Bull Board with bearer token in production
+app.use('/admin/queues',
+  (req, res, next) => {
+    if (process.env.NODE_ENV === 'production') {
+      const auth = req.headers.authorization;
+      if (!process.env.ADMIN_SECRET || auth !== `Bearer ${process.env.ADMIN_SECRET}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+    }
+    next();
+  },
+  bullBoardAdapter.getRouter(),
+);
 
 // ✅ Root health check — fixes the 404 on homepage
 app.get('/', (req, res) => {

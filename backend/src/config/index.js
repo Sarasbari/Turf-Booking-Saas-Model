@@ -39,6 +39,14 @@ export const config = {
         url: process.env.UPSTASH_REDIS_REST_URL,
         token: process.env.UPSTASH_REDIS_REST_TOKEN,
     },
+
+    // BullMQ — ioredis TCP connection (optional — emails fall back to direct send)
+    bullmq: {
+        redisUrl: process.env.REDIS_URL,
+    },
+
+    // Admin secret for Bull Board dashboard
+    adminSecret: process.env.ADMIN_SECRET,
 };
 
 // Validate required environment variables

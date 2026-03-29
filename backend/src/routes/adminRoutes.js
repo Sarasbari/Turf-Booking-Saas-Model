@@ -9,6 +9,7 @@ import { Router } from 'express';
 import { adminAuth_middleware } from '../middleware/adminAuth.js';
 import { getCacheStats } from '../middleware/cache.js';
 import { redis } from '../config/redis.js';
+import { emailQueue, notificationQueue, analyticsQueue } from '../queues/index.js';
 
 const router = Router();
 
@@ -54,6 +55,34 @@ router.post('/cache/flush', adminAuth_middleware, async (req, res) => {
   } catch (error) {
     console.error('❌ Error flushing cache:', error.message);
     return res.status(500).json({ error: 'Failed to flush cache' });
+  }
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// GET /api/admin/queue/stats
+// Returns job counts for all BullMQ queues
+// ───────────────────────────────────────────────────────────────────────────
+
+router.get('/queue/stats', adminAuth_middleware, async (req, res) => {
+  try {
+    const getQueueStats = async (queue, name) => {
+      if (!queue) return { name, status: 'disabled' };
+      const counts = await queue.getJobCounts(
+        'waiting', 'active', 'completed', 'failed', 'delayed',
+      );
+      return { name, status: 'active', ...counts };
+    };
+
+    const [emails, notifications, analytics] = await Promise.all([
+      getQueueStats(emailQueue, 'emails'),
+      getQueueStats(notificationQueue, 'notifications'),
+      getQueueStats(analyticsQueue, 'analytics'),
+    ]);
+
+    return res.json({ success: true, queues: { emails, notifications, analytics } });
+  } catch (error) {
+    console.error('❌ Error fetching queue stats:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch queue statistics' });
   }
 });
 
