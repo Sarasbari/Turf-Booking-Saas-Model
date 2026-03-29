@@ -22,10 +22,11 @@ import authRoutes from './routes/authRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import turfRoutes from './routes/turfRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import recommendationRoutes from './routes/recommendationRoutes.js';
 import { testRedis } from './config/redis.js';
 import { emailQueue, notificationQueue } from './queues/index.js';
 import { createBullBoard } from '@bull-board/api';
-import { BullMQAdapter } from '@bull-board/api/bullMQAdapter.js';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 
 const app = express();
@@ -64,6 +65,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/turfs', turfRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // ✅ Bull Board — queue monitoring dashboard
 const bullBoardAdapter = new ExpressAdapter();

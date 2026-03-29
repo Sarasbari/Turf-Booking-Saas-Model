@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import * as Sentry from '@sentry/react';
 import { Header } from '../../components/layout/Header/Header';
 import { SubNavigation } from '../../components/layout/SubNavigation/SubNavigation';
 import { HeroCarousel } from '../../components/features/HeroCarousel/HeroCarousel';
@@ -8,6 +9,8 @@ import { TurfCard } from '../../components/features/TurfCard/TurfCard';
 import { TurfCardSkeleton } from '../../components/features/TurfCard/TurfCardSkeleton';
 import { Footer } from '../../components/layout/Footer/Footer';
 import { LocationPrompt } from '../../components/features/LocationPrompt/LocationPrompt';
+import { SmartRecommendation } from '../../components/features/SmartRecommendation/SmartRecommendation';
+import { useAuth } from '../../context/AuthContext';
 import { useTurfs } from '../../hooks/useTurfs';
 import { Turf } from '../../types';
 import styles from './Home.module.css';
@@ -49,6 +52,7 @@ const HEADER_CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
 const CITY_CHANGED_EVENT = 'bookmyturf:cityChanged';
 
 export function Home() {
+    const { user } = useAuth();
     const [activeFilters, setActiveFilters] = useState<string[]>(['All Sizes']);
     const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
     const [activeSport, setActiveSport] = useState('all');
@@ -265,6 +269,13 @@ export function Home() {
                     <span>Secure Payments</span>
                 </div>
             </div>
+
+            {/* 🤖 AI Smart Recommendation — only for logged-in users */}
+            {user && (
+                <Sentry.ErrorBoundary fallback={<></>}>
+                    <SmartRecommendation />
+                </Sentry.ErrorBoundary>
+            )}
 
             <div className={styles.filtersContainer}>
                 <div className={styles.filtersBar}>
