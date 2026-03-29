@@ -1,6 +1,18 @@
-// import dotenv from "dotenv";
-// dotenv.config();
+// ── Sentry MUST be initialized before any other imports ───────────────────
+import * as Sentry from '@sentry/node';
 
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  enabled: process.env.NODE_ENV === 'production',
+  tracesSampleRate: 0.2,  // 20% of requests traced
+  integrations: [
+    Sentry.httpIntegration(),
+    Sentry.expressIntegration(),
+  ],
+});
+
+// ── All other imports ─────────────────────────────────────────────────────
 import express from "express";
 import compression from 'compression';
 import cors from 'cors';
@@ -105,11 +117,17 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
+// ── Sentry error handler (MUST be before custom error handler) ────────────
+app.use(Sentry.expressErrorHandler());
+
+// ── Custom error handler (includes Sentry event ID) ───────────────────────
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'production'
+      ? 'Internal Server Error'
+      : err.message || 'Internal Server Error',
+    ...(res.sentry && { sentryId: res.sentry }),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 });

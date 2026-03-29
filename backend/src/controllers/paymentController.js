@@ -13,6 +13,7 @@ import { sendBookingConfirmation } from '../services/emailService.js';
 import { adminDb } from '../config/firebaseAdmin.js';
 import { invalidateCache } from '../middleware/cache.js';
 import { emailQueue } from '../queues/index.js';
+import * as Sentry from '@sentry/node';
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/create-order
@@ -59,6 +60,10 @@ export async function handleCreateOrder(req, res) {
     });
   } catch (error) {
     console.error('❌ Error creating Razorpay order:', error);
+    Sentry.captureException(error, {
+      tags: { feature: 'payment', step: 'create-order' },
+      extra: { turfId: req.body.turfId, userId: req.body.userId },
+    });
     return res.status(500).json({
       error: 'Failed to create payment order',
       message: config.nodeEnv === 'development' ? error.message : undefined,
@@ -220,6 +225,13 @@ export async function handleVerifyPayment(req, res) {
     }
 
     // ── Return success to frontend immediately ────────────────────────
+    Sentry.addBreadcrumb({
+      message: 'Payment verified and booking created',
+      category: 'payment',
+      data: { bookingId, amount: totalPrice, turfId },
+      level: 'info',
+    });
+
     return res.status(200).json({
       success: true,
       bookingId,
@@ -228,6 +240,14 @@ export async function handleVerifyPayment(req, res) {
 
   } catch (error) {
     console.error('❌ Error verifying payment:', error);
+    Sentry.captureException(error, {
+      tags: { feature: 'payment', step: 'verify' },
+      extra: {
+        orderId: req.body.razorpay_order_id,
+        userId: req.body.userId,
+        turfId: req.body.turfId,
+      },
+    });
     return res.status(500).json({
       error: 'Payment verification failed',
       message: config.nodeEnv === 'development' ? error.message : undefined,

@@ -16,6 +16,7 @@
         "@getbrevo/brevo": "^5.0.1",
         "@react-email/components": "^1.0.8",
         "@react-email/render": "^2.0.4",
+        "@sentry/node": "^10.46.0",
         "@upstash/redis": "^1.37.0",
         "bullmq": "^5.71.1",
         "compression": "^1.8.1",
