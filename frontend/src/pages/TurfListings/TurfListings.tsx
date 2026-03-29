@@ -5,6 +5,7 @@ import { TurfCardSkeleton } from '../../components/features/TurfCard/TurfCardSke
 import { BookingModal } from '../../components/features/BookingModal/BookingModal';
 import { Header } from '../../components/layout/Header/Header';
 import { SignInRequiredModal } from '../../components/features/SignInRequiredModal/SignInRequiredModal';
+import { AIRecommendationChip } from '../../components/AIRecommendationChip';
 import { isLoggedIn } from '../../utils/auth';
 import { useTurfs } from '../../hooks/useTurfs';
 import { Turf } from '../../types';
@@ -390,6 +391,9 @@ export function TurfListings() {
                     onClose={() => setIsSignInModalOpen(false)}
                 />
             )}
+
+            {/* AI Slot Recommendation Chip */}
+            <AIRecommendationChip />
         </div>
     );
 }

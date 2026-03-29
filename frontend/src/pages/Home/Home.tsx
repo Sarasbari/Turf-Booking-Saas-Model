@@ -10,6 +10,7 @@ import { TurfCardSkeleton } from '../../components/features/TurfCard/TurfCardSke
 import { Footer } from '../../components/layout/Footer/Footer';
 import { LocationPrompt } from '../../components/features/LocationPrompt/LocationPrompt';
 import { SmartRecommendation } from '../../components/features/SmartRecommendation/SmartRecommendation';
+import { AIRecommendationChip } from '../../components/AIRecommendationChip';
 import { useAuth } from '../../context/AuthContext';
 import { useTurfs } from '../../hooks/useTurfs';
 import { Turf } from '../../types';
@@ -417,6 +418,7 @@ export function Home() {
             )}
 
             <Footer />
+            <AIRecommendationChip />
         </div>
     );
 }

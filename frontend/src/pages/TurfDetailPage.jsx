@@ -5,6 +5,7 @@ import { db } from '../services/firebase';
 import { auth } from '../services/firebase';
 import { createOrder, openRazorpayCheckout } from '../services/paymentService';
 import { Header } from '../components/layout/Header/Header';
+import { AIRecommendationChip } from '../components/AIRecommendationChip';
 import './TurfDetailPage.css';
 
 // ── Icons (inline SVGs) ────────────────────────────────────────────────────
@@ -1442,6 +1443,7 @@ export default function TurfDetailPage() {
             </div>
 
             <MobileBookingBar turf={turf} />
+            <AIRecommendationChip />
         </div>
     );
 }
