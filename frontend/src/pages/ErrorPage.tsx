@@ -151,7 +151,7 @@ export function ErrorPage({ error, eventId, resetError }: ErrorPageProps) {
         <p style={styles.message}>
           We're sorry for the inconvenience. Our team has been automatically
           notified and is looking into this issue.
-          {error?.message && process.env.NODE_ENV === 'development' && (
+          {error?.message && import.meta.env.DEV && (
             <>
               <br />
               <br />
