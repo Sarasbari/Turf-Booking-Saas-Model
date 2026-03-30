@@ -33,6 +33,13 @@ export interface BookingType {
     customerName: string;
     customerPhone: string;
     customerPhoto: string;
+    // User-side booking fields (from payment verification)
+    userName?: string;
+    userEmail?: string;
+    userPhone?: string;
+    timeSlots?: string[];
+    totalPrice?: number;
+    bookedDate?: string;
     sport: string;
     date: string;
     startTime: string;

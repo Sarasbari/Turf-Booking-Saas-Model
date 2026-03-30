@@ -28,6 +28,8 @@ import { FieldValue } from 'firebase-admin/firestore';
  * @param {string} params.bookedDate        - 'YYYY-MM-DD'
  * @param {string[]} params.timeSlots       - ['06:00', '07:00', '08:00']
  * @param {number} params.totalPrice
+ * @param {string} params.sport             - e.g. 'Football', 'Cricket'
+ * @param {string} params.groundId          - e.g. 'ground-1'
  * @param {string} params.paymentId         - razorpay_payment_id
  * @param {string} params.razorpayOrderId   - razorpay_order_id (idempotency key)
  * @returns {Promise<string>} bookingId
@@ -45,6 +47,8 @@ export async function createBooking(params) {
     bookedDate,
     timeSlots,
     totalPrice,
+    sport,
+    groundId,
     paymentId,
     razorpayOrderId,
   } = params;
@@ -107,8 +111,14 @@ export async function createBooking(params) {
       date: bookedDate,    // backward-compat alias for legacy queries
       timeSlots,           // ['06:00', '07:00', '08:00']
       totalPrice,
+      amount: totalPrice,  // alias for owner dashboard
+      sport: sport || '',
+      groundId: groundId || '',
       // Status
       status: 'confirmed',
+      bookedBy: 'user',
+      paymentMethod: 'razorpay',
+      paymentStatus: 'paid',
       emailSent: false,
       // Payment reference
       paymentId,

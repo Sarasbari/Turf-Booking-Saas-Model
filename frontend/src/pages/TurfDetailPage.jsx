@@ -936,6 +936,8 @@ function BookingCard({ turf }) {
                     ownerContact: turf.ownerPhone || turf.ownerName || '',
                     userEmail: user.email || '',
                     userName: user.displayName || '',
+                    sport: selectedSport || '',
+                    groundId: selectedGround?.id || '',
                 },
                 userInfo: {
                     name: user.displayName || '',

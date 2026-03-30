@@ -97,6 +97,8 @@ export async function handleVerifyPayment(req, res) {
       bookedDate,
       timeSlots,
       totalPrice,
+      sport,
+      groundId,
       // User info (from frontend auth state)
       userEmail,
       userName,
@@ -151,6 +153,8 @@ export async function handleVerifyPayment(req, res) {
       bookedDate,
       timeSlots,
       totalPrice:      typeof totalPrice === 'number' ? totalPrice : 0,
+      sport:           sport || '',
+      groundId:        groundId || '',
       paymentId:       razorpay_payment_id,
       razorpayOrderId: razorpay_order_id,
     });

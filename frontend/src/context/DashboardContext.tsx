@@ -1,10 +1,11 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import {
     collection,
     query,
     where,
     onSnapshot,
     doc,
+    getDoc,
     writeBatch,
     serverTimestamp,
     Timestamp
@@ -20,6 +21,14 @@ interface BookingFormData {
     amount: string;
     paymentMethod: string;
     notes?: string;
+}
+
+interface UserProfile {
+    name?: string;
+    email?: string;
+    phone?: string;
+    picture?: string;
+    photoURL?: string;
 }
 
 interface DashboardContextType {
@@ -42,6 +51,7 @@ export function DashboardProvider({
 }) {
     const [bookings, setBookings] = useState<BookingType[]>([]);
     const [loading, setLoading] = useState(true);
+    const userCacheRef = useRef<Map<string, UserProfile>>(new Map());
 
     useEffect(() => {
         if (!ownerData?.turfId) {
@@ -54,20 +64,101 @@ export function DashboardProvider({
             where('turfId', '==', ownerData.turfId)
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const bookingsData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as BookingType[];
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
+            const rawBookings = snapshot.docs.map(d => ({
+                id: d.id,
+                ...d.data()
+            })) as (BookingType & {
+                userName?: string;
+                userEmail?: string;
+                userPhone?: string;
+            })[];
+
+            // ── Enrich bookings with user details ──
+            // Collect unique userIds that need profile fetching
+            const userIdsToFetch = new Set<string>();
+            for (const b of rawBookings) {
+                if (b.userId && !b.customerName && !userCacheRef.current.has(b.userId)) {
+                    userIdsToFetch.add(b.userId);
+                }
+            }
+
+            // Fetch user profiles in parallel (with cache)
+            if (userIdsToFetch.size > 0) {
+                const fetchPromises = Array.from(userIdsToFetch).map(async (uid) => {
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', uid));
+                        if (userDoc.exists()) {
+                            userCacheRef.current.set(uid, userDoc.data() as UserProfile);
+                        } else {
+                            // Cache empty so we don't re-fetch
+                            userCacheRef.current.set(uid, {});
+                        }
+                    } catch (err) {
+                        console.warn(`Failed to fetch user profile for ${uid}:`, err);
+                        userCacheRef.current.set(uid, {});
+                    }
+                });
+                await Promise.all(fetchPromises);
+            }
+
+            // Map raw booking data to BookingType with enriched user info
+            const enrichedBookings: BookingType[] = rawBookings.map(b => {
+                const raw = b as any;
+                const userProfile = b.userId ? userCacheRef.current.get(b.userId) : undefined;
+
+                // Resolve customer details: booking fields → raw userName/userEmail → user profile
+                const customerName = b.customerName
+                    || raw.userName
+                    || userProfile?.name
+                    || '';
+                const customerPhone = b.customerPhone
+                    || raw.userPhone
+                    || userProfile?.phone
+                    || '';
+                const customerPhoto = b.customerPhoto
+                    || userProfile?.picture
+                    || userProfile?.photoURL
+                    || '';
+
+                // Resolve date: booking.date or booking.bookedDate
+                const date = b.date || raw.bookedDate || '';
+
+                // Resolve time fields: startTime/endTime or derive from timeSlots
+                let startTime = b.startTime || '';
+                let endTime = b.endTime || '';
+                if (!startTime && Array.isArray(raw.timeSlots) && raw.timeSlots.length > 0) {
+                    const sorted = [...raw.timeSlots].sort();
+                    startTime = sorted[0];
+                    // endTime = last slot + 1 hour
+                    const lastHour = parseInt(sorted[sorted.length - 1].split(':')[0], 10);
+                    endTime = `${String(lastHour + 1).padStart(2, '0')}:00`;
+                }
+
+                // Resolve amount
+                const amount = b.amount || raw.totalPrice || 0;
+
+                return {
+                    ...b,
+                    customerName,
+                    customerPhone,
+                    customerPhoto,
+                    date,
+                    startTime,
+                    endTime,
+                    amount,
+                    bookedBy: b.bookedBy || (raw.userName ? 'user' : undefined),
+                } as BookingType;
+            });
 
             // Sort by createdAt desc by default
-            bookingsData.sort((a, b) => {
-                const dateA = a.createdAt?.toMillis() || 0;
-                const dateB = b.createdAt?.toMillis() || 0;
+            enrichedBookings.sort((a, b) => {
+                const dateA = a.createdAt?.toMillis?.() || 0;
+                const dateB = b.createdAt?.toMillis?.() || 0;
                 return dateB - dateA;
             });
 
-            setBookings(bookingsData);
+            setBookings(enrichedBookings);
             setLoading(false);
         }, (error) => {
             console.error("Error listening to bookings:", error);

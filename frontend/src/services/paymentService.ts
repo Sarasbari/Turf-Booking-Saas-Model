@@ -55,6 +55,8 @@ interface VerifyPaymentPayload {
     bookedDate: string;       // 'YYYY-MM-DD'
     timeSlots: string[];      // ['06:00', '07:00']
     totalPrice: number;
+    sport: string;
+    groundId: string;
     // User info (from Firebase auth state)
     userEmail: string;
     userName: string;
@@ -193,6 +195,9 @@ interface CheckoutOptions {
         // User details for backend booking document + email
         userEmail: string;
         userName: string;
+        // Booking metadata
+        sport: string;
+        groundId: string;
     };
     userInfo?: { name?: string; email?: string; phone?: string };
     onSuccess: (bookingId: string) => void;
@@ -241,6 +246,8 @@ export function openRazorpayCheckout({
                     bookedDate: bookingMeta.date,
                     timeSlots: bookingMeta.slots,
                     totalPrice: bookingMeta.totalPrice,
+                    sport: bookingMeta.sport,
+                    groundId: bookingMeta.groundId,
                     // User info
                     userEmail: bookingMeta.userEmail,
                     userName: bookingMeta.userName,

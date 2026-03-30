@@ -66,11 +66,37 @@ export function OwnerOverview() {
             const grounds = getGroundsForTurf(turf);
             if (grounds.length > 0) setSelectedGroundId(grounds[0].id);
 
-            // 3. All bookings for this turf
+            // 3. All bookings for this turf — enrich user-created bookings
             const bookingsSnap = await getDocs(
                 query(collection(db, 'bookings'), where('turfId', '==', owner.turfId))
             );
-            const bookings = bookingsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as BookingType[];
+            const bookings = bookingsSnap.docs.map(d => {
+                const raw = d.data() as any;
+
+                // Resolve time fields: startTime/endTime or derive from timeSlots
+                let startTime = raw.startTime || '';
+                let endTime = raw.endTime || '';
+                if (!startTime && Array.isArray(raw.timeSlots) && raw.timeSlots.length > 0) {
+                    const sorted = [...raw.timeSlots].sort();
+                    startTime = sorted[0];
+                    const lastHour = parseInt(sorted[sorted.length - 1].split(':')[0], 10);
+                    endTime = `${String(lastHour + 1).padStart(2, '0')}:00`;
+                }
+
+                return {
+                    id: d.id,
+                    ...raw,
+                    // Normalize field names: user-side → owner-side
+                    customerName: raw.customerName || raw.userName || '',
+                    customerPhone: raw.customerPhone || raw.userPhone || '',
+                    customerPhoto: raw.customerPhoto || '',
+                    date: raw.date || raw.bookedDate || '',
+                    amount: raw.amount || raw.totalPrice || 0,
+                    startTime,
+                    endTime,
+                    bookedBy: raw.bookedBy || (raw.userName ? 'user' : undefined),
+                } as BookingType;
+            });
             setAllBookings(bookings);
 
             // 4. Blocked slots for today
