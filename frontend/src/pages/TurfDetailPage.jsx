@@ -6,6 +6,8 @@ import { auth } from '../services/firebase';
 import { createOrder, openRazorpayCheckout } from '../services/paymentService';
 import { Header } from '../components/layout/Header/Header';
 import { AIRecommendationChip } from '../components/AIRecommendationChip';
+import { ModalOverlay } from '../components/ui/ModalOverlay';
+import { BookingSuccessPopup } from '../components/features/BookingSuccessPopup';
 import './TurfDetailPage.css';
 
 // ── Icons (inline SVGs) ────────────────────────────────────────────────────
@@ -679,9 +681,13 @@ function BookingCard({ turf }) {
     const [selectedSport, setSelectedSport] = useState('');
     const [bookedSlots, setBookedSlots] = useState([]);
     const [blockedSlots, setBlockedSlots] = useState([]);
-    const [paymentStatus, setPaymentStatus] = useState(null);
-    const [isProcessing, setIsProcessing] = useState(false);
     const [loadingSlots, setLoadingSlots] = useState(false);
+
+    // ── Payment state machine ──
+    // 'idle' | 'processing' | 'verifying' | 'success' | 'failed'
+    const [paymentState, setPaymentState] = useState('idle');
+    const [bookingResult, setBookingResult] = useState(null);
+    const [razorpayPaymentId, setRazorpayPaymentId] = useState('');
 
     // Ground support — use totalGrounds from database
     const grounds = (() => {
@@ -883,7 +889,7 @@ function BookingCard({ turf }) {
     // ✅ DURATION OPTIONS
     const durationOptions = [1, 2, 3, 4];
 
-    // ✅ PAYMENT + BOOKING HANDLER
+    // ✅ PAYMENT + BOOKING HANDLER (state machine: idle → processing → verifying → success/failed)
     const handlePayment = async () => {
         if (!date || !selectedSlot) return;
 
@@ -894,14 +900,9 @@ function BookingCard({ turf }) {
             return;
         }
 
-        setIsProcessing(true);
-        setPaymentStatus(null);
-
-        const format12 = (hr) => {
-            const p = hr >= 12 ? 'PM' : 'AM';
-            const dHr = hr % 12 || 12;
-            return `${dHr}:00 ${p}`;
-        };
+        setPaymentState('processing');
+        setBookingResult(null);
+        setRazorpayPaymentId('');
 
         // Build timeSlots array in "HH:00" format (what backend + useBookedSlots expect)
         const timeSlots = Array.from({ length: duration }, (_, i) => {
@@ -925,17 +926,14 @@ function BookingCard({ turf }) {
             openRazorpayCheckout({
                 orderData,
                 bookingMeta: {
-                    // Core booking fields
                     turfId: turf.id,
                     slots: timeSlots,
                     date: date,
                     totalPrice: totalAmount,
-                    // Turf details — backend stores these in Firestore doc + uses for email
                     turfName: turf.name || '',
                     turfAddress: [turf.address, turf.city].filter(Boolean).join(', '),
                     turfImage: turf.images?.[0] || '',
                     ownerContact: turf.ownerPhone || turf.ownerName || '',
-                    // User details — backend stores these in Firestore doc + uses for email
                     userEmail: user.email || '',
                     userName: user.displayName || '',
                 },
@@ -945,22 +943,24 @@ function BookingCard({ turf }) {
                 },
                 onSuccess: (bookingId) => {
                     console.log('✅ Booking confirmed via backend:', bookingId);
-                    setPaymentStatus('success');
-                    setIsProcessing(false);
+                    setBookingResult({ bookingId, success: true });
+                    setPaymentState('success');  // ← opens success popup
                 },
                 onFailure: (error) => {
                     console.error('❌ Payment/verification failed:', error);
                     if (error === 'Payment cancelled by user') {
-                        setIsProcessing(false);
+                        setPaymentState('idle');
                         return;
                     }
-                    setPaymentStatus('failed');
-                    setIsProcessing(false);
+                    setPaymentState('failed');
                 },
             });
+
+            // Razorpay modal is now open — move to 'verifying' once it closes
+            // (the handler callback above handles the transition)
         } catch (err) {
             console.error('Payment initialization error:', err);
-            setIsProcessing(false);
+            setPaymentState('idle');
             alert(`Failed to initialize payment: ${err.message || 'Please try again.'}`);
         }
     };
@@ -990,7 +990,7 @@ function BookingCard({ turf }) {
                     className="td-booking__date-input"
                     min={today}
                     value={date}
-                    onChange={(e) => { setDate(e.target.value); setSelectedSlot(null); setPaymentStatus(null); }}
+                    onChange={(e) => { setDate(e.target.value); setSelectedSlot(null); setPaymentState('idle'); }}
                 />
             </div>
 
@@ -1165,52 +1165,15 @@ function BookingCard({ turf }) {
                 </div>
             )}
 
-            {/* ✅ Success Message */}
-            {paymentStatus === 'success' && (
-                <div style={{
-                    background: '#ecfdf5', border: '1px solid #10b981', borderRadius: '12px',
-                    padding: '16px', textAlign: 'center', marginBottom: '12px'
-                }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
-                    <div style={{ fontWeight: 700, color: '#065f46', fontSize: '16px' }}>Booking Confirmed!</div>
-                    <div style={{ color: '#047857', fontSize: '14px', marginTop: '4px' }}>
-                        {turf.name} · {selectedSlot?.label} · {duration}hr · {new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                    </div>
-                    <button
-                        onClick={() => navigate('/profile')}
-                        style={{
-                            marginTop: '12px', background: '#059669', color: 'white', border: 'none',
-                            padding: '10px 24px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer'
-                        }}
-                    >
-                        View My Bookings →
-                    </button>
-                </div>
-            )}
-
-            {/* ❌ Failed Message */}
-            {paymentStatus === 'failed' && (
-                <div style={{
-                    background: '#fef2f2', border: '1px solid #ef4444', borderRadius: '12px',
-                    padding: '16px', textAlign: 'center', marginBottom: '12px'
-                }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>❌</div>
-                    <div style={{ fontWeight: 700, color: '#991b1b', fontSize: '16px' }}>Payment Failed</div>
-                    <div style={{ color: '#b91c1c', fontSize: '14px', marginTop: '4px' }}>
-                        Please try again or use a different payment method.
-                    </div>
-                </div>
-            )}
-
             {/* Submit */}
             <button
-                className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' || isProcessing ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
-                disabled={!date || !selectedSlot || turf.status === 'closed' || isProcessing}
+                className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' || paymentState === 'processing' || paymentState === 'verifying' ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
+                disabled={!date || !selectedSlot || turf.status === 'closed' || paymentState === 'processing' || paymentState === 'verifying'}
                 onClick={handlePayment}
             >
-                {isProcessing
+                {paymentState === 'processing' || paymentState === 'verifying'
                     ? '⏳ Processing...'
-                    : paymentStatus === 'success'
+                    : paymentState === 'success'
                         ? '✅ Booked!'
                         : !date
                             ? 'Select Date First'
@@ -1221,6 +1184,83 @@ function BookingCard({ turf }) {
             </button>
 
             <div className="td-booking__footer">🔒 Secure payment via Razorpay &nbsp;·&nbsp; ✓ Instant confirmation</div>
+
+            {/* ──── PAYMENT POPUP MODALS ──── */}
+
+            {/* VERIFYING POPUP */}
+            {paymentState === 'verifying' && (
+                <ModalOverlay>
+                    <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 w-[320px] mx-4">
+                        <div
+                            className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full"
+                            style={{ animation: 'spin 1s linear infinite' }}
+                        />
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Confirming your booking...
+                        </h3>
+                        <p className="text-sm text-gray-500 text-center">
+                            Please don't close this window
+                        </p>
+                    </div>
+                </ModalOverlay>
+            )}
+
+            {/* SUCCESS POPUP */}
+            {paymentState === 'success' && bookingResult && (
+                <BookingSuccessPopup
+                    booking={bookingResult}
+                    turf={turf}
+                    selectedSlot={selectedSlot}
+                    selectedDate={date}
+                    totalPrice={totalAmount}
+                    duration={duration}
+                    onClose={() => {
+                        setPaymentState('idle');
+                        navigate('/profile');
+                    }}
+                    onBookAgain={() => {
+                        setPaymentState('idle');
+                        navigate('/turfs');
+                    }}
+                />
+            )}
+
+            {/* FAILED POPUP */}
+            {paymentState === 'failed' && (
+                <ModalOverlay>
+                    <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 w-[340px] mx-4">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                            <span className="text-3xl">❌</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                            Verification Failed
+                        </h3>
+                        <p className="text-sm text-gray-500 text-center">
+                            If money was deducted, our team will confirm your booking within 2 hours.
+                        </p>
+                        {razorpayPaymentId && (
+                            <p className="text-xs text-gray-400 font-mono">
+                                Ref: {razorpayPaymentId}
+                            </p>
+                        )}
+                        <button
+                            onClick={() => setPaymentState('idle')}
+                            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                        <button
+                            onClick={() => {
+                                setPaymentState('idle');
+                                navigate('/profile');
+                            }}
+                            className="text-orange-500 text-sm underline"
+                        >
+                            Check My Bookings
+                        </button>
+                    </div>
+                </ModalOverlay>
+            )}
         </div>
     );
 }
