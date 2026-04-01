@@ -26,11 +26,21 @@ service cloud.firestore {
       }
     }
 
-    // ── Bookings: BACKEND WRITES ONLY via Admin SDK (bypasses rules) ──
-    // Clients can NEVER write bookings directly.
-    // Read allowed for the booking's owner or the turf owner.
+    // ── Bookings ──
+    // User bookings are written by backend (Admin SDK bypasses rules).
+    // Approved turf owners are allowed to create/update bookings only for
+    // their own turf (used by owner manual booking dashboard).
     match /bookings/{bookingId} {
-      allow write: if false; // Admin SDK bypasses this — backend-only writes
+      allow create: if request.auth != null
+        && isOwnerOfTurf(request.resource.data.turfId)
+        && request.resource.data.bookedBy == 'owner';
+
+      allow update: if request.auth != null
+        && isOwnerOfTurf(resource.data.turfId)
+        && request.resource.data.turfId == resource.data.turfId;
+
+      allow delete: if false;
+
       allow read: if request.auth != null
         && (resource.data.userId == request.auth.uid
             || isOwnerOfTurf(resource.data.turfId));
