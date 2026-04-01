@@ -176,22 +176,65 @@ export async function getSlotAvailability(req, res) {
       return res.status(404).json({ error: 'Turf not found' });
     }
 
-    // 2. Get all confirmed bookings for this turf on this date
-    const bookingsSnapshot = await adminDb
-      .collection('bookings')
-      .where('turfId', '==', id)
-      .where('bookedDate', '==', date)
-      .where('status', '==', 'confirmed')
-      .get();
+    // 2. Get all confirmed bookings for this turf on this date.
+    //    Bookings can be stored with EITHER `bookedDate` (user-created)
+    //    or `date` (owner-created). Firestore doesn't support OR queries
+    //    on different fields, so we run two queries in parallel.
+    const [byBookedDate, byDate] = await Promise.all([
+      adminDb
+        .collection('bookings')
+        .where('turfId', '==', id)
+        .where('bookedDate', '==', date)
+        .where('status', '==', 'confirmed')
+        .get(),
+      adminDb
+        .collection('bookings')
+        .where('turfId', '==', id)
+        .where('date', '==', date)
+        .where('status', '==', 'confirmed')
+        .get(),
+    ]);
 
-    // 3. Collect all booked time slots
+    // 3. Collect all booked time slots (deduplicate across both queries)
     const bookedSlots = new Set();
-    bookingsSnapshot.forEach((doc) => {
+    const seenDocIds = new Set();
+
+    function extractSlots(doc) {
+      if (seenDocIds.has(doc.id)) return; // skip duplicate docs
+      seenDocIds.add(doc.id);
       const data = doc.data();
-      if (Array.isArray(data.timeSlots)) {
+
+      // Format 1: timeSlots array (user-created bookings)
+      // e.g. timeSlots: ['06:00', '07:00', '08:00']
+      if (Array.isArray(data.timeSlots) && data.timeSlots.length > 0) {
         data.timeSlots.forEach((slot) => bookedSlots.add(slot));
+        return;
       }
-    });
+
+      // Format 2: startTime/endTime strings (owner-created bookings)
+      // e.g. startTime: '06:00', endTime: '08:00' → slots 06:00, 07:00
+      if (data.startTime && data.endTime) {
+        const startH = parseInt(data.startTime.split(':')[0], 10);
+        const endH = parseInt(data.endTime.split(':')[0], 10);
+        if (!isNaN(startH) && !isNaN(endH) && endH > startH) {
+          for (let h = startH; h < endH; h++) {
+            bookedSlots.add(`${String(h).padStart(2, '0')}:00`);
+          }
+          return;
+        }
+      }
+
+      // Format 3: startHour + duration numbers (legacy owner bookings)
+      // e.g. startHour: 6, duration: 2 → slots 06:00, 07:00
+      if (typeof data.startHour === 'number' && typeof data.duration === 'number') {
+        for (let h = data.startHour; h < data.startHour + data.duration; h++) {
+          bookedSlots.add(`${String(h).padStart(2, '0')}:00`);
+        }
+      }
+    }
+
+    byBookedDate.forEach(extractSlots);
+    byDate.forEach(extractSlots);
 
     // 4. Build all possible slots from the turf's operating hours
     const turfData = turfDoc.data();

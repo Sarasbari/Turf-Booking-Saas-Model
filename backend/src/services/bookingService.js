@@ -69,21 +69,59 @@ export async function createBooking(params) {
     }
 
     // ── Slot Availability Check ───────────────────────────────────────────────
-    // Query all confirmed bookings for this turf on this date
-    const dayBookingsQuery = adminDb
+    // Query all confirmed bookings for this turf on this date.
+    // Owner-created bookings use `date`, user-created use `bookedDate`.
+    // Firestore transactions don't allow Promise.all, so run sequentially.
+    const byBookedDateQuery = adminDb
       .collection('bookings')
       .where('turfId', '==', turfId)
       .where('bookedDate', '==', bookedDate)
       .where('status', '==', 'confirmed');
-    const dayBookingsSnapshot = await transaction.get(dayBookingsQuery);
+    const byDateQuery = adminDb
+      .collection('bookings')
+      .where('turfId', '==', turfId)
+      .where('date', '==', bookedDate)
+      .where('status', '==', 'confirmed');
+
+    const [byBookedDateSnap, byDateSnap] = await Promise.all([
+      transaction.get(byBookedDateQuery),
+      transaction.get(byDateQuery),
+    ]);
 
     const bookedSlotsOnDate = new Set();
-    dayBookingsSnapshot.forEach(doc => {
+    const seenIds = new Set();
+
+    function collectSlots(doc) {
+      if (seenIds.has(doc.id)) return;
+      seenIds.add(doc.id);
       const data = doc.data();
-      if (Array.isArray(data.timeSlots)) {
+
+      // Format 1: timeSlots array
+      if (Array.isArray(data.timeSlots) && data.timeSlots.length > 0) {
         data.timeSlots.forEach(slot => bookedSlotsOnDate.add(slot));
+        return;
       }
-    });
+      // Format 2: startTime/endTime
+      if (data.startTime && data.endTime) {
+        const sH = parseInt(data.startTime.split(':')[0], 10);
+        const eH = parseInt(data.endTime.split(':')[0], 10);
+        if (!isNaN(sH) && !isNaN(eH) && eH > sH) {
+          for (let h = sH; h < eH; h++) {
+            bookedSlotsOnDate.add(`${String(h).padStart(2, '0')}:00`);
+          }
+          return;
+        }
+      }
+      // Format 3: startHour + duration
+      if (typeof data.startHour === 'number' && typeof data.duration === 'number') {
+        for (let h = data.startHour; h < data.startHour + data.duration; h++) {
+          bookedSlotsOnDate.add(`${String(h).padStart(2, '0')}:00`);
+        }
+      }
+    }
+
+    byBookedDateSnap.forEach(collectSlots);
+    byDateSnap.forEach(collectSlots);
 
     // Check if any requested timeSlot overlaps with already booked slots
     const conflictingSlots = timeSlots.filter(slot => bookedSlotsOnDate.has(slot));
