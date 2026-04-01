@@ -1,8 +1,10 @@
 /**
  * Firebase Admin SDK initialization.
  *
- * Uses a service account JSON file (path via FIREBASE_SERVICE_ACCOUNT_PATH env)
- * or Application Default Credentials. Exports Firestore and Auth instances.
+ * Credential loading priority:
+ * 1. FIREBASE_SERVICE_ACCOUNT env var (JSON string — used on Vercel)
+ * 2. service-account.json file (local development)
+ * 3. Application Default Credentials (GCP environments)
  */
 
 import admin from 'firebase-admin';
@@ -14,39 +16,44 @@ function initFirebaseAdmin() {
     return admin.app();
   }
 
-  // Load the downloaded service account key directly
-  try {
-    const serviceAccountPath = new URL('../../service-account.json', import.meta.url);
-    const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+  let credential = null;
 
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      // databaseURL is only needed for Realtime Database, not Firestore.
-      // Remove it, or make sure service-account.json has the SAME project_id
-      // as your frontend's VITE_FIREBASE_PROJECT_ID
-    });
-    console.log('Admin SDK project:', admin.app().options.projectId || admin.app().options.credential?.projectId);
-    console.log('Frontend should match:', process.env.FIREBASE_PROJECT_ID);
-    console.log("✅ Firebase Admin Initialized with service-account.json");
-  } catch (error) {
-    console.error("❌ Failed to load service-account.json. Please ensure it's in the backend folder.");
-    console.error(error.message);
-
-    // Fall back to Application Default Credentials if file is missing
-    admin.initializeApp({
-      projectId: config.firebase.projectId,
-    });
+  // ── Priority 1: Environment variable (Vercel / CI) ──────────────────────
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      credential = admin.credential.cert(serviceAccount);
+      console.log('✅ Firebase Admin initialized from FIREBASE_SERVICE_ACCOUNT env var');
+    } catch (err) {
+      console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT env var:', err.message);
+    }
   }
 
+  // ── Priority 2: Local service-account.json file ─────────────────────────
+  if (!credential) {
+    try {
+      const serviceAccountPath = new URL('../../service-account.json', import.meta.url);
+      const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+      credential = admin.credential.cert(serviceAccount);
+      console.log('✅ Firebase Admin initialized from service-account.json');
+    } catch (err) {
+      console.warn('⚠️  service-account.json not found:', err.message);
+    }
+  }
+
+  // ── Initialize with credential or fall back to ADC ──────────────────────
+  if (credential) {
+    admin.initializeApp({ credential });
+  } else {
+    console.warn('⚠️  No service account found. Falling back to Application Default Credentials.');
+    admin.initializeApp({ projectId: config.firebase.projectId });
+  }
+
+  console.log('🔍 Admin SDK projectId:', admin.app().options.projectId || 'unknown');
   return admin.app();
 }
 
 initFirebaseAdmin();
-
-// DEBUG: Confirm which project the Admin SDK is connected to
-const app = admin.app();
-console.log('🔍 Admin SDK projectId:', app.options.projectId || JSON.parse(readFileSync(new URL('../../service-account.json', import.meta.url), 'utf8')).project_id);
-console.log('🔍 Expected (from env):', process.env.FIREBASE_PROJECT_ID);
 
 export const adminDb = admin.firestore();
 export const adminAuth = admin.auth();
