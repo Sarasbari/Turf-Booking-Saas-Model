@@ -36,6 +36,7 @@ const slotRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // ── Routes (static prefixes first, then dynamic params) ───────────────────

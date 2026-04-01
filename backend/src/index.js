@@ -31,6 +31,9 @@ import { ExpressAdapter } from '@bull-board/express';
 
 const app = express();
 
+// ✅ Trust Vercel's reverse proxy (required for express-rate-limit behind proxies)
+app.set('trust proxy', 1);
+
 // ✅ CORS — allow both localhost and production
 app.use(cors({
   origin: [

@@ -12,6 +12,7 @@ const verifyLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
 });
 
 const router = Router();
