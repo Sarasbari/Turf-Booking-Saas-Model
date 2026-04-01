@@ -41,7 +41,7 @@ function serializeTurf(doc) {
 
 // ── Param validators ──────────────────────────────────────────────────────
 const CITY_REGEX  = /^[a-zA-Z\s\-]{2,50}$/;
-const ID_REGEX    = /^[a-zA-Z0-9_\-]{10,40}$/;
+const ID_REGEX    = /^[a-zA-Z0-9_\-]{3,40}$/;
 const DATE_REGEX  = /^\d{4}-\d{2}-\d{2}$/;
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ export async function getTurfById(req, res) {
   if (!id || !ID_REGEX.test(id)) {
     return res.status(400).json({
       error: 'Invalid turf ID',
-      message: 'ID must be 10-40 alphanumeric characters',
+      message: 'ID must be 3-40 alphanumeric characters',
     });
   }
 
@@ -137,7 +137,7 @@ export async function getSlotAvailability(req, res) {
   if (!id || !ID_REGEX.test(id)) {
     return res.status(400).json({
       error: 'Invalid turf ID',
-      message: 'ID must be 10-40 alphanumeric characters',
+      message: 'ID must be 3-40 alphanumeric characters',
     });
   }
 

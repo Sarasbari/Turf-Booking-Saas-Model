@@ -814,9 +814,6 @@ function BookingCard({ turf }) {
                 }
             } catch (apiError) {
                 console.warn('Could not fetch booked slots via API fallback:', apiError);
-                if (isMounted) {
-                    setBookedSlots([]);
-                }
             } finally {
                 if (isMounted) {
                     setLoadingSlots(false);
