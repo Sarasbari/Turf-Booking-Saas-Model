@@ -64,6 +64,8 @@ const IconClipboard = () => (
 const formatCurrency = (amount) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
+
 const parseBookingDate = (booking) => {
     const value = booking?.bookedDate || booking?.date || booking?.bookingDate || booking?.createdAt;
 
@@ -130,6 +132,40 @@ const extractBookedHours = (booking) => {
     }
 
     return booked;
+};
+
+const getBookingDateKey = (booking) => {
+    const rawDate = booking?.bookedDate || booking?.date || booking?.bookingDate || null;
+
+    if (typeof rawDate === 'string') {
+        return rawDate.slice(0, 10);
+    }
+
+    if (rawDate && typeof rawDate?.toDate === 'function') {
+        const d = rawDate.toDate();
+        if (d instanceof Date && !Number.isNaN(d.getTime())) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+    }
+
+    return null;
+};
+
+const fetchBookedHoursFromApi = async (turfId, date) => {
+    const response = await fetch(`${API_BASE}/api/turfs/${turfId}/slots/${date}`);
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch booked slots from API');
+    }
+
+    const payload = await response.json();
+    if (!payload?.success || !Array.isArray(payload?.bookedSlots)) {
+        return [];
+    }
+
+    return payload.bookedSlots
+        .map((slot) => parseInt(String(slot).split(':')[0], 10))
+        .filter((hour) => !Number.isNaN(hour));
 };
 
 /**
@@ -766,61 +802,56 @@ function BookingCard({ turf }) {
         }
 
         setLoadingSlots(true);
+        let isMounted = true;
         const bookingsRef = collection(db, 'bookings');
+        const bookingQuery = query(bookingsRef, where('turfId', '==', turf.id));
 
-        const docsByField = {
-            bookedDate: [],
-            date: [],
+        const fallbackToApi = async () => {
+            try {
+                const apiBookedHours = await fetchBookedHoursFromApi(turf.id, date);
+                if (isMounted) {
+                    setBookedSlots(apiBookedHours);
+                }
+            } catch (apiError) {
+                console.warn('Could not fetch booked slots via API fallback:', apiError);
+                if (isMounted) {
+                    setBookedSlots([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setLoadingSlots(false);
+                }
+            }
         };
 
-        const recomputeBookedSlots = () => {
-            const seenDocIds = new Set();
-            const booked = new Set();
+        const unsubscribe = onSnapshot(
+            bookingQuery,
+            (snapshot) => {
+                const booked = new Set();
 
-            Object.values(docsByField).forEach((docs) => {
-                docs.forEach((docSnap) => {
-                    if (seenDocIds.has(docSnap.id)) return;
-                    seenDocIds.add(docSnap.id);
-
+                snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     if (!hasActiveBookingStatus(data)) return;
+                    if (getBookingDateKey(data) !== date) return;
                     if (data.groundId && data.groundId !== selectedGround.id) return;
 
                     extractBookedHours(data).forEach((hour) => booked.add(hour));
                 });
-            });
 
-            setBookedSlots(Array.from(booked));
-            setLoadingSlots(false);
-        };
-
-        const subscribeByDateField = (dateFieldKey) => {
-            const bookingQuery = query(
-                bookingsRef,
-                where('turfId', '==', turf.id),
-                where(dateFieldKey, '==', date)
-            );
-
-            return onSnapshot(
-                bookingQuery,
-                (snapshot) => {
-                    docsByField[dateFieldKey] = snapshot.docs;
-                    recomputeBookedSlots();
-                },
-                (err) => {
-                    console.warn(`Could not listen to bookings by ${dateFieldKey}:`, err);
-                    docsByField[dateFieldKey] = [];
-                    recomputeBookedSlots();
+                if (isMounted) {
+                    setBookedSlots(Array.from(booked));
+                    setLoadingSlots(false);
                 }
-            );
-        };
-
-        const unsubBookedDate = subscribeByDateField('bookedDate');
-        const unsubDate = subscribeByDateField('date');
+            },
+            (err) => {
+                console.warn('Could not listen to bookings:', err);
+                fallbackToApi();
+            }
+        );
 
         return () => {
-            unsubBookedDate();
-            unsubDate();
+            isMounted = false;
+            unsubscribe();
         };
     }, [date, turf.id, selectedGround?.id]);
 
