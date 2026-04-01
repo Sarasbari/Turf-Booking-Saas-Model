@@ -9,7 +9,7 @@
 import { createRazorpayOrder, verifyPaymentSignature } from '../services/paymentService.js';
 import { createBooking, markEmailSent } from '../services/bookingService.js';
 import { config } from '../config/index.js';
-import { sendBookingConfirmation } from '../services/emailService.js';
+import { sendBookingConfirmation, sendCancellationEmail } from '../services/emailService.js';
 import { adminDb } from '../config/firebaseAdmin.js';
 import { invalidateCache } from '../middleware/cache.js';
 import { emailQueue } from '../queues/index.js';
@@ -192,8 +192,8 @@ export async function handleVerifyPayment(req, res) {
       paymentId:    razorpay_payment_id,
     };
 
-    if (emailQueue) {
-      // ── BullMQ: queued with retry logic ──────────────────────────────
+    if (emailQueue && !process.env.VERCEL) {
+      // ── BullMQ: queued with retry logic (Only for traditional servers) ──
       await emailQueue.add('booking-confirmation', emailData);
       console.log(`📧 Confirmation email queued for booking: ${bookingId}`);
 
@@ -220,12 +220,14 @@ export async function handleVerifyPayment(req, res) {
         console.error('⚠️  Failed to schedule reminder:', reminderErr.message);
       }
     } else {
-      // ── Fallback: direct send (no queue available) ───────────────────
-      sendBookingConfirmation(emailData)
-        .then(() => markEmailSent(bookingId))
-        .catch((err) => {
-          console.error(`❌ Email failed for booking ${bookingId}:`, err.message);
-        });
+      // ── Fallback: direct send (Vercel serverless or no queue) ───────────
+      try {
+        console.log(`📧 Sending confirmation email directly for ${bookingId}...`);
+        await sendBookingConfirmation(emailData);
+        await markEmailSent(bookingId);
+      } catch (err) {
+        console.error(`❌ Email failed for booking ${bookingId}:`, err.message);
+      }
     }
 
     // ── Return success to frontend immediately ────────────────────────
@@ -310,17 +312,26 @@ export async function handleCancelBooking(req, res) {
     }
 
     // ── Queue cancellation email ──────────────────────────────────────
-    if (emailQueue) {
-      await emailQueue.add('booking-cancelled', {
-        bookingId,
-        toEmail: bookingData.userEmail || '',
-        userName: bookingData.userName || 'User',
-        turfName: bookingData.turfName || '',
-        bookedDate: bookingData.bookedDate || '',
-        timeSlots: bookingData.timeSlots || [],
-      }).catch((err) => {
+    const cancelEmailData = {
+      bookingId,
+      toEmail: bookingData.userEmail || '',
+      userName: bookingData.userName || 'User',
+      turfName: bookingData.turfName || '',
+      bookedDate: bookingData.bookedDate || '',
+      timeSlots: bookingData.timeSlots || [],
+    };
+
+    if (emailQueue && !process.env.VERCEL) {
+      await emailQueue.add('booking-cancelled', cancelEmailData).catch((err) => {
         console.error('⚠️  Failed to queue cancellation email:', err.message);
       });
+    } else {
+      try {
+        console.log(`📧 Sending cancellation email directly for ${bookingId}...`);
+        await sendCancellationEmail(cancelEmailData);
+      } catch (err) {
+        console.error(`❌ Cancellation email failed for booking ${bookingId}:`, err.message);
+      }
     }
 
     return res.status(200).json({ success: true, message: 'Booking cancelled successfully' });

@@ -111,3 +111,54 @@ export async function sendBookingConfirmation(data) {
     throw error;
   }
 }
+
+/**
+ * Sends the booking cancellation email asynchronously.
+ * @param {Object} data 
+ * @returns {Promise<void>}
+ */
+export async function sendCancellationEmail(data) {
+  if (!data.toEmail) {
+    console.warn(`[Email Service] No toEmail for cancellation ${data.bookingId}`);
+    return;
+  }
+
+  try {
+    if (!process.env.BREVO_API_KEY) throw new Error("Missing BREVO_API_KEY");
+    if (!process.env.BREVO_SENDER_EMAIL) throw new Error("Missing BREVO_SENDER_EMAIL");
+
+    const response = await brevoClient.transactionalEmails.sendTransacEmail({
+      sender: {
+        email: process.env.BREVO_SENDER_EMAIL,
+        name: process.env.BREVO_SENDER_NAME || "BookMyTurf",
+      },
+      to: [{ email: data.toEmail, name: data.userName || "Player" }],
+      subject: `🚨 Booking Cancelled — ${data.turfName}`,
+      htmlContent: `
+    <div style="font-family: sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px 10px; width: 100%;">
+      <table align="center" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-collapse: collapse;">
+        <!-- Header -->
+        <tr>
+          <td style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px 20px; text-align: center;">
+            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 1px;">BookMyTurf</h2>
+            <h1 style="color: #ffffff; margin: 10px 0 0 0; font-size: 24px;">Booking Cancelled ❌</h1>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding: 30px 20px;">
+            <h2 style="font-size: 20px; color: #111827; margin: 0 0 20px 0;">Hello ${data.userName}.</h2>
+            <p style="font-size: 15px; color: #374151;">Your booking at <strong>${data.turfName}</strong> for <strong>${data.bookedDate}</strong> has been cancelled.</p>
+            <p style="font-size: 15px; color: #374151;">Booking ID: <strong>${data.bookingId}</strong></p>
+          </td>
+        </tr>
+      </table>
+    </div>`,
+    });
+    console.log(`✅ Brevo cancellation email sent for ${data.bookingId}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Brevo cancellation email error:`, error?.message || error);
+    throw error;
+  }
+}
