@@ -5,7 +5,8 @@
       "src": "src/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["src/**"]
+        "includeFiles": ["src/**"],
+        "maxDuration": 30
       }
     }
   ],
@@ -14,11 +15,5 @@
       "src": "/(.*)",
       "dest": "src/index.js"
     }
-  ],
-  "functions": {
-    "src/index.js": {
-      "maxDuration": 30,
-      "memory": 512
-    }
-  }
+  ]
 }
