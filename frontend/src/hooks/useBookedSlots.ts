@@ -1,35 +1,19 @@
 /**
- * useBookedSlots — Real-time Firestore listener for booked time slots.
+ * useBookedSlots — Fetch booked time slots via the backend API.
  *
- * Subscribes to the `bookings` collection filtered by turfId + date,
- * and returns a Set of booked time-slot strings (e.g. "06:00", "07:00").
- * Automatically cleans up the listener on unmount or input change.
+ * Calls the `GET /api/turfs/:id/slots/:date` endpoint to retrieve slots securely
+ * without violating Firestore security rules, since client apps cannot read all bookings.
  */
 
 import { useState, useEffect } from 'react';
-import {
-    collection,
-    query,
-    where,
-    onSnapshot,
-    type QuerySnapshot,
-    type DocumentData,
-} from 'firebase/firestore';
-import { db } from '../services/firebase';
-
-interface BookingDoc {
-    turfId: string;
-    userId: string;
-    bookedDate: string;
-    timeSlots: string[];
-    status: string;
-}
 
 interface UseBookedSlotsReturn {
     bookedSlots: Set<string>;
     loading: boolean;
     error: string | null;
 }
+
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '');
 
 export function useBookedSlots(
     turfId: string,
@@ -47,41 +31,46 @@ export function useBookedSlots(
             return;
         }
 
+        let isMounted = true;
         setLoading(true);
         setError(null);
 
-        const bookingsRef = collection(db, 'bookings');
-        const q = query(
-            bookingsRef,
-            where('turfId', '==', turfId),
-            where('bookedDate', '==', selectedDate),
-            where('status', '==', 'confirmed')
-        );
-
-        const unsubscribe = onSnapshot(
-            q,
-            (snapshot: QuerySnapshot<DocumentData>) => {
-                const slots = new Set<string>();
-
-                snapshot.forEach((doc) => {
-                    const data = doc.data() as BookingDoc;
-                    if (Array.isArray(data.timeSlots)) {
-                        data.timeSlots.forEach((slot) => slots.add(slot));
-                    }
-                });
-
-                setBookedSlots(slots);
-                setLoading(false);
-            },
-            (err) => {
-                console.error('❌ useBookedSlots listener error:', err);
-                setError(err.message || 'Failed to fetch booked slots');
-                setLoading(false);
+        const fetchSlots = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/turfs/${turfId}/slots/${selectedDate}`);
+                
+                if (!res.ok) {
+                    throw new Error('Failed to fetch slot availability');
+                }
+                
+                const data = await res.json();
+                
+                if (data.success && isMounted) {
+                    setBookedSlots(new Set(data.bookedSlots || []));
+                } else if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch slots');
+                }
+            } catch (err) {
+                if (isMounted) {
+                    console.error('❌ useBookedSlots fetch error:', err);
+                    setError(err instanceof Error ? err.message : 'Unknown error');
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
-        );
+        };
 
-        // Cleanup listener on unmount or when turfId/date changes
-        return () => unsubscribe();
+        fetchSlots();
+
+        // Optional polling to keep slots updated while user has picker open
+        const intervalId = setInterval(fetchSlots, 30000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
     }, [turfId, selectedDate]);
 
     return { bookedSlots, loading, error };

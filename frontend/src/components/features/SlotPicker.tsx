@@ -216,7 +216,7 @@ const SlotPicker: React.FC<SlotPickerProps> = ({
         available:
             'border-emerald-400/60 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-900/50 hover:border-emerald-400 cursor-pointer',
         booked:
-            'border-red-500/40 bg-red-950/40 text-red-400 cursor-not-allowed opacity-60',
+            'border-gray-500/30 bg-gray-900/40 text-gray-400 cursor-not-allowed opacity-50',
         viewing:
             'border-amber-500/50 bg-amber-950/30 text-amber-300 cursor-not-allowed opacity-75',
         selected:
@@ -278,7 +278,7 @@ const SlotPicker: React.FC<SlotPickerProps> = ({
                         Available
                     </span>
                     <span className="flex items-center gap-1.5">
-                        <span className="inline-block h-3 w-3 rounded-sm border border-red-500/40 bg-red-950/50" />
+                        <span className="inline-block h-3 w-3 rounded-sm border border-gray-500/30 bg-gray-900/40" />
                         Booked
                     </span>
                     <span className="flex items-center gap-1.5">
@@ -313,7 +313,7 @@ const SlotPicker: React.FC<SlotPickerProps> = ({
                         <span className="text-base font-semibold">{label}</span>
 
                         {status === 'booked' && (
-                            <span className="mt-0.5 text-[10px] uppercase tracking-wider text-red-400/80">
+                            <span className="mt-0.5 text-[10px] uppercase tracking-wider text-gray-500">
                                 Booked
                             </span>
                         )}
