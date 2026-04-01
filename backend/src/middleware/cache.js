@@ -18,7 +18,7 @@ import { redis } from '../config/redis.js';
 // Strip characters that could cause key injection or bloat
 function sanitizeKey(raw) {
   return raw
-    .replace(/[^a-zA-Z0-9:/_\-.,=]/g, '') // allow only safe URL / key chars
+    .replace(/[^a-zA-Z0-9:/_\-.,=*]/g, '') // allow only safe URL / key chars
     .slice(0, 256);                         // cap key length
 }
 
