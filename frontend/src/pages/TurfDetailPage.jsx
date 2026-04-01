@@ -85,6 +85,53 @@ const parseBookingDate = (booking) => {
     return null;
 };
 
+const hasActiveBookingStatus = (booking) => {
+    const status = String(booking?.status || '').toLowerCase();
+    return !['cancelled', 'canceled', 'failed', 'expired', 'refunded'].includes(status);
+};
+
+const extractBookedHours = (booking) => {
+    const booked = [];
+
+    if (Array.isArray(booking?.timeSlots) && booking.timeSlots.length > 0) {
+        booking.timeSlots.forEach((slot) => {
+            const hour = parseInt(String(slot).split(':')[0], 10);
+            if (!Number.isNaN(hour)) booked.push(hour);
+        });
+        return booked;
+    }
+
+    if (typeof booking?.startHour === 'number' && typeof booking?.duration === 'number') {
+        for (let h = 0; h < booking.duration; h++) {
+            booked.push(booking.startHour + h);
+        }
+        return booked;
+    }
+
+    if (booking?.startTime && booking?.endTime) {
+        const startHour = parseInt(String(booking.startTime).split(':')[0], 10);
+        const endHour = parseInt(String(booking.endTime).split(':')[0], 10);
+        if (!Number.isNaN(startHour) && !Number.isNaN(endHour) && endHour > startHour) {
+            for (let h = startHour; h < endHour; h++) {
+                booked.push(h);
+            }
+            return booked;
+        }
+    }
+
+    if (booking?.startTime) {
+        const hour = parseInt(String(booking.startTime).split(':')[0], 10);
+        if (!Number.isNaN(hour)) {
+            const dur = Number.isFinite(booking.duration) && booking.duration > 0 ? booking.duration : 1;
+            for (let h = 0; h < dur; h++) {
+                booked.push(hour + h);
+            }
+        }
+    }
+
+    return booked;
+};
+
 /**
  * Normalize Firestore data — handles BOTH schemas:
  *  1) seedTurf1 schema (flat: pricePerHour, address, city, openTime, etc.)
@@ -717,55 +764,64 @@ function BookingCard({ turf }) {
             setBookedSlots([]);
             return;
         }
+
         setLoadingSlots(true);
-        // Real-time listener for booked slots
         const bookingsRef = collection(db, 'bookings');
-        const bq = query(
-            bookingsRef,
-            where('turfId', '==', turf.id),
-            where('bookedDate', '==', date),
-            where('status', '==', 'confirmed')
-        );
 
-        const unsubscribe = onSnapshot(bq, (snapshot) => {
-            const booked = [];
-            snapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                if (data.groundId && data.groundId !== selectedGround.id) return;
+        const docsByField = {
+            bookedDate: [],
+            date: [],
+        };
 
-                // Schema 1: Backend bookings have timeSlots array ["06:00", "07:00"]
-                if (Array.isArray(data.timeSlots) && data.timeSlots.length > 0) {
-                    data.timeSlots.forEach((slot) => {
-                        const hour = parseInt(slot.split(':')[0], 10);
-                        if (!isNaN(hour)) booked.push(hour);
-                    });
-                }
-                // Schema 2: Client bookings have startHour (number) + duration (number)
-                else if (data.startHour !== undefined && data.duration) {
-                    for (let h = 0; h < data.duration; h++) {
-                        booked.push(data.startHour + h);
-                    }
-                }
-                // Schema 3: Fallback — startTime as "HH:MM" string
-                else if (data.startTime) {
-                    const hour = parseInt(data.startTime.split(':')[0], 10);
-                    if (!isNaN(hour)) {
-                        const dur = data.duration || 1;
-                        for (let h = 0; h < dur; h++) {
-                            booked.push(hour + h);
-                        }
-                    }
-                }
+        const recomputeBookedSlots = () => {
+            const seenDocIds = new Set();
+            const booked = new Set();
+
+            Object.values(docsByField).forEach((docs) => {
+                docs.forEach((docSnap) => {
+                    if (seenDocIds.has(docSnap.id)) return;
+                    seenDocIds.add(docSnap.id);
+
+                    const data = docSnap.data();
+                    if (!hasActiveBookingStatus(data)) return;
+                    if (data.groundId && data.groundId !== selectedGround.id) return;
+
+                    extractBookedHours(data).forEach((hour) => booked.add(hour));
+                });
             });
-            setBookedSlots(booked);
-            setLoadingSlots(false);
-        }, (err) => {
-            console.warn('Could not listen to bookings:', err);
-            setBookedSlots([]);
-            setLoadingSlots(false);
-        });
 
-        return () => unsubscribe();
+            setBookedSlots(Array.from(booked));
+            setLoadingSlots(false);
+        };
+
+        const subscribeByDateField = (dateFieldKey) => {
+            const bookingQuery = query(
+                bookingsRef,
+                where('turfId', '==', turf.id),
+                where(dateFieldKey, '==', date)
+            );
+
+            return onSnapshot(
+                bookingQuery,
+                (snapshot) => {
+                    docsByField[dateFieldKey] = snapshot.docs;
+                    recomputeBookedSlots();
+                },
+                (err) => {
+                    console.warn(`Could not listen to bookings by ${dateFieldKey}:`, err);
+                    docsByField[dateFieldKey] = [];
+                    recomputeBookedSlots();
+                }
+            );
+        };
+
+        const unsubBookedDate = subscribeByDateField('bookedDate');
+        const unsubDate = subscribeByDateField('date');
+
+        return () => {
+            unsubBookedDate();
+            unsubDate();
+        };
     }, [date, turf.id, selectedGround?.id]);
 
     // Real-time listener for blocked slots — updates instantly when owner blocks/unblocks
