@@ -19,7 +19,6 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   final BookingService _bookingService = BookingService();
 
-
   DateTime _selectedDate = DateTime.now();
   final Set<int> _selectedHours = {};
   bool _isProcessing = false;
@@ -33,8 +32,8 @@ class _BookingScreenState extends State<BookingScreen> {
       lastDate: now.add(const Duration(days: 30)),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
               primary: AppTheme.primary,
               surface: AppTheme.surface,
             ),
@@ -115,9 +114,9 @@ class _BookingScreenState extends State<BookingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Booking failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Booking failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -144,7 +143,11 @@ class _BookingScreenState extends State<BookingScreen> {
                   color: AppTheme.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle, size: 48, color: AppTheme.primary),
+                child: const Icon(
+                  Icons.check_circle,
+                  size: 48,
+                  color: AppTheme.primary,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -159,7 +162,10 @@ class _BookingScreenState extends State<BookingScreen> {
               Text(
                 'Your slot at ${widget.turf.name} has been booked.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                ),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -222,7 +228,9 @@ class _BookingScreenState extends State<BookingScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.surface,
                       borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -232,7 +240,11 @@ class _BookingScreenState extends State<BookingScreen> {
                             color: AppTheme.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.calendar_today, size: 18, color: AppTheme.primary),
+                          child: const Icon(
+                            Icons.calendar_today,
+                            size: 18,
+                            color: AppTheme.primary,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -241,7 +253,10 @@ class _BookingScreenState extends State<BookingScreen> {
                             children: [
                               const Text(
                                 'Select Date',
-                                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -255,7 +270,10 @@ class _BookingScreenState extends State<BookingScreen> {
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right, color: AppTheme.textMuted),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: AppTheme.textMuted,
+                        ),
                       ],
                     ),
                   ),
@@ -309,9 +327,11 @@ class _BookingScreenState extends State<BookingScreen> {
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.background,
+                color: AppTheme.surface,
                 border: Border(
-                  top: BorderSide(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+                  top: BorderSide(
+                    color: AppTheme.surfaceBorder.withValues(alpha: 0.5),
+                  ),
                 ),
               ),
               child: SafeArea(

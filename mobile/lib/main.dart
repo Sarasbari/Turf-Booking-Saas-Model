@@ -7,9 +7,7 @@ import 'screens/main_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Lock to portrait mode
   SystemChrome.setPreferredOrientations([
@@ -17,11 +15,13 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Dark status bar for dark theme
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-  ));
+  // Dark icons on light status bar
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   runApp(const TurfBookingApp());
 }
@@ -35,23 +35,31 @@ class TurfBookingApp extends StatelessWidget {
       title: 'TurfBook',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         scaffoldBackgroundColor: AppTheme.background,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppTheme.primary,
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
           surface: AppTheme.surface,
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppTheme.background,
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppTheme.surface,
           foregroundColor: AppTheme.textPrimary,
           elevation: 0,
           scrolledUnderElevation: 0,
-          titleTextStyle: TextStyle(
-            fontFamily: 'Inter',
+          titleTextStyle: const TextStyle(
+            fontFamily: 'Roboto',
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: AppTheme.textPrimary,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          color: AppTheme.surface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusM),
+            side: const BorderSide(color: AppTheme.surfaceBorder),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -60,7 +68,7 @@ class TurfBookingApp extends StatelessWidget {
             foregroundColor: Colors.white,
             elevation: 0,
             textStyle: const TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: 'Roboto',
               fontWeight: FontWeight.w600,
               fontSize: 14,
             ),
@@ -69,9 +77,23 @@ class TurfBookingApp extends StatelessWidget {
             ),
           ),
         ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.primary,
+            side: const BorderSide(color: AppTheme.surfaceBorder),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusM),
+            ),
+            textStyle: const TextStyle(
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: AppTheme.surfaceLight,
+          fillColor: AppTheme.surface,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusM),
             borderSide: const BorderSide(color: AppTheme.surfaceBorder),
@@ -84,16 +106,19 @@ class TurfBookingApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTheme.radiusM),
             borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 14),
         ),
         snackBarTheme: SnackBarThemeData(
-          backgroundColor: AppTheme.surface,
-          contentTextStyle: const TextStyle(color: AppTheme.textPrimary),
+          backgroundColor: AppTheme.textPrimary,
+          contentTextStyle: const TextStyle(color: Colors.white),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           behavior: SnackBarBehavior.floating,
         ),
-        fontFamily: 'Inter',
+        fontFamily: 'Roboto',
       ),
       home: const MainShell(),
     );

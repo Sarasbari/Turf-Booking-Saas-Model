@@ -28,7 +28,16 @@ class TurfCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusL),
-          border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: AppTheme.surfaceBorder.withValues(alpha: 0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -46,20 +55,32 @@ class TurfCard extends StatelessWidget {
                           placeholder: (_, _) => Container(
                             color: AppTheme.surfaceLight,
                             child: const Center(
-                              child: Icon(Icons.sports_soccer, size: 40, color: AppTheme.textMuted),
+                              child: Icon(
+                                Icons.sports_soccer,
+                                size: 40,
+                                color: AppTheme.textMuted,
+                              ),
                             ),
                           ),
                           errorWidget: (_, _, _) => Container(
                             color: AppTheme.surfaceLight,
                             child: const Center(
-                              child: Icon(Icons.sports_soccer, size: 40, color: AppTheme.textMuted),
+                              child: Icon(
+                                Icons.sports_soccer,
+                                size: 40,
+                                color: AppTheme.textMuted,
+                              ),
                             ),
                           ),
                         )
                       : Container(
                           color: AppTheme.surfaceLight,
                           child: const Center(
-                            child: Icon(Icons.sports_soccer, size: 40, color: AppTheme.textMuted),
+                            child: Icon(
+                              Icons.sports_soccer,
+                              size: 40,
+                              color: AppTheme.textMuted,
+                            ),
                           ),
                         ),
                 ),
@@ -70,7 +91,10 @@ class TurfCard extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.35),
+                        ],
                       ),
                     ),
                   ),
@@ -101,7 +125,10 @@ class TurfCard extends StatelessWidget {
                     top: 12,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.primary,
                         borderRadius: BorderRadius.circular(AppTheme.radiusS),
@@ -129,7 +156,10 @@ class TurfCard extends StatelessWidget {
                     bottom: 12,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.warning.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(AppTheme.radiusS),
@@ -150,15 +180,23 @@ class TurfCard extends StatelessWidget {
                   right: 12,
                   child: Row(
                     children: turf.sports.take(2).map((sport) {
-                      final color = AppTheme.sportColors[sport] ?? AppTheme.primary;
+                      final color =
+                          AppTheme.sportColors[sport] ?? AppTheme.primary;
                       return Padding(
                         padding: const EdgeInsets.only(left: 4),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(AppTheme.radiusS),
-                            border: Border.all(color: color.withValues(alpha: 0.5)),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusS,
+                            ),
+                            border: Border.all(
+                              color: color.withValues(alpha: 0.5),
+                            ),
                           ),
                           child: Text(
                             sport,
@@ -194,12 +232,21 @@ class TurfCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textSecondary),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: AppTheme.textSecondary,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          turf.area.isNotEmpty ? '${turf.area}, ${turf.city}' : turf.city,
-                          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                          turf.area.isNotEmpty
+                              ? '${turf.area}, ${turf.city}'
+                              : turf.city,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.textSecondary,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -215,14 +262,20 @@ class TurfCard extends StatelessWidget {
                       children: turf.amenities.take(3).map((a) {
                         final emoji = AppTheme.amenityIcons[a] ?? '✨';
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.surfaceLight,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '$emoji $a',
-                            style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
                         );
                       }).toList(),
@@ -257,7 +310,10 @@ class TurfCard extends StatelessWidget {
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [AppTheme.primary, AppTheme.accent],

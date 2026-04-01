@@ -52,6 +52,78 @@ const LOCATION_DISMISSED_KEY = 'turfbook_location_dismissed';
 const HEADER_CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
 const CITY_CHANGED_EVENT = 'bookmyturf:cityChanged';
 
+const SIZE_FILTERS = new Set(['5-a-side', '7-a-side', '11-a-side']);
+
+const normalizeText = (value: string | undefined | null): string => (value || '').trim().toLowerCase();
+
+const parseHour = (timeValue: string): number | null => {
+    const hour = Number.parseInt(timeValue.split(':')[0], 10);
+    return Number.isNaN(hour) ? null : hour;
+};
+
+const isTurfOpenNow = (turf: Turf): boolean => {
+    if (!turf.openTime || !turf.closeTime) {
+        return true;
+    }
+
+    const openHour = parseHour(turf.openTime);
+    const closeHour = parseHour(turf.closeTime);
+    if (openHour === null || closeHour === null) {
+        return true;
+    }
+
+    const nowHour = new Date().getHours();
+    if (closeHour <= openHour) {
+        return nowHour >= openHour || nowHour < closeHour;
+    }
+
+    return nowHour >= openHour && nowHour < closeHour;
+};
+
+const turfSupportsSport = (turf: Turf, selectedSport: string): boolean => {
+    if (selectedSport === 'all') {
+        return true;
+    }
+
+    const normalizedSport = normalizeText(selectedSport);
+    const turfSports = [turf.sport, ...(turf.sports || [])].map((sport) => normalizeText(sport));
+    return turfSports.some((sport) => sport === normalizedSport);
+};
+
+const turfMatchesChipFilter = (turf: Turf, filter: string): boolean => {
+    const normalizedFilter = normalizeText(filter);
+
+    if (SIZE_FILTERS.has(filter)) {
+        return normalizeText(turf.groundSize) === normalizedFilter;
+    }
+
+    if (filter === 'Under ₹500') {
+        return turf.pricePerHour < 500;
+    }
+
+    if (filter === '₹500-₹1000') {
+        return turf.pricePerHour >= 500 && turf.pricePerHour <= 1000;
+    }
+
+    if (filter === '₹1000+') {
+        return turf.pricePerHour > 1000;
+    }
+
+    if (filter === 'Available Now') {
+        return isTurfOpenNow(turf);
+    }
+
+    if (filter === 'Floodlit') {
+        return turf.amenities.some((amenity) => normalizeText(amenity) === 'floodlit');
+    }
+
+    if (filter === 'With Parking') {
+        return turf.amenities.some((amenity) => normalizeText(amenity).includes('parking'));
+    }
+
+    return true;
+};
+
 export function Home() {
     const { user } = useAuth();
     const [activeFilters, setActiveFilters] = useState<string[]>(['All Sizes']);
@@ -182,21 +254,23 @@ export function Home() {
         localStorage.setItem(LOCATION_DISMISSED_KEY, 'true');
     };
 
+    const selectedChipFilters = activeFilters.filter((filter) => filter !== 'All Sizes');
+    const filteredTurfs = allTurfs.filter((turf) => {
+        const matchesSport = turfSupportsSport(turf, activeSport);
+        const matchesChips = selectedChipFilters.every((filter) => turfMatchesChipFilter(turf, filter));
+        return matchesSport && matchesChips;
+    });
+
     // ✅ Search filter — matches name, location, sport
     const isSearchActive = debouncedSearch.length > 0;
     const searchResults = isSearchActive
-        ? allTurfs.filter(t =>
+        ? filteredTurfs.filter(t =>
             t.name.toLowerCase().includes(debouncedSearch) ||
             t.address.toLowerCase().includes(debouncedSearch) ||
             t.city.toLowerCase().includes(debouncedSearch) ||
-            t.sport.toLowerCase().includes(debouncedSearch)
+            [t.sport, ...(t.sports || [])].some((sport) => sport.toLowerCase().includes(debouncedSearch))
         )
         : [];
-
-    // ✅ Filter by sport
-    const filteredTurfs = activeSport === 'all'
-        ? allTurfs
-        : allTurfs.filter(t => t.sport.toLowerCase() === activeSport);
 
     const matchesSelectedCity = (turf: Turf, city: string): boolean => {
         const normalizedCity = city.trim().toLowerCase();
@@ -237,9 +311,8 @@ export function Home() {
         return turfs.slice(0, 10);
     })();
 
-    const budgetTurfs = allTurfs
+    const budgetTurfs = filteredTurfs
         .filter(t => t.pricePerHour < 500)
-        .filter(t => activeSport === 'all' || t.sport.toLowerCase() === activeSport)
         .slice(0, 10);
 
     return (

@@ -7,6 +7,10 @@ export interface Turf {
     city: string;
     address: string;
     sport: 'Cricket' | 'Football' | 'Volleyball' | 'Basketball' | 'Tennis';
+    sports?: string[];
+    groundSize?: string;
+    openTime?: string;
+    closeTime?: string;
     pricePerHour: number;
     rating: number;
     totalReviews: number;

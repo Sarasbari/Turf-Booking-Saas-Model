@@ -13,23 +13,26 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    ProfileScreen(),
-  ];
+  final List<Widget> _screens = const [HomeScreen(), ProfileScreen()];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppTheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
           border: Border(
-            top: BorderSide(color: AppTheme.surfaceBorder.withValues(alpha: 0.5)),
+            top: BorderSide(
+              color: AppTheme.surfaceBorder.withValues(alpha: 0.5),
+            ),
           ),
         ),
         child: SafeArea(
@@ -63,7 +66,9 @@ class _MainShellState extends State<MainShell> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
-                color: isActive ? AppTheme.primary.withValues(alpha: 0.15) : Colors.transparent,
+                color: isActive
+                    ? AppTheme.primary.withValues(alpha: 0.15)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(

@@ -1,37 +1,38 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // ── Brand Colors ───────────────────────────────────────────────
-  static const Color primary = Color(0xFF22C55E);       // green-500
-  static const Color primaryDark = Color(0xFF16A34A);    // green-600
-  static const Color accent = Color(0xFF10B981);         // emerald-500
-  static const Color accentLight = Color(0xFF34D399);    // emerald-400
+  // ── Brand Colors (match web design-system.ts) ─────────────────
+  static const Color primary = Color(0xFFEA580C);
+  static const Color primaryDark = Color(0xFFDC2626);
+  static const Color primaryLight = Color(0xFFFB923C);
+  static const Color accent = Color(0xFFEA580C);
+  static const Color accentLight = Color(0xFFFB923C);
 
   // ── Background & Surface ───────────────────────────────────────
-  static const Color background = Color(0xFF0F172A);      // slate-900
-  static const Color surface = Color(0xFF1E293B);         // slate-800
-  static const Color surfaceLight = Color(0xFF334155);    // slate-700
-  static const Color surfaceBorder = Color(0xFF475569);   // slate-600
+  static const Color background = Color(0xFFF5F5F5);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceLight = Color(0xFFF9FAFB);
+  static const Color surfaceBorder = Color(0xFFE5E5E5);
 
   // ── Text ───────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFFF8FAFC);     // slate-50
-  static const Color textSecondary = Color(0xFF94A3B8);   // slate-400
-  static const Color textMuted = Color(0xFF64748B);       // slate-500
+  static const Color textPrimary = Color(0xFF333333);
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color textMuted = Color(0xFF999999);
 
   // ── Semantic ───────────────────────────────────────────────────
-  static const Color error = Color(0xFFEF4444);           // red-500
-  static const Color warning = Color(0xFFF59E0B);         // amber-500
-  static const Color success = Color(0xFF22C55E);         // green-500
-  static const Color info = Color(0xFF3B82F6);            // blue-500
+  static const Color error = Color(0xFFD9534F);
+  static const Color warning = Color(0xFFF0AD4E);
+  static const Color success = Color(0xFF5CB85C);
+  static const Color info = Color(0xFF5BC0DE);
 
   // ── Sport Colors ───────────────────────────────────────────────
   static const Map<String, Color> sportColors = {
-    'Cricket': Color(0xFF22C55E),
-    'Football': Color(0xFF3B82F6),
+    'Cricket': Color(0xFF16A34A),
+    'Football': Color(0xFF2563EB),
     'Volleyball': Color(0xFFF59E0B),
-    'Basketball': Color(0xFFEF4444),
-    'Tennis': Color(0xFF8B5CF6),
-    'Pickleball': Color(0xFFEC4899),
+    'Basketball': Color(0xFFDC2626),
+    'Tennis': Color(0xFF7C3AED),
+    'Pickleball': Color(0xFFDB2777),
   };
 
   // ── Amenity Icons ──────────────────────────────────────────────
