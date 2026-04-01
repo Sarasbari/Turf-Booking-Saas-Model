@@ -24,10 +24,6 @@ import turfRoutes from './routes/turfRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
 import { testRedis } from './config/redis.js';
-import { emailQueue, notificationQueue } from './queues/index.js';
-import { createBullBoard } from '@bull-board/api';
-import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
-import { ExpressAdapter } from '@bull-board/express';
 
 const app = express();
 
@@ -70,30 +66,38 @@ app.use('/api/turfs', turfRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
-// ✅ Bull Board — queue monitoring dashboard
-const bullBoardAdapter = new ExpressAdapter();
-bullBoardAdapter.setBasePath('/admin/queues');
+// ✅ Bull Board — queue monitoring dashboard (optional, non-blocking)
+try {
+  const { emailQueue, notificationQueue } = await import('./queues/index.js');
+  const { createBullBoard } = await import('@bull-board/api');
+  const { BullMQAdapter } = await import('@bull-board/api/bullMQAdapter');
+  const { ExpressAdapter } = await import('@bull-board/express');
 
-// Only register adapters for queues that exist (Redis may be disabled)
-const queueAdapters = [];
-if (emailQueue)        queueAdapters.push(new BullMQAdapter(emailQueue));
-if (notificationQueue) queueAdapters.push(new BullMQAdapter(notificationQueue));
+  const bullBoardAdapter = new ExpressAdapter();
+  bullBoardAdapter.setBasePath('/admin/queues');
 
-createBullBoard({ queues: queueAdapters, serverAdapter: bullBoardAdapter });
+  const queueAdapters = [];
+  if (emailQueue)        queueAdapters.push(new BullMQAdapter(emailQueue));
+  if (notificationQueue) queueAdapters.push(new BullMQAdapter(notificationQueue));
 
-// Protect Bull Board with bearer token in production
-app.use('/admin/queues',
-  (req, res, next) => {
-    if (process.env.NODE_ENV === 'production') {
-      const auth = req.headers.authorization;
-      if (!process.env.ADMIN_SECRET || auth !== `Bearer ${process.env.ADMIN_SECRET}`) {
-        return res.status(401).json({ error: 'Unauthorized' });
+  createBullBoard({ queues: queueAdapters, serverAdapter: bullBoardAdapter });
+
+  app.use('/admin/queues',
+    (req, res, next) => {
+      if (process.env.NODE_ENV === 'production') {
+        const auth = req.headers.authorization;
+        if (!process.env.ADMIN_SECRET || auth !== `Bearer ${process.env.ADMIN_SECRET}`) {
+          return res.status(401).json({ error: 'Unauthorized' });
+        }
       }
-    }
-    next();
-  },
-  bullBoardAdapter.getRouter(),
-);
+      next();
+    },
+    bullBoardAdapter.getRouter(),
+  );
+  console.log('✅ Bull Board mounted at /admin/queues');
+} catch (err) {
+  console.warn('⚠️  Bull Board disabled (missing deps or no Redis):', err.message);
+}
 
 // ✅ Root health check — fixes the 404 on homepage
 app.get('/', (req, res) => {

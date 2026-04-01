@@ -35,3 +35,5 @@ coverage/
 # Firebase credentials
 service-account.json
 *-adminsdk-*.json
+.vercel
+.env*.local
