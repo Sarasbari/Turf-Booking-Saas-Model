@@ -892,7 +892,7 @@ function BookingCard({ turf }) {
 
     // ✅ Bill Calculation
     const subtotal = discountedPrice * duration;
-    const convenienceFee = Math.round(subtotal * 0.02);  // 2% convenience fee
+    const convenienceFee = Math.round(subtotal * 0.04);  // 4% convenience fee
     const totalAmount = subtotal + convenienceFee;
 
     // Generate 1-hour slots, respecting duration, booked, blocked & past-time status
@@ -1231,7 +1231,7 @@ function BookingCard({ turf }) {
                     )}
 
                     <div className="td-booking__summary-row">
-                        <span className="td-booking__summary-label">Convenience Fee (2%)</span>
+                        <span className="td-booking__summary-label">Convenience Fee (4%)</span>
                         <span className="td-booking__summary-value">+ {formatCurrency(convenienceFee)}</span>
                     </div>
 
