@@ -10,9 +10,9 @@ interface HeaderProps {
     onSearchChange?: (query: string) => void;
 }
 
-const HEADER_SEARCH_STORAGE_KEY = 'bookmyturf_header_search_query';
-const HEADER_CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
-const CITY_CHANGED_EVENT = 'bookmyturf:cityChanged';
+const HEADER_SEARCH_STORAGE_KEY = 'turfhub_header_search_query';
+const HEADER_CITY_STORAGE_KEY = 'turfhub_header_selected_city';
+const CITY_CHANGED_EVENT = 'turfhub:cityChanged';
 
 export function Header({ onSearchChange }: HeaderProps) {
     const navigate = useNavigate();
@@ -135,7 +135,7 @@ export function Header({ onSearchChange }: HeaderProps) {
                     className="flex-shrink-0 text-xl md:text-2xl font-bold text-orange-600 cursor-pointer select-none whitespace-nowrap"
                     onClick={() => navigate('/')}
                 >
-                    BookMyTurf
+                    TurfHub
                 </div>
 
                 {/* Center Section: Search Bar (Desktop only) */}

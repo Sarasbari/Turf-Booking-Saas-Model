@@ -33,7 +33,7 @@ app.set('trust proxy', 1);
 // ✅ CORS — allow both localhost and production
 app.use(cors({
   origin: [
-    'https://bookmyturf-psi.vercel.app',
+    'https://turfhub-psi.vercel.app',
     'http://localhost:5173',
   ],
   credentials: true,
@@ -102,7 +102,7 @@ try {
 // ✅ Root health check — fixes the 404 on homepage
 app.get('/', (req, res) => {
   res.json({ 
-    status: '✅ BookMyTurf backend is live',
+    status: '✅ TurfHub backend is live',
     timestamp: new Date().toISOString(),
   });
 });

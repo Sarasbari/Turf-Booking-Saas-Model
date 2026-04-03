@@ -97,7 +97,7 @@ export function BookingSuccessPopup({
   const timeRange = selectedSlot?.label || '';
 
   // QR code value — deep link to the booking
-  const qrValue = `https://bookmyturf-psi.vercel.app/booking/${booking.bookingId}`;
+  const qrValue = `https://turfhub-psi.vercel.app/booking/${booking.bookingId}`;
 
   // Owner contact info
   const ownerContact = turf.ownerPhone || turf.ownerContact || turf.ownerName || 'See email';

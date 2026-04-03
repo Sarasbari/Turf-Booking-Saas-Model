@@ -43,7 +43,7 @@ export async function sendBookingConfirmation(data) {
     const response = await brevoClient.transactionalEmails.sendTransacEmail({
       sender: {
         email: process.env.BREVO_SENDER_EMAIL,
-        name: process.env.BREVO_SENDER_NAME || "BookMyTurf",
+        name: process.env.BREVO_SENDER_NAME || "TurfHub",
       },
       to: [{ email: data.toEmail, name: data.userName || "Player" }],
       subject: `🏟️ Booking Confirmed — ${data.turfName} on ${data.bookedDate}`,
@@ -53,7 +53,7 @@ export async function sendBookingConfirmation(data) {
         <!-- Header -->
         <tr>
           <td style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 30px 20px; text-align: center;">
-            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 1px;">BookMyTurf</h2>
+            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 1px;">TurfHub</h2>
             <h1 style="color: #ffffff; margin: 10px 0 0 0; font-size: 24px;">Booking Confirmed ✓</h1>
           </td>
         </tr>
@@ -93,7 +93,7 @@ export async function sendBookingConfirmation(data) {
         <tr>
           <td style="background-color: #f3f4f6; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
             <p style="color: #4b5563; font-size: 15px; font-weight: bold; margin: 0 0 10px 0;">
-              See you on the turf! — BookMyTurf Team
+              See you on the turf! — TurfHub Team
             </p>
             <p style="color: #9ca3af; font-size: 12px; margin: 0;">
               This is an automated email. Do not reply.
@@ -130,7 +130,7 @@ export async function sendCancellationEmail(data) {
     const response = await brevoClient.transactionalEmails.sendTransacEmail({
       sender: {
         email: process.env.BREVO_SENDER_EMAIL,
-        name: process.env.BREVO_SENDER_NAME || "BookMyTurf",
+        name: process.env.BREVO_SENDER_NAME || "TurfHub",
       },
       to: [{ email: data.toEmail, name: data.userName || "Player" }],
       subject: `🚨 Booking Cancelled — ${data.turfName}`,
@@ -140,7 +140,7 @@ export async function sendCancellationEmail(data) {
         <!-- Header -->
         <tr>
           <td style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px 20px; text-align: center;">
-            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 1px;">BookMyTurf</h2>
+            <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 1px;">TurfHub</h2>
             <h1 style="color: #ffffff; margin: 10px 0 0 0; font-size: 24px;">Booking Cancelled ❌</h1>
           </td>
         </tr>

@@ -226,7 +226,7 @@ export function openRazorpayCheckout({
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'BookMyTurf',
+        name: 'TurfHub',
         description: `Turf Booking — ${bookingMeta.slots.length} slot(s)`,
         order_id: orderData.orderId,
         handler: async (response: RazorpaySuccessResponse) => {

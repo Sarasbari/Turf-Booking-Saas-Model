@@ -49,8 +49,8 @@ function haversineDistance(
 
 const LOCATION_STORAGE_KEY = 'turfbook_user_location';
 const LOCATION_DISMISSED_KEY = 'turfbook_location_dismissed';
-const HEADER_CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
-const CITY_CHANGED_EVENT = 'bookmyturf:cityChanged';
+const HEADER_CITY_STORAGE_KEY = 'turfhub_header_selected_city';
+const CITY_CHANGED_EVENT = 'turfhub:cityChanged';
 
 const SIZE_FILTERS = new Set(['5-a-side', '7-a-side', '11-a-side']);
 
@@ -383,7 +383,7 @@ export function Home() {
                 <div className={styles.emptyState}>
                     <div className={styles.emptyIcon}>🏟️</div>
                     <h3 className={styles.emptyTitle}>No turfs found</h3>
-                    <p className={styles.emptyText}>Seed your database to get started with BookMyTurf.</p>
+                    <p className={styles.emptyText}>Seed your database to get started with TurfHub.</p>
                 </div>
             ) : isSearchActive ? (
                 /* ✅ Search Results Mode */

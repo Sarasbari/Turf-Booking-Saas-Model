@@ -51,8 +51,8 @@ interface RecommendationData {
 // ── Constants ─────────────────────────────────────────────────────────────
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const CACHE_KEY = 'bookmyturf_smart_recommendation';
-const CITY_STORAGE_KEY = 'bookmyturf_header_selected_city';
+const CACHE_KEY = 'turfhub_smart_recommendation';
+const CITY_STORAGE_KEY = 'turfhub_header_selected_city';
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 

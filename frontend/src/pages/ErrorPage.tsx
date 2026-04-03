@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/react';
  * ErrorPage — Sentry ErrorBoundary fallback
  *
  * Shown when an unhandled React error crashes a component tree.
- * BookMyTurf-branded with a "Go back home" button and a
+ * TurfHub-branded with a "Go back home" button and a
  * Sentry user feedback dialog trigger.
  */
 
@@ -196,7 +196,7 @@ export function ErrorPage({ error, eventId, resetError }: ErrorPageProps) {
           )}
         </div>
 
-        <p style={styles.brand}>BookMyTurf</p>
+        <p style={styles.brand}>TurfHub</p>
       </div>
     </div>
   );

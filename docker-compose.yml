@@ -16,7 +16,7 @@ services:
     depends_on:
       - backend
     networks:
-      - bookmyturf
+      - turfhub
 
   backend:
     build:
@@ -35,7 +35,7 @@ services:
     depends_on:
       - firebase-emulator
     networks:
-      - bookmyturf
+      - turfhub
 
   firebase-emulator:
     image: node:20-alpine
@@ -56,10 +56,10 @@ services:
       - ./.firebaserc:/app/.firebaserc
       - firebase-data:/root/.cache
     networks:
-      - bookmyturf
+      - turfhub
 
 networks:
-  bookmyturf:
+  turfhub:
     driver: bridge
 
 volumes:

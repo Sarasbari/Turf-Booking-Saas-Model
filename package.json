@@ -1,5 +1,5 @@
 {
-  "name": "bookmyturf",
+  "name": "turfhub",
   "private": true,
   "scripts": {
     "dev": "docker-compose up",

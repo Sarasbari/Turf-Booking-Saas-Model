@@ -50,7 +50,7 @@ export function HeroSearch() {
           />
         </div>
         <button type="submit" className={`${styles.cta} w-full sm:w-auto min-h-[44px]`}>
-          BookMyTurf
+          TurfHub
         </button>
       </form>
     </div>

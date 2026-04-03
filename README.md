@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/images/hero_banner.png" alt="BookMyTurf Banner" width="100%" />
+  <img src="docs/images/hero_banner.png" alt="TurfHub Banner" width="100%" />
 </p>
 
-<h1 align="center">⚽ BookMyTurf</h1>
+<h1 align="center">⚽ TurfHub</h1>
 
 <p align="center">
   <strong>India's Smartest Turf Booking Platform — Book, Play, Repeat.</strong>
@@ -15,11 +15,11 @@
   <a href="#-tech-stack"><img src="https://img.shields.io/badge/Firebase-Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase" /></a>
   <a href="#-tech-stack"><img src="https://img.shields.io/badge/Flutter-Mobile-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" /></a>
   <a href="#-tech-stack"><img src="https://img.shields.io/badge/Razorpay-Payments-0C2451?style=for-the-badge&logo=razorpay&logoColor=white" alt="Razorpay" /></a>
-  <a href="https://bookmyturf-psi.vercel.app"><img src="https://img.shields.io/badge/Live-Demo-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" /></a>
+  <a href="https://turfhub-psi.vercel.app"><img src="https://img.shields.io/badge/Live-Demo-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" /></a>
 </p>
 
 <p align="center">
-  <a href="https://bookmyturf-psi.vercel.app">🌐 Live Demo</a> •
+  <a href="https://turfhub-psi.vercel.app">🌐 Live Demo</a> •
   <a href="#-quick-start">🚀 Quick Start</a> •
   <a href="#-features">✨ Features</a> •
   <a href="#-api-reference">📡 API Docs</a> •
@@ -47,7 +47,7 @@
 
 ## 🏟️ About the Project
 
-**BookMyTurf** is a full-stack, production-grade sports turf booking platform built as a **SaaS model**. It connects sports enthusiasts with turf owners, enabling seamless discovery, real-time slot booking, secure payments, and comprehensive owner management — all through a beautiful, responsive interface.
+**TurfHub** is a full-stack, production-grade sports turf booking platform built as a **SaaS model**. It connects sports enthusiasts with turf owners, enabling seamless discovery, real-time slot booking, secure payments, and comprehensive owner management — all through a beautiful, responsive interface.
 
 ### 🎯 The Problem
 
@@ -55,7 +55,7 @@ Booking sports turfs in India is fragmented — phone calls, WhatsApp messages, 
 
 ### 💡 The Solution
 
-BookMyTurf provides a **three-sided platform**:
+TurfHub provides a **three-sided platform**:
 
 | For Players | For Turf Owners | Platform |
 |:---:|:---:|:---:|
@@ -238,7 +238,7 @@ sequenceDiagram
 ## 📁 Project Structure
 
 ```
-BookMyTurf/
+TurfHub/
 ├── 📂 frontend/                    # React + TypeScript Web App
 │   ├── src/
 │   │   ├── components/
@@ -557,7 +557,7 @@ vercel --prod
 
 | Service | URL |
 |---|---|
-| 🌐 Production | [bookmyturf-psi.vercel.app](https://bookmyturf-psi.vercel.app) |
+| 🌐 Production | [turfhub-psi.vercel.app](https://turfhub-psi.vercel.app) |
 | ⚙️ Backend API | Vercel serverless |
 
 ---

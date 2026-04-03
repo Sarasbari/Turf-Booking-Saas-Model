@@ -109,7 +109,7 @@ export function useAIRecommendations(): UseAIRecommendationsReturn {
             setError(null);
 
             try {
-                const selectedCity = localStorage.getItem('bookmyturf_header_selected_city')?.trim().toLowerCase() || '';
+                const selectedCity = localStorage.getItem('turfhub_header_selected_city')?.trim().toLowerCase() || '';
 
                 // ── 1. Fetch all turfs ──────────────────────────────────────
                 const turfsSnap = await getDocs(collection(db, 'turf'));
