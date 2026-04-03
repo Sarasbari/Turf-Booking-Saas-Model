@@ -71,6 +71,28 @@ class Turf {
     this.ownerId = '',
   });
 
+  static List<String> _asStringList(dynamic value) {
+    if (value is List) {
+      return value
+          .where((item) => item != null)
+          .map((item) => item.toString())
+          .toList();
+    }
+    return const [];
+  }
+
+  static double _asDouble(dynamic value, {double fallback = 0}) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? fallback;
+    return fallback;
+  }
+
+  static int _asInt(dynamic value, {int fallback = 0}) {
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
+  }
+
   /// Normalize Firestore data — handles BOTH schemas (flat & nested)
   factory Turf.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
@@ -79,7 +101,8 @@ class Turf {
     // Handle nested location
     final location = data['location'] as Map<String, dynamic>? ?? {};
     final pricing = data['pricing'] as Map<String, dynamic>? ?? {};
-    final operatingHours = data['operatingHours'] as Map<String, dynamic>? ?? {};
+    final operatingHours =
+        data['operatingHours'] as Map<String, dynamic>? ?? {};
 
     // Handle geoPoint
     GeoPoint? geo;
@@ -96,7 +119,7 @@ class Turf {
     // Handle sports list
     List<String> sports = [];
     if (data['sports'] is List) {
-      sports = List<String>.from(data['sports']);
+      sports = _asStringList(data['sports']);
     } else if (data['sport'] is String) {
       sports = [data['sport'] as String];
     }
@@ -110,29 +133,41 @@ class Turf {
       name: data['name']?.toString() ?? 'Unnamed Turf',
       about: data['about']?.toString() ?? data['description']?.toString() ?? '',
       city: data['city']?.toString() ?? location['city']?.toString() ?? '',
-      address: data['address']?.toString() ?? location['address']?.toString() ?? '',
+      address:
+          data['address']?.toString() ?? location['address']?.toString() ?? '',
       state: data['state']?.toString() ?? location['state']?.toString() ?? '',
-      pincode: data['pincode']?.toString() ?? location['pincode']?.toString() ?? '',
+      pincode:
+          data['pincode']?.toString() ?? location['pincode']?.toString() ?? '',
       area: data['area']?.toString() ?? '',
       sports: sports,
-      amenities: List<String>.from(data['amenities'] ?? []),
-      images: List<String>.from(
-        data['images'] ?? (data['coverImage'] != null ? [data['coverImage']] : []),
+      amenities: _asStringList(data['amenities']),
+      images: _asStringList(
+        data['images'] ??
+            (data['coverImage'] != null ? [data['coverImage']] : []),
       ),
-      pricePerHour: (data['pricePerHour'] ?? pricing['basePrice'] ?? 0).toDouble(),
+      pricePerHour: _asDouble(data['pricePerHour'] ?? pricing['basePrice']),
       priceRange: data['priceRange']?.toString() ?? '',
-      rating: (data['rating'] ?? 0).toDouble(),
-      totalReviews: (data['totalReviews'] ?? 0).toInt(),
-      totalBookings: (data['totalBookings'] ?? 0).toInt(),
-      bookingsLast30Days: (data['bookingsLast30Days'] ?? 0).toInt(),
-      openTime: data['openTime']?.toString() ?? operatingHours['opensAt']?.toString() ?? '06:00',
-      closeTime: data['closeTime']?.toString() ?? operatingHours['closesAt']?.toString() ?? '22:00',
+      rating: _asDouble(data['rating']),
+      totalReviews: _asInt(data['totalReviews']),
+      totalBookings: _asInt(data['totalBookings']),
+      bookingsLast30Days: _asInt(data['bookingsLast30Days']),
+      openTime:
+          data['openTime']?.toString() ??
+          operatingHours['opensAt']?.toString() ??
+          '06:00',
+      closeTime:
+          data['closeTime']?.toString() ??
+          operatingHours['closesAt']?.toString() ??
+          '22:00',
       weeklyOff: data['weeklyOff']?.toString(),
-      groundSize: data['groundSize']?.toString() ?? data['turfSize']?.toString() ?? '5-a-side',
-      totalGrounds: (data['totalGrounds'] ?? 1).toInt(),
+      groundSize:
+          data['groundSize']?.toString() ??
+          data['turfSize']?.toString() ??
+          '5-a-side',
+      totalGrounds: _asInt(data['totalGrounds'], fallback: 1),
       status: status,
       isDiscountActive: data['isDiscountActive'] == true,
-      discountPercent: (data['discountPercent'] ?? 0).toInt(),
+      discountPercent: _asInt(data['discountPercent']),
       discountDescription: data['discountDescription']?.toString() ?? '',
       isUnderMaintenance: data['isUnderMaintenance'] == true,
       maintenanceNote: data['maintenanceNote']?.toString() ?? '',

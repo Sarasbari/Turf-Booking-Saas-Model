@@ -37,15 +37,14 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // TODO: Replace these placeholder values with your actual Firebase config.
-  // Run: flutterfire configure
+  // Configured from the existing frontend Firebase project.
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: '1:000000000000:web:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'turf-booking-system',
-    authDomain: 'turf-booking-system.firebaseapp.com',
-    storageBucket: 'turf-booking-system.appspot.com',
+    apiKey: 'AIzaSyCXadSaDFHk6oPH5poOfGMBdd9pi1ZdACI',
+    appId: '1:651924114624:web:d81b0f80f349b2d2ff7125',
+    messagingSenderId: '651924114624',
+    projectId: 'turf-database',
+    authDomain: 'turf-database.firebaseapp.com',
+    storageBucket: 'turf-database.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
