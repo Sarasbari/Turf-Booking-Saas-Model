@@ -355,7 +355,7 @@ export default function DashboardHeader({
 
                     <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xl leading-none">🏟️</span>
-                        <span className="font-bold text-lg text-[#111827] hidden sm:inline">TurfHub Owner</span>
+                        <span className="font-bold text-lg text-[#111827] hidden sm:inline">aLiveHub Owner</span>
                     </div>
 
                     {/* Center: Search (desktop) */}

@@ -18,6 +18,7 @@ export interface Turf {
     images: string[];
     ownerId: string;
     isActive: boolean;
+    isLive: boolean;
     createdAt: Timestamp;
 }
 

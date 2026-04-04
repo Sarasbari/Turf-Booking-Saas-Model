@@ -128,14 +128,25 @@ export function Header({ onSearchChange }: HeaderProps) {
 
     return (
         <header className="sticky top-0 z-[100] bg-white shadow-sm" ref={menuRef}>
-            <div className="max-w-[1400px] mx-auto px-4 md:px-6 h-[68px] flex items-center justify-between gap-6">
+            <div className="max-w-[1400px] mx-auto px-4 md:px-6 h-[76px] flex items-center justify-between gap-6">
 
                 {/* Left Section: Logo */}
                 <div
-                    className="flex-shrink-0 text-xl md:text-2xl font-bold text-orange-600 cursor-pointer select-none whitespace-nowrap"
+                    className="flex-shrink-0 flex items-center cursor-pointer select-none transition-transform duration-200 hover:scale-[1.02] overflow-hidden"
                     onClick={() => navigate('/')}
+                    style={{ height: '72px', maxWidth: '280px' }}
                 >
-                    TurfHub
+                    <img
+                        src="/logo-alivehub.png.png"
+                        alt="aLiveHub"
+                        className="w-auto object-contain"
+                        style={{
+                            height: '210px',
+                            marginTop: '-8px',
+                            marginBottom: '-8px',
+                        }}
+                        draggable={false}
+                    />
                 </div>
 
                 {/* Center Section: Search Bar (Desktop only) */}

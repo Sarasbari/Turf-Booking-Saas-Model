@@ -17,7 +17,7 @@ dotenv.config();
 import emailWorker from './workers/emailWorker.js';
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('  TurfHub — BullMQ Workers');
+console.log('  aLiveHub — BullMQ Workers');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(`  Email worker: ${emailWorker ? '✅ active' : '❌ disabled'}`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

@@ -31,6 +31,7 @@ function serializeTurf(doc) {
     sport: data.sport || '',
     rating: data.rating || 0,
     isActive: data.isActive !== false, // default true
+    isLive: data.isLive !== false,    // default true (distinguishes active from coming soon)
     amenities: data.amenities || [],
     openTime: data.openTime || '',
     closeTime: data.closeTime || '',

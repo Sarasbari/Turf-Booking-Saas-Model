@@ -6,7 +6,20 @@ import { addToFavorites, removeFromFavorites, isTurfFavorited } from '../../../u
 import { SignInRequiredModal } from '../SignInRequiredModal/SignInRequiredModal';
 import { ConfirmationModal } from '../ConfirmationModal/ConfirmationModal';
 import type { Turf } from '../../../types';
+import { ComingSoonOverlay } from '../../ui/ComingSoonOverlay';
 import styles from './TurfCard.module.css';
+
+/*
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * HOW TO MAKE A TURF GO LIVE:
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * 1. Go to Firebase Console
+ * 2. Firestore → turf collection
+ * 3. Find the turf document
+ * 4. Edit field: isLive → true
+ * 5. Done! No code change needed.
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ */
 
 interface TurfCardProps {
     turf: Turf;
@@ -96,10 +109,12 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
 
     const handleBookClick = (e: React.MouseEvent) => {
         e.stopPropagation(); // prevent double trigger since card also has onClick
+        if (turf.isLive === false) return;
         navigate(`/turf/${turf.id}`);
     };
 
     const handleCardClick = () => {
+        if (turf.isLive === false) return;
         // Navigate to turf details page
         navigate(`/turf/${turf.id}`);
     };
@@ -107,7 +122,7 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
     return (
         <>
             <motion.div
-                className={`${styles.card} w-full`}
+                className={`${styles.card} w-full relative overflow-hidden ${turf.isLive === false ? 'cursor-default' : ''}`}
                 onClick={handleCardClick}
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -123,11 +138,12 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
                     delay: Math.min(index * 0.05, 0.4),
                     ease: [0.4, 0, 0.2, 1],
                 }}
-                whileHover={{
+                whileHover={turf.isLive !== false ? {
                     y: -4,
                     transition: { duration: 0.3 },
-                }}
+                } : {}}
             >
+                {turf.isLive === false && <ComingSoonOverlay turfId={turf.id} turfName={turf.name} />}
                 {/* Image Section */}
                 <div className={`${styles.imageSection} h-36 sm:h-44 md:h-48`}>
                     {!imageLoaded && <div className={styles.imagePlaceholder} />}
@@ -216,12 +232,13 @@ export function TurfCard({ turf, onBook, index = 0, onFavoriteChange, onShowToas
                             <span className={styles.priceUnit}>/hr</span>
                         </div>
                         <motion.button
-                            className={`${styles.bookButton} w-full sm:w-auto min-h-[44px] flex items-center justify-center`}
+                            className={`${styles.bookButton} w-full sm:w-auto min-h-[44px] flex items-center justify-center ${turf.isLive === false ? '!bg-gray-200 !text-gray-400 !cursor-not-allowed border-none shadow-none' : ''}`}
                             onClick={handleBookClick}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={turf.isLive !== false ? { scale: 1.02 } : {}}
+                            whileTap={turf.isLive !== false ? { scale: 0.98 } : {}}
+                            disabled={turf.isLive === false}
                         >
-                            Book
+                            {turf.isLive === false ? 'Soon' : 'Book'}
                         </motion.button>
                     </div>
                 </div>

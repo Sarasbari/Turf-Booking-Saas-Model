@@ -102,7 +102,7 @@ try {
 // ✅ Root health check — fixes the 404 on homepage
 app.get('/', (req, res) => {
   res.json({ 
-    status: '✅ TurfHub backend is live',
+    status: '✅ aLiveHub backend is live',
     timestamp: new Date().toISOString(),
   });
 });

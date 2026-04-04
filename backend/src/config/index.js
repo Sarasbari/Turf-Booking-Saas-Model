@@ -31,7 +31,7 @@ export const config = {
     brevo: {
         apiKey: process.env.BREVO_API_KEY,
         senderEmail: process.env.BREVO_SENDER_EMAIL,
-        senderName: process.env.BREVO_SENDER_NAME || 'TurfHub',
+        senderName: process.env.BREVO_SENDER_NAME || 'aLiveHub',
     },
 
     // Upstash Redis (optional — caching degrades gracefully without it)

@@ -42,7 +42,7 @@ const TurfInfo = ({
         if (navigator.share) {
             navigator.share({
                 title: name,
-                text: `Check out ${name} on TurfHub!`,
+                text: `Check out ${name} on aLiveHub!`,
                 url: window.location.href,
             }).catch(() => { });
         } else {

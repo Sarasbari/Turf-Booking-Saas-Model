@@ -223,7 +223,7 @@ router.post('/', firebaseAuth, async (req, res) => {
 
     // 5. Build prompt
     const prompt = `
-You are a sports booking assistant for TurfHub India.
+You are a sports booking assistant for aLiveHub India.
 Analyze this user's booking history and suggest the best slot for their next booking.
 
 Booking history:

@@ -78,6 +78,7 @@ export const turfService = {
             closeTime: typeof data.closeTime === 'string' ? data.closeTime : undefined,
             ownerId: typeof data.ownerId === 'string' ? data.ownerId : '',
             isActive: typeof data.isActive === 'boolean' ? data.isActive : true,
+            isLive: typeof data.isLive === 'boolean' ? data.isLive : true,
             createdAt: data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now(),
         };
     },

@@ -383,7 +383,7 @@ export function Home() {
                 <div className={styles.emptyState}>
                     <div className={styles.emptyIcon}>🏟️</div>
                     <h3 className={styles.emptyTitle}>No turfs found</h3>
-                    <p className={styles.emptyText}>Seed your database to get started with TurfHub.</p>
+                    <p className={styles.emptyText}>Seed your database to get started with aLiveHub.</p>
                 </div>
             ) : isSearchActive ? (
                 /* ✅ Search Results Mode */

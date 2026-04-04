@@ -8,7 +8,7 @@ export function Footer() {
             <div className={styles.container}>
                 {/* Brand Section */}
                 <div className={styles.column}>
-                    <h3 className={styles.brand}>TurfHub</h3>
+                    <h3 className={styles.brand}>aLiveHub</h3>
                     <p className={styles.tagline}>
                         Book your favorite sports turfs with ease. Play anytime, anywhere.
                     </p>
@@ -70,7 +70,7 @@ export function Footer() {
             <div className={styles.bottomBar}>
                 <div className={styles.container}>
                     <p className={styles.copyright}>
-                        © {currentYear} TurfHub. All rights reserved.
+                        © {currentYear} aLiveHub. All rights reserved.
                     </p>
                     <p className={styles.madeWith}>
                         Made with ❤️ for sports enthusiasts

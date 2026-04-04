@@ -210,6 +210,7 @@ const normalizeTurf = (id, data) => ({
     discountDescription: data.discountDescription || '',
     isUnderMaintenance: data.isUnderMaintenance || false,
     maintenanceNote: data.maintenanceNote || '',
+    isLive: typeof data.isLive === 'boolean' ? data.isLive : true,
 });
 
 // ── Amenity icon map ────────────────────────────────────────────────────────
@@ -374,10 +375,10 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                     <div className="td-hero__actions">
                         <button
                             className="td-hero__book-btn"
-                            disabled={turf.status === 'closed' || turf.isUnderMaintenance}
+                            disabled={turf.status === 'closed' || turf.isUnderMaintenance || turf.isLive === false}
                             onClick={() => document.getElementById('td-booking')?.scrollIntoView({ behavior: 'smooth' })}
                         >
-                            Book Now
+                            {turf.isLive === false ? 'Coming Soon' : 'Book Now'}
                         </button>
                         <button className="td-hero__share-btn" onClick={handleShare}>
                             <IconShare />
@@ -404,9 +405,10 @@ function StickyBar({ turf, visible }) {
                     {formatCurrency(turf.pricePerHour)}<small>/hr</small>
                 </div>
                 <button className="td-sticky__btn"
+                    disabled={turf.status === 'closed' || turf.isLive === false}
                     onClick={() => document.getElementById('td-booking')?.scrollIntoView({ behavior: 'smooth' })}
                 >
-                    Book Now
+                    {turf.isLive === false ? 'Coming Soon' : 'Book Now'}
                 </button>
             </div>
         </div>
@@ -1253,11 +1255,13 @@ function BookingCard({ turf }) {
 
             {/* Submit */}
             <button
-                className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' || paymentState === 'processing' || paymentState === 'verifying' ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
-                disabled={!date || !selectedSlot || turf.status === 'closed' || paymentState === 'processing' || paymentState === 'verifying'}
+                className={`td-booking__submit ${!date || !selectedSlot || turf.status === 'closed' || paymentState === 'processing' || paymentState === 'verifying' || turf.isLive === false ? 'td-booking__submit--disabled' : 'td-booking__submit--active'}`}
+                disabled={!date || !selectedSlot || turf.status === 'closed' || paymentState === 'processing' || paymentState === 'verifying' || turf.isLive === false}
                 onClick={handlePayment}
             >
-                {paymentState === 'processing' || paymentState === 'verifying'
+                {turf.isLive === false
+                    ? 'Coming Soon'
+                    : paymentState === 'processing' || paymentState === 'verifying'
                     ? '⏳ Processing...'
                     : paymentState === 'success'
                         ? '✅ Booked!'
