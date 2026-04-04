@@ -2,8 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import * as Sentry from '@sentry/react'
 import { App } from './App'
-import { ErrorPage } from './pages/ErrorPage'
-import './index.css'
+import { ErrorPage } from '@/pages/public/ErrorPage'
+import '@/index.css'
 import { inject } from '@vercel/analytics'
 
 // ── Sentry (production-only error monitoring) ────────────────────────────

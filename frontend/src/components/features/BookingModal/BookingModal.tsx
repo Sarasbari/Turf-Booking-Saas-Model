@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { type Turf } from '../../../types';
-import { generateTimeSlots } from '../../../data/mockTurfs';
-import { getUserData, getFirstName } from '../../../utils/auth';
+import { type Turf } from '@/types';
+import { generateTimeSlots } from '@/data/mockTurfs';
+import { getUserData, getFirstName } from '@/utils/auth';
 import styles from './BookingModal.module.css';
 
 interface BookingModalProps {

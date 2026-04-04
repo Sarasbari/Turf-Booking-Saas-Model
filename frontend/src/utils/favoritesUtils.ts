@@ -6,10 +6,10 @@ import {
     arrayRemove,
     serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db } from '@/services/firebase';
 import { getUserProfile } from './firestoreUtils';
-import { Turf } from '../types';
-import { turfService } from '../services/turfService';
+import { Turf } from '@/types';
+import { turfService } from '@/services/turfService';
 
 // addToFavorites — unchanged ✅
 export async function addToFavorites(userId: string, turfId: string): Promise<void> {

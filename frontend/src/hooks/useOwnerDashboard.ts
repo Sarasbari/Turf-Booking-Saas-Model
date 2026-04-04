@@ -7,8 +7,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs, onSnapshot, DocumentData, QuerySnapshot } from 'firebase/firestore';
-import { db, auth } from '../services/firebase';
-import { Turf, Booking } from '../types';
+import { db, auth } from '@/services/firebase';
+import { Turf, Booking } from '@/types';
 
 interface OwnerStats {
     totalEarnings: number;

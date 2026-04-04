@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, onSnapshot, query, orderBy, where, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { auth } from '../services/firebase';
-import { createOrder, openRazorpayCheckout } from '../services/paymentService';
-import { Header } from '../components/layout/Header/Header';
-import { AIRecommendationChip } from '../components/AIRecommendationChip';
-import { ModalOverlay } from '../components/ui/ModalOverlay';
-import { BookingSuccessPopup } from '../components/features/BookingSuccessPopup';
+import { db } from '@/services/firebase';
+import { auth } from '@/services/firebase';
+import { createOrder, openRazorpayCheckout } from '@/services/paymentService';
+import { Header } from '@/components/layout/Header/Header';
+import { AIRecommendationChip } from '@/components/AIRecommendationChip';
+import { ModalOverlay } from '@/components/ui/ModalOverlay';
+import { BookingSuccessPopup } from '@/components/features/BookingSuccessPopup';
 import './TurfDetailPage.css';
 
 // ── Icons (inline SVGs) ────────────────────────────────────────────────────

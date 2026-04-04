@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { db } from '../../services/firebase';
+import { db } from '@/services/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface NotifyMePopupProps {

@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Sentry from '@sentry/react';
-import { Header } from '../../components/layout/Header/Header';
-import { SubNavigation } from '../../components/layout/SubNavigation/SubNavigation';
-import { HeroCarousel } from '../../components/features/HeroCarousel/HeroCarousel';
-import { FilterChip } from '../../components/ui/FilterChip/FilterChip';
-import { SectionHeader } from '../../components/ui/SectionHeader/SectionHeader';
-import { TurfCard } from '../../components/features/TurfCard/TurfCard';
-import { TurfCardSkeleton } from '../../components/features/TurfCard/TurfCardSkeleton';
-import { Footer } from '../../components/layout/Footer/Footer';
-import { LocationPrompt } from '../../components/features/LocationPrompt/LocationPrompt';
-import { SmartRecommendation } from '../../components/features/SmartRecommendation/SmartRecommendation';
-import { AIRecommendationChip } from '../../components/AIRecommendationChip';
-import { useAuth } from '../../context/AuthContext';
-import { useTurfs } from '../../hooks/useTurfs';
-import { Turf } from '../../types';
+import { Header } from '@/components/layout/Header/Header';
+import { SubNavigation } from '@/components/layout/SubNavigation/SubNavigation';
+import { HeroCarousel } from '@/components/features/HeroCarousel/HeroCarousel';
+import { FilterChip } from '@/components/ui/FilterChip/FilterChip';
+import { SectionHeader } from '@/components/ui/SectionHeader/SectionHeader';
+import { TurfCard } from '@/components/features/TurfCard/TurfCard';
+import { TurfCardSkeleton } from '@/components/features/TurfCard/TurfCardSkeleton';
+import { Footer } from '@/components/layout/Footer/Footer';
+import { LocationPrompt } from '@/components/features/LocationPrompt/LocationPrompt';
+import { SmartRecommendation } from '@/components/features/SmartRecommendation/SmartRecommendation';
+import { AIRecommendationChip } from '@/components/AIRecommendationChip';
+import { useAuth } from '@/context/AuthContext';
+import { useTurfs } from '@/hooks/useTurfs';
+import { Turf } from '@/types';
 import styles from './Home.module.css';
 
 

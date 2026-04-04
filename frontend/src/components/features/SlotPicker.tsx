@@ -9,10 +9,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../services/firebase';
-import { useBookedSlots } from '../../hooks/useBookedSlots';
-import { useSlotBlocking } from '../../hooks/useSlotBlocking';
-import { useAuth } from '../../hooks/useAuth';
+import { db } from '@/services/firebase';
+import { useBookedSlots } from '@/hooks/useBookedSlots';
+import { useSlotBlocking } from '@/hooks/useSlotBlocking';
+import { useAuth } from '@/hooks/useAuth';
 import SlotCountdown from './SlotCountdown';
 
 // ---------------------------------------------------------------------------

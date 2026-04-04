@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Turf } from '../types';
-import { turfService } from '../services/turfService';
+import { Turf } from '@/types';
+import { turfService } from '@/services/turfService';
 
 export function useTurfs() {
     const [turfs, setTurfs] = useState<Turf[]>([]);

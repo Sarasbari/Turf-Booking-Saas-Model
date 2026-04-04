@@ -1,4 +1,4 @@
-import { SlotType, TurfData, GroundConfig } from '../types/owner';
+import { SlotType, TurfData, GroundConfig } from '@/types/owner';
 
 /**
  * Get the list of grounds for a turf.

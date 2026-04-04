@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../../services/firebase';
-import { useAuth } from '../../context/AuthContext';
+import { auth, db } from '@/services/firebase';
+import { useAuth } from '@/context/AuthContext';
 import styles from './SignIn.module.css';
 
 // ── Types ────────────────────────────────────────────────────

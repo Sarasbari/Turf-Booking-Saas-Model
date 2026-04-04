@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { db, auth } from '../../../services/firebase';
+import { db, auth } from '@/services/firebase';
 import './MyBookings.css';
 
 // ── Types ────────────────────────────────────────────────────────────────────

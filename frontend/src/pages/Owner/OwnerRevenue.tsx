@@ -4,9 +4,9 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend,
     ResponsiveContainer
 } from 'recharts';
-import { useDashboard } from '../../context/DashboardContext';
-import { BookingType } from '../../types/owner';
-import styles from '../../styles/Owner/OwnerRevenue.module.css';
+import { useDashboard } from '@/context/DashboardContext';
+import { BookingType } from '@/types/owner';
+import styles from '@/styles/Owner/OwnerRevenue.module.css';
 
 // ── Types ──────────────────────────────────────────────────
 type TimePeriod = 'week' | 'month' | 'quarter' | 'year' | 'custom';

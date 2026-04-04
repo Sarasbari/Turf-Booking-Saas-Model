@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getUserData, UserData, onAuthStateChange } from '../../../utils/auth';
-import { getUserProfile } from '../../../utils/firestoreUtils';
+import { getUserData, UserData, onAuthStateChange } from '@/utils/auth';
+import { getUserProfile } from '@/utils/firestoreUtils';
 import { NavigationDrawer } from '../NavigationDrawer/NavigationDrawer';
-import { LocationModal } from '../../features/LocationModal/LocationModal';
-import { SignInModal } from '../../../pages/SignIn/SignIn';
+import { LocationModal } from '@/components/features/LocationModal/LocationModal';
+import { SignInModal } from '@/pages/public/Auth/SignIn/SignIn';
 
 interface HeaderProps {
     onSearchChange?: (query: string) => void;

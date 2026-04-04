@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../../../services/firebase';
-import { getFavoriteTurfs } from '../../../utils/favoritesUtils';
-import { TurfCard } from '../TurfCard/TurfCard';
-import { ToastContainer } from '../../ui/ToastContainer/ToastContainer';
-import { useToast } from '../../../hooks/useToast';
-import type { Turf } from '../../../types';
+import { auth } from '@/services/firebase';
+import { getFavoriteTurfs } from '@/utils/favoritesUtils';
+import { TurfCard } from '@/components/features/TurfCard/TurfCard';
+import { ToastContainer } from '@/components/ui/ToastContainer/ToastContainer';
+import { useToast } from '@/hooks/useToast';
+import type { Turf } from '@/types';
 import styles from './Favorites.module.css';
 
 export function Favorites() {

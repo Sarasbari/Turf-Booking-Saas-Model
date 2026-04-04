@@ -33,6 +33,7 @@ app.set('trust proxy', 1);
 // ✅ CORS — allow both localhost and production
 app.use(cors({
   origin: [
+    'https://alivehub.vercel.app',
     'https://turfhub-psi.vercel.app',
     'http://localhost:5173',
   ],

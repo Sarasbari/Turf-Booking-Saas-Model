@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { isLoggedIn, getUserData } from '../../../utils/auth';
-import { addToFavorites, removeFromFavorites, isTurfFavorited } from '../../../utils/favoritesUtils';
-import { SignInRequiredModal } from '../SignInRequiredModal/SignInRequiredModal';
-import { ConfirmationModal } from '../ConfirmationModal/ConfirmationModal';
-import type { Turf } from '../../../types';
-import { ComingSoonOverlay } from '../../ui/ComingSoonOverlay';
+import { isLoggedIn, getUserData } from '@/utils/auth';
+import { addToFavorites, removeFromFavorites, isTurfFavorited } from '@/utils/favoritesUtils';
+import { SignInRequiredModal } from '@/components/features/SignInRequiredModal/SignInRequiredModal';
+import { ConfirmationModal } from '@/components/features/ConfirmationModal/ConfirmationModal';
+import type { Turf } from '@/types';
+import { ComingSoonOverlay } from '@/components/ui/ComingSoonOverlay';
 import styles from './TurfCard.module.css';
 
 /*

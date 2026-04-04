@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
-import { ModalOverlay } from '../ui/ModalOverlay';
+import { ModalOverlay } from '@/components/ui/ModalOverlay';
 
 // ---------------------------------------------------------------------------
 // Types

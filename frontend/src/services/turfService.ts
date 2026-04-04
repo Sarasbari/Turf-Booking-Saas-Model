@@ -1,6 +1,6 @@
 import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
-import { Turf } from '../types';
+import { Turf } from '@/types';
 
 const SPORT_MAP: Record<string, Turf['sport']> = {
     cricket: 'Cricket',

@@ -19,13 +19,13 @@ import {
     type QuerySnapshot,
     type DocumentData,
 } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db } from '@/services/firebase';
 import { useAuth } from './useAuth';
 import {
     type BlockedSlot,
     SLOT_LOCK_DURATION_MS,
     buildBlockedSlotId,
-} from '../types/blockedSlot';
+} from '@/types/blockedSlot';
 
 // ---------------------------------------------------------------------------
 // Types

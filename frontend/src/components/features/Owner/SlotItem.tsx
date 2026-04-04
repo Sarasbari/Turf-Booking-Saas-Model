@@ -1,5 +1,5 @@
-import { SlotType, BookingType } from '../../../types/owner';
-import { formatSlotLabel } from '../../../utils/slotUtils';
+import { SlotType, BookingType } from '@/types/owner';
+import { formatSlotLabel } from '@/utils/slotUtils';
 
 interface SlotItemProps {
     slot: SlotType;

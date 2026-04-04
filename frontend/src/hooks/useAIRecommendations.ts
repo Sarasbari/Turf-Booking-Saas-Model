@@ -22,8 +22,8 @@ import {
     where,
     getDocs,
 } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { useAuth } from '../context/AuthContext';
+import { db } from '@/services/firebase';
+import { useAuth } from '@/context/AuthContext';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../../services/firebase';
-import { OwnerData, TurfData } from '../../types/owner';
-import styles from '../../styles/Owner/OwnerSettings.module.css';
+import { auth, db } from '@/services/firebase';
+import { OwnerData, TurfData } from '@/types/owner';
+import styles from '@/styles/Owner/OwnerSettings.module.css';
 
 export function OwnerSettings() {
     const [ownerData, setOwnerData] = useState<OwnerData | null>(null);

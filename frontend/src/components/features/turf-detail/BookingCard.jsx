@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { generateSlots, getSlotStatus, calculatePrice } from '../../utils/slotUtils';
-import { getTodayDate, getDateAfterDays, formatDateForFirebase } from '../../utils/dateUtils';
+import { db } from '@/services/firebase';
+import { generateSlots, getSlotStatus, calculatePrice } from '@/components/utils/slotUtils';
+import { getTodayDate, getDateAfterDays, formatDateForFirebase } from '@/components/utils/dateUtils';
 import './BookingCard.css';
 
 /**

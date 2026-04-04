@@ -24,7 +24,7 @@ import {
     useAIRecommendations,
     SPORT_ICONS,
     type Recommendation,
-} from '../hooks/useAIRecommendations';
+} from '@/hooks/useAIRecommendations';
 
 // ── Component ────────────────────────────────────────────────────────────────
 

@@ -17,7 +17,7 @@ import {
     X,
     Clock,
 } from 'lucide-react';
-import { OwnerData, TurfData } from '../../../types/owner';
+import { OwnerData, TurfData } from '@/types/owner';
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 

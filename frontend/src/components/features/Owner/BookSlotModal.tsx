@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { SlotType } from '../../../types/owner';
-import styles from '../../../styles/Owner/OwnerSlots.module.css';
+import { SlotType } from '@/types/owner';
+import styles from '@/styles/Owner/OwnerSlots.module.css';
 
 interface BookingFormData {
     customerName: string;

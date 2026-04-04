@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { UserProfile } from '../../../types/profile';
-import { updateUserProfile, validatePhoneNumber } from '../../../utils/firestoreUtils';
+import { UserProfile } from '@/types/profile';
+import { updateUserProfile, validatePhoneNumber } from '@/utils/firestoreUtils';
 import './PersonalInfo.css';
 
 interface PersonalInfoProps {

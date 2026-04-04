@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signOut } from '../../../utils/auth';
-import type { UserData } from '../../../utils/auth';
+import { signOut } from '@/utils/auth';
+import type { UserData } from '@/utils/auth';
 import styles from './NavigationDrawer.module.css';
 
 interface NavigationDrawerProps {

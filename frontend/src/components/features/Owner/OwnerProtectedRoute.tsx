@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../../../services/firebase';
-import { OwnerData } from '../../../types/owner';
+import { auth, db } from '@/services/firebase';
+import { OwnerData } from '@/types/owner';
 
 export function OwnerProtectedRoute() {
     const [loading, setLoading] = useState(true);

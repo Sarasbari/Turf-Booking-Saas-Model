@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { seedTurf1, seedAllTurfs } from '../utils/seedTurf';
+import { seedTurf1, seedAllTurfs } from '@/components/utils/seedTurf';
 
 export default function SeedButton() {
     const [status, setStatus] = useState('idle'); // idle | loading | done | error

@@ -11,8 +11,8 @@ import {
     Timestamp,
     serverTimestamp,
 } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { UserProfile, Booking, ProfileFormData } from '../types/profile';
+import { db } from '@/services/firebase';
+import { UserProfile, Booking, ProfileFormData } from '@/types/profile';
 
 /**
  * Calculate profile completion percentage

@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { auth, db, storage } from '../../services/firebase';
-import { OwnerData, TurfData } from '../../types/owner';
-import styles from '../../styles/Owner/MyTurf.module.css';
+import { auth, db, storage } from '@/services/firebase';
+import { OwnerData, TurfData } from '@/types/owner';
+import styles from '@/styles/Owner/MyTurf.module.css';
 
 // ═══════════════════════════════════════════════════════════════════
 //  CONSTANTS

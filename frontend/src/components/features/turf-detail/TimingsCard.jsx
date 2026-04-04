@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getTurfStatus } from '../../utils/dateUtils';
+import { getTurfStatus } from '@/components/utils/dateUtils';
 import './TimingsCard.css';
 
 /**

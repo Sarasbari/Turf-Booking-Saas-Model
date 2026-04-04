@@ -6,9 +6,9 @@ import {
     Loader2, AlertTriangle, FileText
 } from 'lucide-react';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../services/firebase';
-import { useDashboard } from '../../context/DashboardContext';
-import { BookingType } from '../../types/owner';
+import { db } from '@/services/firebase';
+import { useDashboard } from '@/context/DashboardContext';
+import { BookingType } from '@/types/owner';
 
 // ── Helpers ────────────────────────────────────────────────
 function formatCurrency(v: number) {

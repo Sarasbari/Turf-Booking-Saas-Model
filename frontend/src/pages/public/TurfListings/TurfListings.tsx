@@ -1,14 +1,14 @@
 import { useState, useMemo } from 'react';
-import { FilterState, SortOption } from '../../types/turf';
-import { TurfCard } from '../../components/features/TurfCard/TurfCard';
-import { TurfCardSkeleton } from '../../components/features/TurfCard/TurfCardSkeleton';
-import { BookingModal } from '../../components/features/BookingModal/BookingModal';
-import { Header } from '../../components/layout/Header/Header';
-import { SignInRequiredModal } from '../../components/features/SignInRequiredModal/SignInRequiredModal';
-import { AIRecommendationChip } from '../../components/AIRecommendationChip';
-import { isLoggedIn } from '../../utils/auth';
-import { useTurfs } from '../../hooks/useTurfs';
-import { Turf } from '../../types';
+import { FilterState, SortOption } from '@/types/turf';
+import { TurfCard } from '@/components/features/TurfCard/TurfCard';
+import { TurfCardSkeleton } from '@/components/features/TurfCard/TurfCardSkeleton';
+import { BookingModal } from '@/components/features/BookingModal/BookingModal';
+import { Header } from '@/components/layout/Header/Header';
+import { SignInRequiredModal } from '@/components/features/SignInRequiredModal/SignInRequiredModal';
+import { AIRecommendationChip } from '@/components/AIRecommendationChip';
+import { isLoggedIn } from '@/utils/auth';
+import { useTurfs } from '@/hooks/useTurfs';
+import { Turf } from '@/types';
 import styles from './TurfListings.module.css';
 
 // Filter constants

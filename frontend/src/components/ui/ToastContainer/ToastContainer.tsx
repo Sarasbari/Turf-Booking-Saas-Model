@@ -1,5 +1,5 @@
 import { Toast } from '../Toast/Toast';
-import type { Toast as ToastType } from '../../../hooks/useToast';
+import type { Toast as ToastType } from '@/hooks/useToast';
 import styles from './ToastContainer.module.css';
 
 interface ToastContainerProps {

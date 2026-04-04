@@ -1,4 +1,4 @@
-import { BookingType } from '../../../types/owner';
+import { BookingType } from '@/types/owner';
 
 interface BookingCardProps {
     booking: BookingType;
