@@ -8,6 +8,7 @@ import { SignInRequiredModal } from '@/components/features/SignInRequiredModal/S
 import { AIRecommendationChip } from '@/components/AIRecommendationChip';
 import { isLoggedIn } from '@/utils/auth';
 import { useTurfs } from '@/hooks/useTurfs';
+import { useSEO } from '@/hooks/useSEO';
 import { Turf } from '@/types';
 import styles from './TurfListings.module.css';
 
@@ -26,6 +27,16 @@ export function TurfListings() {
     const [selectedTurf, setSelectedTurf] = useState<Turf | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
+
+    // ✅ SEO — Listings page meta tags
+    useSEO({
+        title: 'Sports Turfs in Mumbai — Book Online',
+        description:
+            'Browse 10+ sports turfs in Mumbai. Cricket, football, volleyball. Filter by city, price & type. Book instantly online with real-time availability.',
+        keywords:
+            'turf booking mumbai, sports turf near me, cricket turf booking, football turf mumbai, book turf online',
+        url: 'https://alivehub.vercel.app/listings',
+    });
 
     // Fetch data using hook
     const { turfs: allTurfs, loading } = useTurfs();

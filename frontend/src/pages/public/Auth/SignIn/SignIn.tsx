@@ -4,6 +4,7 @@ import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/services/firebase';
 import { useAuth } from '@/context/AuthContext';
+import { useSEO } from '@/hooks/useSEO';
 import styles from './SignIn.module.css';
 
 // ── Types ────────────────────────────────────────────────────
@@ -539,6 +540,13 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
 export function SignIn() {
     const [isModalOpen, setIsModalOpen] = useState(true);
     const navigate = useNavigate();
+
+    // ✅ SEO — noindex to prevent crawl budget waste
+    useSEO({
+        title: 'Sign In',
+        description: 'Sign in to aLiveHub to book sports turfs in Mumbai.',
+        noindex: true,
+    });
 
     const handleClose = () => {
         setIsModalOpen(false);

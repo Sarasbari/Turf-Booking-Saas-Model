@@ -37,3 +37,18 @@ service-account.json
 *-adminsdk-*.json
 .vercel
 .env*.local
+
+# AI / Agent / Model Configurations & Workspaces
+.claude/
+.cline/
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.gemini/
+.opencode.json
+.mcp.json
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.code-review-graph/

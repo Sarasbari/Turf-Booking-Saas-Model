@@ -1,0 +1,13 @@
+# aLiveHub — Robots.txt
+# https://alivehub.vercel.app
+
+User-agent: *
+Allow: /
+
+# Block private/authenticated-only routes from crawling
+Disallow: /owner/
+Disallow: /profile
+Disallow: /auth/
+
+# Sitemap location
+Sitemap: https://alivehub.vercel.app/sitemap.xml

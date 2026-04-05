@@ -11,8 +11,10 @@ import { Footer } from '@/components/layout/Footer/Footer';
 import { LocationPrompt } from '@/components/features/LocationPrompt/LocationPrompt';
 import { SmartRecommendation } from '@/components/features/SmartRecommendation/SmartRecommendation';
 import { AIRecommendationChip } from '@/components/AIRecommendationChip';
+import { WebsiteStructuredData } from '@/components/features/WebsiteStructuredData';
 import { useAuth } from '@/context/AuthContext';
 import { useTurfs } from '@/hooks/useTurfs';
+import { useSEO } from '@/hooks/useSEO';
 import { Turf } from '@/types';
 import styles from './Home.module.css';
 
@@ -131,6 +133,16 @@ export function Home() {
     const [activeSport, setActiveSport] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    // ✅ SEO — Mumbai-focused meta tags
+    useSEO({
+        title: 'Book Sports Turfs in Mumbai — Cricket, Football & More',
+        description:
+            'Book cricket, football & sports turfs in Mumbai instantly. Real-time slot availability, instant confirmation. Vasai, Virar, Mira Road & more.',
+        keywords:
+            'turf booking mumbai, cricket turf vasai, football turf virar, sports ground booking mira road, book turf online mumbai, turf near me',
+        url: 'https://alivehub.vercel.app',
+    });
 
     // Fetch data using hook
     const { turfs: allTurfs, loading } = useTurfs();
@@ -317,6 +329,7 @@ export function Home() {
 
     return (
         <div className={styles.page}>
+            <WebsiteStructuredData />
             <Header onSearchChange={handleSearchChange} />
             <SubNavigation onSportChange={handleSportChange} />
             <HeroCarousel />

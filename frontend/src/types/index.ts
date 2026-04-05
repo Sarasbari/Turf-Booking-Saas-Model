@@ -19,6 +19,7 @@ export interface Turf {
     ownerId: string;
     isActive: boolean;
     isLive: boolean;
+    slug?: string;
     createdAt: Timestamp;
 }
 

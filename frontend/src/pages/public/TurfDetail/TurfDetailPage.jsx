@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/Header/Header';
 import { AIRecommendationChip } from '@/components/AIRecommendationChip';
 import { ModalOverlay } from '@/components/ui/ModalOverlay';
 import { BookingSuccessPopup } from '@/components/features/BookingSuccessPopup';
+import { TurfStructuredData } from '@/components/features/TurfStructuredData';
 import './TurfDetailPage.css';
 
 // ── Icons (inline SVGs) ────────────────────────────────────────────────────
@@ -272,7 +273,10 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                     <div className="td-hero__poster-main">
                         <img
                             src={turf.images?.[activeImg] || 'https://via.placeholder.com/520x300?text=No+Image'}
-                            alt={turf.name}
+                            alt={`${turf.name} — ${turf.sports?.join(', ') || 'Sports'} turf in ${turf.city}, Mumbai`}
+                            loading="lazy"
+                            width={520}
+                            height={300}
                         />
                         {turf.isDiscountActive && (
                             <div className="td-hero__poster-badge">
@@ -295,7 +299,7 @@ function HeroSection({ turf, activeImg, setActiveImg }) {
                                 onClick={() => setActiveImg(idx)}
                                 className={`td-hero__thumb ${activeImg === idx ? 'td-hero__thumb--active' : ''}`}
                             >
-                                <img src={img} alt={`Thumbnail ${idx + 1}`} />
+                                <img src={img} alt={`${turf.name} turf photo ${idx + 1}`} loading="lazy" />
                             </button>
                         ))}
                     </div>
@@ -1512,6 +1516,58 @@ export default function TurfDetailPage() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // ── SEO: Dynamic meta tags for each turf page ────────────────
+    useEffect(() => {
+        if (!turf) return;
+
+        const sportsText = turf.sports?.join(', ') || 'Sports';
+        const title = `${turf.name} — Book Online | ${turf.city}`;
+        const description = `Book ${turf.name} in ${turf.address}. ₹${turf.pricePerHour}/hr. ${sportsText}. Real-time slots. Instant confirmation.`;
+        const keywords = `${turf.name}, turf booking ${turf.city}, ${sportsText} turf ${turf.city}, book turf online`;
+        const image = turf.images?.[0] || 'https://alivehub.vercel.app/og-logo.png';
+        const url = `https://alivehub.vercel.app/turf/${turf.slug || turfId}`;
+
+        document.title = `${title} | aLiveHub`;
+
+        const setMeta = (name, content, useProp = false) => {
+            const attr = useProp ? 'property' : 'name';
+            let el = document.querySelector(`meta[${attr}="${name}"]`);
+            if (!el) {
+                el = document.createElement('meta');
+                el.setAttribute(attr, name);
+                document.head.appendChild(el);
+            }
+            el.setAttribute('content', content);
+        };
+
+        const setLink = (rel, href) => {
+            let el = document.querySelector(`link[rel="${rel}"]`);
+            if (!el) {
+                el = document.createElement('link');
+                el.setAttribute('rel', rel);
+                document.head.appendChild(el);
+            }
+            el.setAttribute('href', href);
+        };
+
+        setMeta('description', description);
+        setMeta('keywords', keywords);
+        setLink('canonical', url);
+
+        // Open Graph
+        setMeta('og:title', title, true);
+        setMeta('og:description', description, true);
+        setMeta('og:image', image, true);
+        setMeta('og:url', url, true);
+        setMeta('og:type', 'website', true);
+
+        // Twitter Card
+        setMeta('twitter:card', 'summary_large_image');
+        setMeta('twitter:title', title);
+        setMeta('twitter:description', description);
+        setMeta('twitter:image', image);
+    }, [turf, turfId]);
+
     // ── LOADING STATE ────────────────────────────────────────────
     if (loading) {
         return (
@@ -1547,6 +1603,8 @@ export default function TurfDetailPage() {
     // ── MAIN RENDER ──────────────────────────────────────────────
     return (
         <div className="turf-detail-page">
+            {/* ✅ SEO: JSON-LD Structured Data for Google Rich Results */}
+            <TurfStructuredData turf={turf} />
             <Header />                {/* ✅ ADD THIS — same header as Home & Listings */}
             <StickyBar turf={turf} visible={showSticky} />
 

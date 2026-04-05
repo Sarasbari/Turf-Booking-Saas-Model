@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://alivehub.vercel.app/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <lastmod>2026-04-05</lastmod>
+  </url>
+
+  <!-- All Turf Listings -->
+  <url>
+    <loc>https://alivehub.vercel.app/listings</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <lastmod>2026-04-05</lastmod>
+  </url>
+
+  <!--
+    ══════════════════════════════════════════════════════
+    Individual Turf Pages — add one <url> per real turf
+    When you add slug-based routing, update the <loc> to:
+      https://alivehub.vercel.app/turf/turf-name-city
+    ══════════════════════════════════════════════════════
+  -->
+
+  <!-- Sign In (low priority, still crawlable for now) -->
+  <url>
+    <loc>https://alivehub.vercel.app/signin</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.2</priority>
+  </url>
+
+</urlset>
