@@ -12,14 +12,16 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          firebase: [
-            "firebase/app",
-            "firebase/auth",
-            "firebase/firestore",
-          ],
-          ui: ["framer-motion", "recharts"],
+        manualChunks(id) {
+          if (id.includes("node_modules/react-dom") || id.includes("node_modules/react-router-dom") || id.includes("node_modules/react/")) {
+            return "vendor";
+          }
+          if (id.includes("node_modules/firebase") || id.includes("node_modules/@firebase")) {
+            return "firebase";
+          }
+          if (id.includes("node_modules/framer-motion") || id.includes("node_modules/recharts")) {
+            return "ui";
+          }
         },
       },
     },
