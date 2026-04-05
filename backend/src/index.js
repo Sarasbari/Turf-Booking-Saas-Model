@@ -17,6 +17,8 @@ import express from "express";
 import compression from 'compression';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import authRoutes from './routes/authRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
@@ -29,6 +31,22 @@ const app = express();
 
 // ✅ Trust Vercel's reverse proxy (required for express-rate-limit behind proxies)
 app.set('trust proxy', 1);
+
+// ── Security Headers (Helmet) ─────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false,          // Razorpay checkout script needs this off
+  crossOriginEmbedderPolicy: false,      // Allow cross-origin resources
+}));
+
+// ── Global API Rate Limiter ───────────────────────────────────────────────
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 100,                   // 100 requests per window per IP
+  message: { error: 'Too many requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
+});
 
 // ✅ CORS — allow both localhost and production
 app.use(cors({
@@ -60,7 +78,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
+// Routes — all API routes behind global rate limiter
+app.use('/api/', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/turfs', turfRoutes);

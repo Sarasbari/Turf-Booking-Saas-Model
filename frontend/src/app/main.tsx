@@ -26,6 +26,23 @@ Sentry.init({
 // ── Vercel Analytics ─────────────────────────────────────────────────────
 inject()
 
+// ── Firebase Analytics (consent-gated) ───────────────────────────────────
+// Only initialize if the user has explicitly accepted cookies.
+// The CookieConsent component handles runtime initialization for new visitors.
+const cookieConsent = localStorage.getItem('cookie_consent')
+if (cookieConsent === 'accepted') {
+  import('firebase/analytics').then(({ getAnalytics }) => {
+    import('@/services/firebase').then(({ app }) => {
+      try {
+        getAnalytics(app)
+        console.log('✅ Firebase Analytics initialized (prior consent)')
+      } catch {
+        // Analytics init is non-critical
+      }
+    })
+  })
+}
+
 // ── Render App ───────────────────────────────────────────────────────────
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

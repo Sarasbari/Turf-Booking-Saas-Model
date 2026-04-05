@@ -9,6 +9,17 @@ import { ProtectedRoute } from "@/routes/ProtectedRoute";
 // @ts-ignore - JSX file in TypeScript project
 import TurfDetailPage from "@/pages/public/TurfDetail/TurfDetailPage";
 
+// Legal pages
+import { PrivacyPolicy } from "@/pages/public/Legal/PrivacyPolicy";
+import { TermsOfService } from "@/pages/public/Legal/TermsOfService";
+
+// Public pages
+import { Contact } from "@/pages/public/Contact/Contact";
+
+// User pages
+import { CancelBooking } from "@/pages/user/MyBookings/CancelBooking";
+import { LeaveReview } from "@/pages/user/Reviews/LeaveReview";
+
 // Owner Dashboard imports
 import { OwnerProtectedRoute } from "@/components/features/Owner/OwnerProtectedRoute";
 import { OwnerLayout } from "@/pages/owner/OwnerLayout";
@@ -25,12 +36,24 @@ export function AppRouter() {
         <>
             <ScrollToTop />
             <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<Home />} />
                 <Route path="/listings" element={<TurfListings />} />
                 <Route path="/turf/:turfId" element={<TurfDetailPage />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+
+                {/* Legal routes */}
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+
+                {/* Contact */}
+                <Route path="/contact" element={<Contact />} />
+
+                {/* Protected user routes */}
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/cancel-booking" element={<ProtectedRoute><CancelBooking /></ProtectedRoute>} />
+                <Route path="/review" element={<ProtectedRoute><LeaveReview /></ProtectedRoute>} />
 
                 {/* Owner Dashboard Routes */}
                 <Route path="/owner" element={<OwnerProtectedRoute />}>

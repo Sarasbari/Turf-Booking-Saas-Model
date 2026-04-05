@@ -16,7 +16,6 @@
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "firebase": "^12.9.0",
-    "firebase-admin": "^13.7.0",
     "framer-motion": "^12.29.2",
     "gsap": "^3.12.5",
     "lucide-react": "^0.575.0",
@@ -41,6 +40,6 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^8.0.3"
   }
 }

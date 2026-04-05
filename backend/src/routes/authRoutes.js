@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import {
     getCurrentUser,
     logout,
@@ -7,6 +8,16 @@ import {
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// ── Strict auth rate limiter (brute-force protection) ─────────────────────
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    max: 5,                     // 5 auth attempts per 15 min per IP
+    message: { error: 'Too many login attempts. Try again in 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
+});
 
 /**
  * @route   GET /api/auth/me
@@ -25,8 +36,8 @@ router.post('/logout', authenticateToken, logout);
 /**
  * @route   POST /api/auth/verify
  * @desc    Verify JWT token
- * @access  Public
+ * @access  Public (rate-limited)
  */
-router.post('/verify', verifyTokenEndpoint);
+router.post('/verify', authLimiter, verifyTokenEndpoint);
 
 export default router;

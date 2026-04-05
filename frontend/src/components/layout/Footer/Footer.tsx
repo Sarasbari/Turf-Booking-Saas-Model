@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import styles from './Footer.module.css';
 
 export function Footer() {
@@ -35,10 +36,10 @@ export function Footer() {
                 <div className={styles.column}>
                     <h4 className={styles.columnTitle}>Quick Links</h4>
                     <ul className={styles.linkList}>
-                        <li><a href="/">Home</a></li>
-                        <li><a href="/listings">Browse Turfs</a></li>
-                        <li><a href="/signin">Sign In</a></li>
-                        <li><a href="/about">About Us</a></li>
+                        <li><Link to="/">Home</Link></li>
+                        <li><Link to="/listings">Browse Turfs</Link></li>
+                        <li><Link to="/signin">Sign In</Link></li>
+                        <li><Link to="/contact">Contact Us</Link></li>
                     </ul>
                 </div>
 
@@ -46,22 +47,21 @@ export function Footer() {
                 <div className={styles.column}>
                     <h4 className={styles.columnTitle}>Sports</h4>
                     <ul className={styles.linkList}>
-                        <li><a href="/listings?sport=football">Football</a></li>
-                        <li><a href="/listings?sport=cricket">Cricket</a></li>
-                        <li><a href="/listings?sport=basketball">Basketball</a></li>
-                        <li><a href="/listings?sport=badminton">Badminton</a></li>
-                        <li><a href="/listings?sport=volleyball">Volleyball</a></li>
+                        <li><Link to="/listings?sport=football">Football</Link></li>
+                        <li><Link to="/listings?sport=cricket">Cricket</Link></li>
+                        <li><Link to="/listings?sport=basketball">Basketball</Link></li>
+                        <li><Link to="/listings?sport=badminton">Badminton</Link></li>
+                        <li><Link to="/listings?sport=volleyball">Volleyball</Link></li>
                     </ul>
                 </div>
 
-                {/* Support */}
+                {/* Legal & Support */}
                 <div className={styles.column}>
-                    <h4 className={styles.columnTitle}>Support</h4>
+                    <h4 className={styles.columnTitle}>Legal</h4>
                     <ul className={styles.linkList}>
-                        <li><a href="/help">Help Center</a></li>
-                        <li><a href="/contact">Contact Us</a></li>
-                        <li><a href="/terms">Terms of Service</a></li>
-                        <li><a href="/privacy">Privacy Policy</a></li>
+                        <li><Link to="/privacy-policy">Privacy Policy</Link></li>
+                        <li><Link to="/terms-of-service">Terms of Service</Link></li>
+                        <li><Link to="/contact">Contact Us</Link></li>
                     </ul>
                 </div>
             </div>
