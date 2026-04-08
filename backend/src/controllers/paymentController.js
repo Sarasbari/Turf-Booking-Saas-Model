@@ -3,10 +3,10 @@
  *
  * Handles Razorpay order creation and payment verification.
  *
- * 3-Layer Atomic Locking:
- *   Layer 2 — create-order: acquireSlotLocks() BEFORE Razorpay order creation
- *   Layer 3 — verify: Firestore transaction to verify lock ownership,
- *             create booking, and confirm locks atomically
+ * Layer 3 Atomic Locking:
+ *   - create-order: Proceeds directly to Razorpay order creation (no pre-payment lock).
+ *   - verify: Firestore transaction to verify slot availability,
+ *             create booking atomically.
  *
  * Bookings are ONLY written to Firestore after server-side signature verification,
  * via the Admin SDK (bypasses Firestore security rules).
@@ -14,7 +14,6 @@
 
 import { createRazorpayOrder, verifyPaymentSignature } from '../services/paymentService.js';
 import { markEmailSent } from '../services/bookingService.js';
-import { acquireSlotLocks, releaseSlotLocks } from '../services/slotLockService.js';
 import { config } from '../config/index.js';
 import { sendBookingConfirmation, sendCancellationEmail } from '../services/emailService.js';
 import { adminDb } from '../config/firebaseAdmin.js';
@@ -26,11 +25,8 @@ import * as Sentry from '@sentry/node';
 // ---------------------------------------------------------------------------
 // POST /api/payment/create-order
 //
-// Layer 2 — Pre-Payment Hard Lock:
-//   1. Create Razorpay order (to get orderId)
-//   2. Atomically acquire slot locks in Firestore
-//   3. If locks fail → return 409 Conflict (slots unavailable)
-//   4. If locks succeed → return order details + lock expiry to frontend
+// Creates a Razorpay order. Double-booking prevention happens atomically
+// at verify time (Layer 3 Firestore transaction).
 // ---------------------------------------------------------------------------
 
 export async function handleCreateOrder(req, res) {
@@ -57,37 +53,13 @@ export async function handleCreateOrder(req, res) {
     const random = Math.floor(10000 + Math.random() * 90000);
     const receipt = `TRF-${year}-${random}`;
 
-    // ── Step 1: Create Razorpay order (amount in paise) ──────────────
+    // ── Create Razorpay order (amount in paise) ──────────────────────
     const amountInPaise = Math.round(totalPrice * 100);
     const order = await createRazorpayOrder(amountInPaise, 'INR', receipt);
 
     console.log(`✅ Razorpay order created: ${order.id} for user ${user.uid}`);
 
-    // ── Step 2: Atomically acquire slot locks ─────────────────────────
-    const lockResult = await acquireSlotLocks({
-      turfId,
-      date,
-      slots,
-      userId: user.uid,
-      razorpayOrderId: order.id,
-    });
-
-    if (!lockResult.success) {
-      // Slots not available — return 409 Conflict with details
-      console.warn(
-        `⚠️  Slot lock failed for user ${user.uid}:`,
-        lockResult.error,
-        lockResult.slot
-      );
-      return res.status(409).json({
-        success: false,
-        error: lockResult.error,
-        slot: lockResult.slot,
-        message: lockResult.message,
-      });
-    }
-
-    // ── Step 3: Return order details + lock expiry to frontend ────────
+    // ── Return order details to frontend ─────────────────────────────
     return res.status(200).json({
       success: true,
       orderId: order.id,
@@ -95,7 +67,6 @@ export async function handleCreateOrder(req, res) {
       currency: order.currency,
       keyId: config.razorpay.keyId,
       receipt,
-      locksExpiresAt: lockResult.expiresAt.toISOString(),
       meta: { turfId, slots, date, userId: user.uid },
     });
   } catch (error) {
@@ -194,14 +165,6 @@ export async function handleVerifyPayment(req, res) {
     try {
       bookingId = await adminDb.runTransaction(async (transaction) => {
 
-        // ── READ: Check all slot locks ──────────────────────────────────
-        const lockRefs = timeSlots.map((slot) =>
-          adminDb.collection('slotLocks').doc(`${turfId}_${bookedDate}_${slot}`)
-        );
-        const lockDocs = await Promise.all(
-          lockRefs.map((ref) => transaction.get(ref))
-        );
-
         // ── READ: Idempotency guard — check for existing booking ────────
         const existingQuery = adminDb
           .collection('bookings')
@@ -211,42 +174,40 @@ export async function handleVerifyPayment(req, res) {
 
         if (!existingSnapshot.empty) {
           const existingId = existingSnapshot.docs[0].id;
-          console.log(`ℹ️  Duplicate booking prevented for order: ${razorpay_order_id} → existing bookingId: ${existingId}`);
+          console.log(
+            `ℹ️  Duplicate booking prevented for order: ${razorpay_order_id} → existing bookingId: ${existingId}`
+          );
           return existingId;
         }
 
-        // ── VERIFY: Each lock must belong to this user and not be expired ─
-        for (let i = 0; i < lockDocs.length; i++) {
-          const lockDoc = lockDocs[i];
-          const slot = timeSlots[i];
-
-          if (!lockDoc.exists) {
-            throw new Error(
-              `Lock missing for slot ${slot}. Session may have expired.`
-            );
-          }
-
-          const lock = lockDoc.data();
-
-          // Check if lock expired (10 min window passed)
-          if (lock.expiresAt.toMillis() < Date.now()) {
-            throw new Error(
-              `Lock expired for slot ${slot}. Please try booking again.`
-            );
-          }
-
-          // Check lock belongs to this user
-          if (lock.lockedBy !== user.uid) {
-            throw new Error(
-              `Slot ${slot} was locked by another user while your payment was processing.`
-            );
-          }
-
-          // Check not already confirmed (idempotency for lock)
-          if (lock.status === 'confirmed' && lock.bookingId) {
-            return lock.bookingId;
-          }
+        // ── READ: Check if any of the slots are already booked ──────────
+        // Note: We check each slot with a separate query. Since timeSlots is usually small (1-4),
+        // doing Promise.all on these queries is efficient enough and perfectly safe inside a transaction.
+        const bookingChecks = await Promise.all(
+          timeSlots.map(async (slot) => {
+            let q = adminDb
+              .collection('bookings')
+              .where('turfId', '==', turfId)
+              .where('bookedDate', '==', bookedDate)
+              .where('timeSlots', 'array-contains', slot)
+              .where('status', '==', 'confirmed');
+              
+            if (groundId) {
+                q = q.where('groundId', '==', groundId);
+            }
+            return transaction.get(q.limit(1));
+          })
+        );
+        
+        // ── VERIFY: Ensure slots are available ───────────────────────────────
+        for (let i = 0; i < bookingChecks.length; i++) {
+           if (!bookingChecks[i].empty) {
+               throw new Error(
+                 `Slot ${timeSlots[i]} has already been booked by another user.`
+               );
+           }
         }
+
 
         // ── WRITE: Create booking document ──────────────────────────────
         const bookingRef = adminDb.collection('bookings').doc();
@@ -285,14 +246,6 @@ export async function handleVerifyPayment(req, res) {
           updatedAt: FieldValue.serverTimestamp(),
         });
 
-        // ── WRITE: Update all locks to confirmed ────────────────────────
-        lockRefs.forEach((ref) => {
-          transaction.update(ref, {
-            status: 'confirmed',
-            bookingId: bookingRef.id,
-            confirmedAt: Timestamp.now(),
-          });
-        });
 
         console.log(
           `✅ Booking confirmed atomically: ${bookingRef.id} for user: ${user.uid}`

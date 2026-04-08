@@ -8,7 +8,7 @@
  * Only VITE_RAZORPAY_KEY_ID is used (public key).
  *
  * Slot Locking:
- *   - createOrder() now returns slot lock info (locksExpiresAt)
+ *   - createOrder() relies strictly on Razorpay order creation (Layer 2 locking removed)
  *   - 409 responses are handled gracefully (SLOT_LOCKED, SLOT_CONFIRMED)
  *   - verify() 409 responses indicate SLOT_TAKEN (refund scenario)
  */
@@ -34,7 +34,6 @@ interface CreateOrderSuccess {
     currency: string;
     keyId: string;
     receipt: string;
-    locksExpiresAt: string; // ISO date string — lock expiry for countdown timer
     meta: {
         turfId: string;
         slots: string[];
@@ -152,9 +151,6 @@ async function getAuthToken(): Promise<string> {
 
 /**
  * Create a Razorpay order via backend.
- *
- * Also atomically acquires slot locks (Layer 2).
- * Returns slot lock info on success, or conflict details on failure.
  *
  * Does NOT throw on 409 — returns the error response for the caller to handle.
  */

@@ -770,7 +770,6 @@ function BookingCard({ turf }) {
     const [selectedSport, setSelectedSport] = useState('');
     const [bookedSlots, setBookedSlots] = useState([]);
     const [blockedSlots, setBlockedSlots] = useState([]);
-    const [lockedSlots, setLockedSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [slotError, setSlotError] = useState(null);
 
@@ -893,45 +892,7 @@ function BookingCard({ turf }) {
         return () => unsubscribe();
     }, [date, turf.id, selectedGround?.id]);
 
-    // Real-time listener for slot locks — Layer 2 hard locks from backend
-    useEffect(() => {
-        if (!date || !turf.id) {
-            setLockedSlots([]);
-            return;
-        }
 
-        const locksRef = collection(db, 'slotLocks');
-        const locksQuery = query(
-            locksRef,
-            where('turfId', '==', turf.id),
-            where('date', '==', date),
-            where('status', '==', 'locked')
-        );
-
-        const unsubscribe = onSnapshot(locksQuery, (snapshot) => {
-            const locked = [];
-            const now = Date.now();
-            const currentUserId = auth.currentUser?.uid; // evaluate dynamically
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                // Skip locks by the current user (they already selected this slot)
-                if (currentUserId && data.lockedBy === currentUserId) return;
-                // Skip expired locks (cleanup cron will remove them)
-                if (data.expiresAt && data.expiresAt.toMillis() < now) return;
-                if (data.slot) {
-                    const hour = parseInt(data.slot.split(':')[0]);
-                    if (!isNaN(hour)) locked.push(hour);
-                }
-            });
-            setLockedSlots(locked);
-        }, (error) => {
-            console.warn('Could not listen to slot locks:', error);
-            setLockedSlots([]);
-        });
-
-        return () => unsubscribe();
-    }, [date, turf.id]);
 
     const price = turf.pricePerHour;
     const discountedPrice = turf.isDiscountActive
@@ -997,14 +958,7 @@ function BookingCard({ turf }) {
                 }
             }
 
-            // Check locked (held by another user — Layer 2)
-            let isLocked = false;
-            for (let h = 0; h < duration; h++) {
-                if (lockedSlots.includes(currentHour + h)) {
-                    isLocked = true;
-                    break;
-                }
-            }
+
 
             // Check past
             const isPast = isToday && (currentHour < currentHourNow || (currentHour === currentHourNow && currentMinuteNow > 0));
@@ -1015,7 +969,6 @@ function BookingCard({ turf }) {
                 label: `${format(currentHour)} – ${format(currentHour + duration)}`,
                 isBooked,
                 isBlocked,
-                isLocked,
                 isPast,
             });
 
@@ -1057,7 +1010,7 @@ function BookingCard({ turf }) {
         const orderTotalPrice = totalAmount > 0 ? totalAmount : 1;
 
         try {
-            // 1. Create Razorpay order + acquire slot locks (Layer 2)
+            // 1. Create Razorpay order
             const orderData = await createOrder({
                 turfId: turf.id,
                 slots: timeSlots,
@@ -1065,7 +1018,7 @@ function BookingCard({ turf }) {
                 date: date,
             });
 
-            // Handle slot lock conflict (409 responses)
+            // Handle order creation failure or conflicts if any
             if (!orderData.success) {
                 console.warn('⚠️ Slot lock conflict:', orderData.error, orderData.slot);
                 const errorMsg = orderData.error === 'SLOT_CONFIRMED'
@@ -1225,10 +1178,9 @@ function BookingCard({ turf }) {
                 ) : (
                     <div className="td-booking__slots">
                         {slots.map(slot => {
-                            const isDisabled = slot.isBooked || slot.isBlocked || slot.isLocked || slot.isPast;
+                            const isDisabled = slot.isBooked || slot.isBlocked || slot.isPast;
                             const statusLabel = slot.isPast ? 'Passed'
                                 : (slot.isBlocked || slot.isBooked) ? 'Booked'
-                                : slot.isLocked ? 'Held ⏳'
                                 : null;
                             return (
                                 <button
@@ -1243,7 +1195,6 @@ function BookingCard({ turf }) {
                                     className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''
                                         } ${slot.isBooked ? 'td-booking__slot--booked' : ''}
                                         ${slot.isBlocked ? 'td-booking__slot--booked' : ''}
-                                        ${slot.isLocked ? 'td-booking__slot--locked' : ''}
                                         ${slot.isPast ? 'td-booking__slot--past' : ''}`}
                                     title={statusLabel ? `This slot is ${statusLabel.toLowerCase()}` : `Book ${slot.label}`}
                                 >
