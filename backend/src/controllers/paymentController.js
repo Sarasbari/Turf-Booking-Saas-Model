@@ -2,21 +2,35 @@
  * Payment Controller
  *
  * Handles Razorpay order creation and payment verification.
+ *
+ * 3-Layer Atomic Locking:
+ *   Layer 2 — create-order: acquireSlotLocks() BEFORE Razorpay order creation
+ *   Layer 3 — verify: Firestore transaction to verify lock ownership,
+ *             create booking, and confirm locks atomically
+ *
  * Bookings are ONLY written to Firestore after server-side signature verification,
- * via the bookingService (Admin SDK — bypasses Firestore security rules).
+ * via the Admin SDK (bypasses Firestore security rules).
  */
 
 import { createRazorpayOrder, verifyPaymentSignature } from '../services/paymentService.js';
-import { createBooking, markEmailSent } from '../services/bookingService.js';
+import { markEmailSent } from '../services/bookingService.js';
+import { acquireSlotLocks, releaseSlotLocks } from '../services/slotLockService.js';
 import { config } from '../config/index.js';
 import { sendBookingConfirmation, sendCancellationEmail } from '../services/emailService.js';
 import { adminDb } from '../config/firebaseAdmin.js';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { invalidateCache } from '../middleware/cache.js';
 import { emailQueue } from '../queues/index.js';
 import * as Sentry from '@sentry/node';
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/create-order
+//
+// Layer 2 — Pre-Payment Hard Lock:
+//   1. Create Razorpay order (to get orderId)
+//   2. Atomically acquire slot locks in Firestore
+//   3. If locks fail → return 409 Conflict (slots unavailable)
+//   4. If locks succeed → return order details + lock expiry to frontend
 // ---------------------------------------------------------------------------
 
 export async function handleCreateOrder(req, res) {
@@ -43,19 +57,45 @@ export async function handleCreateOrder(req, res) {
     const random = Math.floor(10000 + Math.random() * 90000);
     const receipt = `TRF-${year}-${random}`;
 
-    // ── Create Razorpay order (amount in paise) ──────────────────────
+    // ── Step 1: Create Razorpay order (amount in paise) ──────────────
     const amountInPaise = Math.round(totalPrice * 100);
     const order = await createRazorpayOrder(amountInPaise, 'INR', receipt);
 
     console.log(`✅ Razorpay order created: ${order.id} for user ${user.uid}`);
 
+    // ── Step 2: Atomically acquire slot locks ─────────────────────────
+    const lockResult = await acquireSlotLocks({
+      turfId,
+      date,
+      slots,
+      userId: user.uid,
+      razorpayOrderId: order.id,
+    });
+
+    if (!lockResult.success) {
+      // Slots not available — return 409 Conflict with details
+      console.warn(
+        `⚠️  Slot lock failed for user ${user.uid}:`,
+        lockResult.error,
+        lockResult.slot
+      );
+      return res.status(409).json({
+        success: false,
+        error: lockResult.error,
+        slot: lockResult.slot,
+        message: lockResult.message,
+      });
+    }
+
+    // ── Step 3: Return order details + lock expiry to frontend ────────
     return res.status(200).json({
+      success: true,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
       keyId: config.razorpay.keyId,
       receipt,
-      // Pass back metadata the frontend will need for verification
+      locksExpiresAt: lockResult.expiresAt.toISOString(),
       meta: { turfId, slots, date, userId: user.uid },
     });
   } catch (error) {
@@ -73,6 +113,16 @@ export async function handleCreateOrder(req, res) {
 
 // ---------------------------------------------------------------------------
 // POST /api/payment/verify
+//
+// Layer 3 — Atomic Transaction at Verify:
+//   1. Verify Razorpay signature (HMAC-SHA256, timing-safe)
+//   2. Firestore transaction:
+//      a. READ all slot locks for the requested slots
+//      b. VERIFY each lock belongs to this user and isn't expired
+//      c. WRITE booking document
+//      d. UPDATE all locks to status: 'confirmed'
+//   3. If transaction fails → slot was taken, return 409 SLOT_TAKEN
+//   4. Queue confirmation email (non-blocking)
 //
 // Expected request body:
 //   razorpay_order_id, razorpay_payment_id, razorpay_signature  — from Razorpay
@@ -138,26 +188,141 @@ export async function handleVerifyPayment(req, res) {
 
     console.log(`✅ Payment signature verified for order: ${razorpay_order_id}`);
 
-    // ── Write booking to Firestore via bookingService (Admin SDK) ─────
-    // Admin SDK bypasses Firestore security rules — this is the ONLY place
-    // a booking document is ever created.
-    const bookingId = await createBooking({
-      userId:          user.uid,
-      userEmail:       userEmail || user.email || '',
-      userName:        userName  || user.name  || 'User',
-      turfId,
-      turfName:        turfName    || '',
-      turfAddress:     turfAddress || '',
-      turfImage:       turfImage   || '',
-      ownerContact:    ownerContact || '',
-      bookedDate,
-      timeSlots,
-      totalPrice:      typeof totalPrice === 'number' ? totalPrice : 0,
-      sport:           sport || '',
-      groundId:        groundId || '',
-      paymentId:       razorpay_payment_id,
-      razorpayOrderId: razorpay_order_id,
-    });
+    // ── Layer 3: Atomic Transaction — verify locks + create booking ────
+    let bookingId;
+
+    try {
+      bookingId = await adminDb.runTransaction(async (transaction) => {
+
+        // ── READ: Check all slot locks ──────────────────────────────────
+        const lockRefs = timeSlots.map((slot) =>
+          adminDb.collection('slotLocks').doc(`${turfId}_${bookedDate}_${slot}`)
+        );
+        const lockDocs = await Promise.all(
+          lockRefs.map((ref) => transaction.get(ref))
+        );
+
+        // ── READ: Idempotency guard — check for existing booking ────────
+        const existingQuery = adminDb
+          .collection('bookings')
+          .where('razorpayOrderId', '==', razorpay_order_id)
+          .limit(1);
+        const existingSnapshot = await transaction.get(existingQuery);
+
+        if (!existingSnapshot.empty) {
+          const existingId = existingSnapshot.docs[0].id;
+          console.log(`ℹ️  Duplicate booking prevented for order: ${razorpay_order_id} → existing bookingId: ${existingId}`);
+          return existingId;
+        }
+
+        // ── VERIFY: Each lock must belong to this user and not be expired ─
+        for (let i = 0; i < lockDocs.length; i++) {
+          const lockDoc = lockDocs[i];
+          const slot = timeSlots[i];
+
+          if (!lockDoc.exists) {
+            throw new Error(
+              `Lock missing for slot ${slot}. Session may have expired.`
+            );
+          }
+
+          const lock = lockDoc.data();
+
+          // Check if lock expired (10 min window passed)
+          if (lock.expiresAt.toMillis() < Date.now()) {
+            throw new Error(
+              `Lock expired for slot ${slot}. Please try booking again.`
+            );
+          }
+
+          // Check lock belongs to this user
+          if (lock.lockedBy !== user.uid) {
+            throw new Error(
+              `Slot ${slot} was locked by another user while your payment was processing.`
+            );
+          }
+
+          // Check not already confirmed (idempotency for lock)
+          if (lock.status === 'confirmed' && lock.bookingId) {
+            return lock.bookingId;
+          }
+        }
+
+        // ── WRITE: Create booking document ──────────────────────────────
+        const bookingRef = adminDb.collection('bookings').doc();
+
+        transaction.set(bookingRef, {
+          id: bookingRef.id,
+          // User info
+          userId: user.uid,
+          userEmail: userEmail || user.email || '',
+          userName: userName || user.name || 'User',
+          // Turf info
+          turfId,
+          turfName: turfName || '',
+          turfAddress: turfAddress || '',
+          turfImage: turfImage || '',
+          ownerContact: ownerContact || '',
+          // Booking details
+          bookedDate,
+          date: bookedDate, // backward-compat alias for legacy queries
+          timeSlots,
+          totalPrice: typeof totalPrice === 'number' ? totalPrice : 0,
+          amount: typeof totalPrice === 'number' ? totalPrice : 0,
+          sport: sport || '',
+          groundId: groundId || '',
+          // Status
+          status: 'confirmed',
+          bookedBy: 'user',
+          paymentMethod: 'razorpay',
+          paymentStatus: 'paid',
+          emailSent: false,
+          // Payment reference
+          paymentId: razorpay_payment_id,
+          razorpayOrderId: razorpay_order_id,
+          // Timestamps
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        // ── WRITE: Update all locks to confirmed ────────────────────────
+        lockRefs.forEach((ref) => {
+          transaction.update(ref, {
+            status: 'confirmed',
+            bookingId: bookingRef.id,
+            confirmedAt: Timestamp.now(),
+          });
+        });
+
+        console.log(
+          `✅ Booking confirmed atomically: ${bookingRef.id} for user: ${user.uid}`
+        );
+        return bookingRef.id;
+      });
+    } catch (txnError) {
+      // Transaction failed — slot was taken by another user
+      console.error('❌ Atomic booking transaction failed:', txnError.message);
+
+      Sentry.captureException(txnError, {
+        tags: { feature: 'payment', step: 'verify-transaction' },
+        extra: {
+          orderId: razorpay_order_id,
+          paymentId: razorpay_payment_id,
+          userId: user.uid,
+          turfId,
+          timeSlots,
+        },
+      });
+
+      // TODO: Initiate Razorpay refund for the captured payment
+      // razorpay.payments.refund(razorpay_payment_id, { amount: totalPrice * 100 })
+
+      return res.status(409).json({
+        success: false,
+        error: 'SLOT_TAKEN',
+        message: txnError.message,
+      });
+    }
 
     console.log(`✅ Booking stored: ${bookingId}`);
 
@@ -180,16 +345,16 @@ export async function handleVerifyPayment(req, res) {
     };
 
     const emailData = {
-      toEmail:      userEmail || user.email || '',
-      userName:     userName  || user.name  || 'User',
+      toEmail: userEmail || user.email || '',
+      userName: userName || user.name || 'User',
       bookingId,
-      turfName:     turfName    || 'Your Turf',
-      turfAddress:  turfAddress || '',
+      turfName: turfName || 'Your Turf',
+      turfAddress: turfAddress || '',
       ownerContact: ownerContact || '',
-      bookedDate:   formatDate(bookedDate),
+      bookedDate: formatDate(bookedDate),
       timeSlots,
-      totalAmount:  typeof totalPrice === 'number' ? totalPrice : 0,
-      paymentId:    razorpay_payment_id,
+      totalAmount: typeof totalPrice === 'number' ? totalPrice : 0,
+      paymentId: razorpay_payment_id,
     };
 
     if (emailQueue && !process.env.VERCEL) {
@@ -305,6 +470,17 @@ export async function handleCancelBooking(req, res) {
     });
 
     console.log(`✅ Booking ${bookingId} cancelled by user ${user.uid}`);
+
+    // ── Release corresponding slot locks ──────────────────────────────
+    if (bookingData.turfId && bookingData.bookedDate && bookingData.timeSlots) {
+      await releaseSlotLocks({
+        turfId: bookingData.turfId,
+        date: bookingData.bookedDate,
+        slots: bookingData.timeSlots,
+      }).catch((err) => {
+        console.warn('⚠️  Failed to release slot locks on cancel:', err.message);
+      });
+    }
 
     // ── Invalidate slot cache for the cancelled booking's turf+date ──
     if (bookingData.turfId && bookingData.bookedDate) {

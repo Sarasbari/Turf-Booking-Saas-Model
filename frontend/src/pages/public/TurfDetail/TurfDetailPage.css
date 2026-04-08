@@ -2054,3 +2054,26 @@
   box-shadow: none !important;
   color: #94a3b8 !important;
 }
+
+/* Locked slot (held by another user — Layer 2) */
+.td-booking__slot--locked {
+  background: #fffbeb !important;
+  color: #92400e !important;
+  border-color: #fcd34d !important;
+  cursor: not-allowed !important;
+  opacity: 0.75;
+  position: relative;
+  animation: td-lockPulse 2s ease-in-out infinite;
+}
+
+.td-booking__slot--locked:hover {
+  background: #fffbeb !important;
+  transform: none !important;
+  box-shadow: none !important;
+  color: #92400e !important;
+}
+
+@keyframes td-lockPulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 0.55; }
+}

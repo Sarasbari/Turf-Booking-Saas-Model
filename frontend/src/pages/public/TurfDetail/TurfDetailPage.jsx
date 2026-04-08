@@ -770,7 +770,9 @@ function BookingCard({ turf }) {
     const [selectedSport, setSelectedSport] = useState('');
     const [bookedSlots, setBookedSlots] = useState([]);
     const [blockedSlots, setBlockedSlots] = useState([]);
+    const [lockedSlots, setLockedSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
+    const [slotError, setSlotError] = useState(null);
 
     // ── Payment state machine ──
     // 'idle' | 'processing' | 'verifying' | 'success' | 'failed'
@@ -891,6 +893,45 @@ function BookingCard({ turf }) {
         return () => unsubscribe();
     }, [date, turf.id, selectedGround?.id]);
 
+    // Real-time listener for slot locks — Layer 2 hard locks from backend
+    useEffect(() => {
+        if (!date || !turf.id) {
+            setLockedSlots([]);
+            return;
+        }
+
+        const currentUserId = auth.currentUser?.uid;
+        const locksRef = collection(db, 'slotLocks');
+        const locksQuery = query(
+            locksRef,
+            where('turfId', '==', turf.id),
+            where('date', '==', date),
+            where('status', '==', 'locked')
+        );
+
+        const unsubscribe = onSnapshot(locksQuery, (snapshot) => {
+            const locked = [];
+            const now = Date.now();
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                // Skip locks by the current user (they already selected this slot)
+                if (data.lockedBy === currentUserId) return;
+                // Skip expired locks (cleanup cron will remove them)
+                if (data.expiresAt && data.expiresAt.toMillis() < now) return;
+                if (data.slot) {
+                    const hour = parseInt(data.slot.split(':')[0]);
+                    if (!isNaN(hour)) locked.push(hour);
+                }
+            });
+            setLockedSlots(locked);
+        }, (error) => {
+            console.warn('Could not listen to slot locks:', error);
+            setLockedSlots([]);
+        });
+
+        return () => unsubscribe();
+    }, [date, turf.id]);
+
     const price = turf.pricePerHour;
     const discountedPrice = turf.isDiscountActive
         ? Math.round(price * (1 - turf.discountPercent / 100))
@@ -955,6 +996,15 @@ function BookingCard({ turf }) {
                 }
             }
 
+            // Check locked (held by another user — Layer 2)
+            let isLocked = false;
+            for (let h = 0; h < duration; h++) {
+                if (lockedSlots.includes(currentHour + h)) {
+                    isLocked = true;
+                    break;
+                }
+            }
+
             // Check past
             const isPast = isToday && (currentHour < currentHourNow || (currentHour === currentHourNow && currentMinuteNow > 0));
 
@@ -964,6 +1014,7 @@ function BookingCard({ turf }) {
                 label: `${format(currentHour)} – ${format(currentHour + duration)}`,
                 isBooked,
                 isBlocked,
+                isLocked,
                 isPast,
             });
 
@@ -993,6 +1044,7 @@ function BookingCard({ turf }) {
         setPaymentState('processing');
         setBookingResult(null);
         setRazorpayPaymentId('');
+        setSlotError(null);
 
         // Build timeSlots array in "HH:00" format (what backend + useBookedSlots expect)
         const timeSlots = Array.from({ length: duration }, (_, i) => {
@@ -1004,13 +1056,24 @@ function BookingCard({ turf }) {
         const orderTotalPrice = totalAmount > 0 ? totalAmount : 1;
 
         try {
-            // 1. Create Razorpay order via backend
+            // 1. Create Razorpay order + acquire slot locks (Layer 2)
             const orderData = await createOrder({
                 turfId: turf.id,
                 slots: timeSlots,
                 totalPrice: orderTotalPrice,
                 date: date,
             });
+
+            // Handle slot lock conflict (409 responses)
+            if (!orderData.success) {
+                console.warn('⚠️ Slot lock conflict:', orderData.error, orderData.slot);
+                const errorMsg = orderData.error === 'SLOT_CONFIRMED'
+                    ? `Slot ${orderData.slot || ''} has already been booked by another user. Please choose a different time.`
+                    : `Slot ${orderData.slot || ''} is being held by another user. Please try again in a few minutes or choose a different time.`;
+                setSlotError(errorMsg);
+                setPaymentState('idle');
+                return;
+            }
 
             // 2. Open Razorpay checkout → backend verifies → writes booking → sends email
             openRazorpayCheckout({
@@ -1044,6 +1107,11 @@ function BookingCard({ turf }) {
                         setPaymentState('idle');
                         return;
                     }
+                    setPaymentState('failed');
+                },
+                onSlotTaken: (message) => {
+                    console.warn('⚠️ Slot taken during payment:', message);
+                    setSlotError(message);
                     setPaymentState('failed');
                 },
             });
@@ -1156,8 +1224,11 @@ function BookingCard({ turf }) {
                 ) : (
                     <div className="td-booking__slots">
                         {slots.map(slot => {
-                            const isDisabled = slot.isBooked || slot.isBlocked || slot.isPast;
-                            const statusLabel = slot.isPast ? 'Passed' : (slot.isBlocked || slot.isBooked) ? 'Booked' : null;
+                            const isDisabled = slot.isBooked || slot.isBlocked || slot.isLocked || slot.isPast;
+                            const statusLabel = slot.isPast ? 'Passed'
+                                : (slot.isBlocked || slot.isBooked) ? 'Booked'
+                                : slot.isLocked ? 'Held ⏳'
+                                : null;
                             return (
                                 <button
                                     key={slot.id}
@@ -1166,6 +1237,7 @@ function BookingCard({ turf }) {
                                     className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''
                                         } ${slot.isBooked ? 'td-booking__slot--booked' : ''}
                                         ${slot.isBlocked ? 'td-booking__slot--booked' : ''}
+                                        ${slot.isLocked ? 'td-booking__slot--locked' : ''}
                                         ${slot.isPast ? 'td-booking__slot--past' : ''}`}
                                     title={statusLabel ? `This slot is ${statusLabel.toLowerCase()}` : `Book ${slot.label}`}
                                 >
@@ -1254,6 +1326,28 @@ function BookingCard({ turf }) {
                             You saved {formatCurrency((price - discountedPrice) * duration)}!
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Slot Conflict Alert */}
+            {slotError && (
+                <div style={{
+                    background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px',
+                    padding: '12px 16px', marginBottom: '12px', fontSize: '13px', color: '#b91c1c',
+                    display: 'flex', alignItems: 'flex-start', gap: '8px',
+                }}>
+                    <span style={{ fontSize: '16px', lineHeight: 1 }}>⚠️</span>
+                    <div>
+                        <div style={{ fontWeight: 600, marginBottom: '2px' }}>Slot Unavailable</div>
+                        <div>{slotError}</div>
+                    </div>
+                    <button
+                        onClick={() => setSlotError(null)}
+                        style={{
+                            marginLeft: 'auto', background: 'none', border: 'none',
+                            color: '#b91c1c', cursor: 'pointer', fontSize: '16px', padding: '0 4px',
+                        }}
+                    >✕</button>
                 </div>
             )}
 

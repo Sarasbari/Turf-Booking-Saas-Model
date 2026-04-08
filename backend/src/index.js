@@ -25,6 +25,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import turfRoutes from './routes/turfRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
+import cleanupLocksRoute from './routes/cleanupLocksRoute.js';
 import { testRedis } from './config/redis.js';
 
 const app = express();
@@ -85,6 +86,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/turfs', turfRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/cron', cleanupLocksRoute);
 
 // ✅ Bull Board — queue monitoring dashboard (optional, non-blocking)
 try {

@@ -6,6 +6,11 @@
  *
  * Security: The Razorpay key secret NEVER appears here.
  * Only VITE_RAZORPAY_KEY_ID is used (public key).
+ *
+ * Slot Locking:
+ *   - createOrder() now returns slot lock info (locksExpiresAt)
+ *   - 409 responses are handled gracefully (SLOT_LOCKED, SLOT_CONFIRMED)
+ *   - verify() 409 responses indicate SLOT_TAKEN (refund scenario)
  */
 
 import { auth } from './firebase';
@@ -21,12 +26,15 @@ interface CreateOrderPayload {
     date: string;
 }
 
-interface CreateOrderResponse {
+/** Successful create-order response */
+interface CreateOrderSuccess {
+    success: true;
     orderId: string;
     amount: number;
     currency: string;
     keyId: string;
     receipt: string;
+    locksExpiresAt: string; // ISO date string — lock expiry for countdown timer
     meta: {
         turfId: string;
         slots: string[];
@@ -34,6 +42,16 @@ interface CreateOrderResponse {
         userId: string;
     };
 }
+
+/** Failed create-order response (409 Conflict — slot unavailable) */
+interface CreateOrderConflict {
+    success: false;
+    error: 'SLOT_LOCKED' | 'SLOT_CONFIRMED';
+    slot: string;
+    message: string;
+}
+
+type CreateOrderResponse = CreateOrderSuccess | CreateOrderConflict;
 
 /**
  * All fields sent to /api/payment/verify.
@@ -62,11 +80,19 @@ interface VerifyPaymentPayload {
     userName: string;
 }
 
-interface VerifyPaymentResponse {
-    success: boolean;
+interface VerifyPaymentSuccess {
+    success: true;
     bookingId: string;
     message: string;
 }
+
+interface VerifyPaymentConflict {
+    success: false;
+    error: 'SLOT_TAKEN';
+    message: string;
+}
+
+type VerifyPaymentResponse = VerifyPaymentSuccess | VerifyPaymentConflict;
 
 // Extend Window for Razorpay global
 declare global {
@@ -126,6 +152,11 @@ async function getAuthToken(): Promise<string> {
 
 /**
  * Create a Razorpay order via backend.
+ *
+ * Also atomically acquires slot locks (Layer 2).
+ * Returns slot lock info on success, or conflict details on failure.
+ *
+ * Does NOT throw on 409 — returns the error response for the caller to handle.
  */
 export async function createOrder(
     payload: CreateOrderPayload
@@ -141,6 +172,17 @@ export async function createOrder(
         body: JSON.stringify(payload),
     });
 
+    // Handle 409 Conflict gracefully (slot locked/confirmed by another user)
+    if (res.status === 409) {
+        const data = await res.json().catch(() => ({
+            success: false as const,
+            error: 'SLOT_LOCKED' as const,
+            slot: '',
+            message: 'Slot is temporarily unavailable',
+        }));
+        return data as CreateOrderConflict;
+    }
+
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to create payment order');
@@ -152,6 +194,8 @@ export async function createOrder(
 /**
  * Verify payment signature via backend.
  * On success the backend creates the confirmed booking in Firestore via Admin SDK.
+ *
+ * Does NOT throw on 409 — returns the SLOT_TAKEN response for the caller to handle.
  */
 export async function verifyPayment(
     payload: VerifyPaymentPayload
@@ -167,6 +211,16 @@ export async function verifyPayment(
         body: JSON.stringify(payload),
     });
 
+    // Handle 409 Conflict gracefully (slot taken during payment)
+    if (res.status === 409) {
+        const data = await res.json().catch(() => ({
+            success: false as const,
+            error: 'SLOT_TAKEN' as const,
+            message: 'Slot was taken while your payment was processing.',
+        }));
+        return data as VerifyPaymentConflict;
+    }
+
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Payment verification failed');
@@ -180,7 +234,7 @@ export async function verifyPayment(
 // ---------------------------------------------------------------------------
 
 interface CheckoutOptions {
-    orderData: CreateOrderResponse;
+    orderData: CreateOrderSuccess;
     bookingMeta: {
         // Core booking fields
         turfId: string;
@@ -202,6 +256,7 @@ interface CheckoutOptions {
     userInfo?: { name?: string; email?: string; phone?: string };
     onSuccess: (bookingId: string) => void;
     onFailure: (error: string) => void;
+    onSlotTaken?: (message: string) => void;
 }
 
 /**
@@ -216,6 +271,7 @@ export function openRazorpayCheckout({
     userInfo,
     onSuccess,
     onFailure,
+    onSlotTaken,
 }: CheckoutOptions): void {
     if (typeof window.Razorpay === 'undefined') {
         onFailure('Razorpay SDK not loaded. Add the checkout.js script to index.html.');
@@ -252,6 +308,17 @@ export function openRazorpayCheckout({
                     userEmail: bookingMeta.userEmail,
                     userName: bookingMeta.userName,
                 });
+
+                if (!result.success) {
+                    // SLOT_TAKEN — payment went through but slot was taken
+                    const msg = result.message || 'Slot was booked by another user. Your payment will be refunded.';
+                    if (onSlotTaken) {
+                        onSlotTaken(msg);
+                    } else {
+                        onFailure(msg);
+                    }
+                    return;
+                }
 
                 onSuccess(result.bookingId);
             } catch (err) {

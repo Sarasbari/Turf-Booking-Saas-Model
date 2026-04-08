@@ -72,6 +72,15 @@ service cloud.firestore {
             || isOwnerOfTurf(resource.data.turfId));
     }
 
+    // ── Slot Locks (Layer 2 — backend hard locks) ──
+    // Public read so frontend can show "Held" status on slots.
+    // Write is denied to clients — only Admin SDK (backend) can
+    // acquire, confirm, or release slot locks.
+    match /slotLocks/{lockId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // ── Payments: server-only (deny all client access) ──
     match /payments/{paymentId} {
       allow read, write: if false;
