@@ -147,12 +147,19 @@ export async function acquireSlotLocks({
       error.message.startsWith('SLOT_CONFIRMED:') ||
       error.message.startsWith('SLOT_LOCKED:')
     ) {
-      const [type, slot, ...messageParts] = error.message.split(':');
+      const firstColon = error.message.indexOf(':');
+      const secondColon = error.message.indexOf(':', firstColon + 1);
+      const thirdColon = error.message.indexOf(':', secondColon + 1);
+
+      const type = error.message.substring(0, firstColon);
+      const slot = error.message.substring(firstColon + 1, thirdColon); // "18:00"
+      const message = error.message.substring(thirdColon + 1);
+
       return {
         success: false,
         error: type,
         slot,
-        message: messageParts.join(':'), // rejoin in case message had colons
+        message,
       };
     }
     // Re-throw unexpected errors (DB issues, etc.)

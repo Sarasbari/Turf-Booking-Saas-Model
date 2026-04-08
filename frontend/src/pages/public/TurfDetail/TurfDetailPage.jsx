@@ -900,7 +900,6 @@ function BookingCard({ turf }) {
             return;
         }
 
-        const currentUserId = auth.currentUser?.uid;
         const locksRef = collection(db, 'slotLocks');
         const locksQuery = query(
             locksRef,
@@ -912,10 +911,12 @@ function BookingCard({ turf }) {
         const unsubscribe = onSnapshot(locksQuery, (snapshot) => {
             const locked = [];
             const now = Date.now();
+            const currentUserId = auth.currentUser?.uid; // evaluate dynamically
+
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 // Skip locks by the current user (they already selected this slot)
-                if (data.lockedBy === currentUserId) return;
+                if (currentUserId && data.lockedBy === currentUserId) return;
                 // Skip expired locks (cleanup cron will remove them)
                 if (data.expiresAt && data.expiresAt.toMillis() < now) return;
                 if (data.slot) {
@@ -1150,7 +1151,7 @@ function BookingCard({ turf }) {
                     className="td-booking__date-input"
                     min={today}
                     value={date}
-                    onChange={(e) => { setDate(e.target.value); setSelectedSlot(null); setPaymentState('idle'); }}
+                    onChange={(e) => { setDate(e.target.value); setSelectedSlot(null); setPaymentState('idle'); setSlotError(null); }}
                 />
             </div>
 
@@ -1161,7 +1162,7 @@ function BookingCard({ turf }) {
                     {grounds.map((g) => (
                         <button
                             key={g.id}
-                            onClick={() => { setSelectedGround(g); setSelectedSlot(null); }}
+                            onClick={() => { setSelectedGround(g); setSelectedSlot(null); setSlotError(null); }}
                             className={`td-booking__sport-pill ${selectedGround?.id === g.id ? 'td-booking__sport-pill--active' : ''}`}
                         >
                             🏟️ {g.name}
@@ -1177,7 +1178,7 @@ function BookingCard({ turf }) {
                     {durationOptions.map((d) => (
                         <button
                             key={d}
-                            onClick={() => { setDuration(d); setSelectedSlot(null); }}
+                            onClick={() => { setDuration(d); setSelectedSlot(null); setSlotError(null); }}
                             className={`td-booking__sport-pill ${duration === d ? 'td-booking__sport-pill--active' : ''}`}
                         >
                             🕐 {d} Hour{d > 1 ? 's' : ''}
@@ -1232,7 +1233,12 @@ function BookingCard({ turf }) {
                             return (
                                 <button
                                     key={slot.id}
-                                    onClick={() => !isDisabled && setSelectedSlot(slot)}
+                                    onClick={() => {
+                                        if (!isDisabled) {
+                                            setSelectedSlot(slot);
+                                            setSlotError(null);
+                                        }
+                                    }}
                                     disabled={isDisabled}
                                     className={`td-booking__slot ${selectedSlot?.id === slot.id ? 'td-booking__slot--active' : ''
                                         } ${slot.isBooked ? 'td-booking__slot--booked' : ''}
