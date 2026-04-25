@@ -29,7 +29,7 @@ export function useSEO({
 }: SEOProps) {
   useEffect(() => {
     // ── Title ──
-    document.title = `${title} | ${SITE_NAME}`;
+    document.title = SITE_NAME;
 
     // ── Helper: set or create a <meta> tag ──
     const setMeta = (name: string, content: string, useProperty = false) => {

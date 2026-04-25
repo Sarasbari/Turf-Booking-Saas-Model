@@ -1578,7 +1578,7 @@ export default function TurfDetailPage() {
         const image = turf.images?.[0] || 'https://alivehub.vercel.app/og-logo.png';
         const url = `https://alivehub.vercel.app/turf/${turf.slug || turfId}`;
 
-        document.title = `${title} | aLiveHub`;
+        document.title = 'aLiveHub';
 
         const setMeta = (name, content, useProp = false) => {
             const attr = useProp ? 'property' : 'name';

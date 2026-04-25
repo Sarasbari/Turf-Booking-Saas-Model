@@ -7,9 +7,9 @@
  * Security: The Razorpay key secret NEVER appears here.
  * Only VITE_RAZORPAY_KEY_ID is used (public key).
  *
- * Slot Locking:
- *   - createOrder() relies strictly on Razorpay order creation (Layer 2 locking removed)
- *   - 409 responses are handled gracefully (SLOT_LOCKED, SLOT_CONFIRMED)
+ * Booking Flow:
+ *   - createOrder() creates a Razorpay order directly
+ *   - verify() atomically checks slot availability and creates booking
  *   - verify() 409 responses indicate SLOT_TAKEN (refund scenario)
  */
 
@@ -45,7 +45,7 @@ interface CreateOrderSuccess {
 /** Failed create-order response (409 Conflict — slot unavailable) */
 interface CreateOrderConflict {
     success: false;
-    error: 'SLOT_LOCKED' | 'SLOT_CONFIRMED';
+    error: 'SLOT_UNAVAILABLE';
     slot: string;
     message: string;
 }
@@ -168,11 +168,11 @@ export async function createOrder(
         body: JSON.stringify(payload),
     });
 
-    // Handle 409 Conflict gracefully (slot locked/confirmed by another user)
+    // Handle 409 Conflict gracefully (slot unavailable)
     if (res.status === 409) {
         const data = await res.json().catch(() => ({
             success: false as const,
-            error: 'SLOT_LOCKED' as const,
+            error: 'SLOT_UNAVAILABLE' as const,
             slot: '',
             message: 'Slot is temporarily unavailable',
         }));

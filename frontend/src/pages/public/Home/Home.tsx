@@ -136,7 +136,7 @@ export function Home() {
 
     // ✅ SEO — Mumbai-focused meta tags
     useSEO({
-        title: 'Book Sports Turfs in Mumbai — Cricket, Football & More',
+        title: 'aLiveHub',
         description:
             'Book cricket, football & sports turfs in Mumbai instantly. Real-time slot availability, instant confirmation. Vasai, Virar, Mira Road & more.',
         keywords:

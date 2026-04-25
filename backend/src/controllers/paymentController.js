@@ -3,10 +3,10 @@
  *
  * Handles Razorpay order creation and payment verification.
  *
- * Layer 3 Atomic Locking:
- *   - create-order: Proceeds directly to Razorpay order creation (no pre-payment lock).
- *   - verify: Firestore transaction to verify slot availability,
- *             create booking atomically.
+ * Flow:
+ *   - create-order: Creates a Razorpay order directly.
+ *   - verify: Firestore transaction to verify slot availability
+ *             and create booking atomically.
  *
  * Bookings are ONLY written to Firestore after server-side signature verification,
  * via the Admin SDK (bypasses Firestore security rules).
@@ -85,13 +85,12 @@ export async function handleCreateOrder(req, res) {
 // ---------------------------------------------------------------------------
 // POST /api/payment/verify
 //
-// Layer 3 — Atomic Transaction at Verify:
+// Atomic Transaction at Verify:
 //   1. Verify Razorpay signature (HMAC-SHA256, timing-safe)
 //   2. Firestore transaction:
-//      a. READ all slot locks for the requested slots
-//      b. VERIFY each lock belongs to this user and isn't expired
+//      a. CHECK for existing booking (idempotency)
+//      b. VERIFY slot availability
 //      c. WRITE booking document
-//      d. UPDATE all locks to status: 'confirmed'
 //   3. If transaction fails → slot was taken, return 409 SLOT_TAKEN
 //   4. Queue confirmation email (non-blocking)
 //
@@ -159,7 +158,7 @@ export async function handleVerifyPayment(req, res) {
 
     console.log(`✅ Payment signature verified for order: ${razorpay_order_id}`);
 
-    // ── Layer 3: Atomic Transaction — verify locks + create booking ────
+    // ── Atomic Transaction — verify availability + create booking ──────
     let bookingId;
 
     try {
@@ -423,17 +422,6 @@ export async function handleCancelBooking(req, res) {
     });
 
     console.log(`✅ Booking ${bookingId} cancelled by user ${user.uid}`);
-
-    // ── Release corresponding slot locks ──────────────────────────────
-    if (bookingData.turfId && bookingData.bookedDate && bookingData.timeSlots) {
-      await releaseSlotLocks({
-        turfId: bookingData.turfId,
-        date: bookingData.bookedDate,
-        slots: bookingData.timeSlots,
-      }).catch((err) => {
-        console.warn('⚠️  Failed to release slot locks on cancel:', err.message);
-      });
-    }
 
     // ── Invalidate slot cache for the cancelled booking's turf+date ──
     if (bookingData.turfId && bookingData.bookedDate) {

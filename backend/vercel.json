@@ -16,10 +16,5 @@
       "dest": "src/index.js"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron/cleanup-locks",
-      "schedule": "*/5 * * * *"
-    }
-  ]
+  "crons": []
 }
