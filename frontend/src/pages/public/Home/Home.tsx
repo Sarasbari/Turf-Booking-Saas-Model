@@ -338,12 +338,12 @@ export function Home() {
             <div className={styles.trustBar}>
                 <div className={styles.trustItem}>
                     <span className={styles.trustIcon}>🏟️</span>
-                    <span>500+ Turfs</span>
+                    <span>100+ Turfs</span>
                 </div>
                 <div className={styles.trustDivider} />
                 <div className={styles.trustItem}>
                     <span className={styles.trustIcon}>📅</span>
-                    <span>10k+ Bookings</span>
+                    <span>100+ Bookings</span>
                 </div>
                 <div className={styles.trustDivider} />
                 <div className={styles.trustItem}>
